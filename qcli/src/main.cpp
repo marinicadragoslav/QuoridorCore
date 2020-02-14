@@ -141,6 +141,12 @@ void RunCommand_Wall(qarg args)
    GC.placeWallForCurrentPlayer(qcore::Position(x, y), orientation);
 }
 
+void RunCommand_Reset(qarg args)
+{
+   GC.initLocalGame(args.isSet("-p") ? std::stoi(args.getValue("<players>")) : 2);
+   GC.getBoardState()->registerStateChange(PrintAsciiGameBoard);
+}
+
 int main(int argc, char *argv[])
 {
    qcore::PluginManager::RegisterPlugin<qcli::ConsolePlayer>("qcli::ConsolePlayer");
@@ -167,7 +173,7 @@ int main(int argc, char *argv[])
    app.addCommand([](qarg){ GC.start(); }, "start", "Game Setup")
       .setSummary("Starts the game.");
 
-   app.addCommand([](qarg a){ GC.initLocalGame(a.isSet("-p") ? std::stoi(a.getValue("<players>")) : 2); }, "reset -p <players>", "Game Setup")
+   app.addCommand(RunCommand_Reset, "reset -p <players>", "Game Setup")
       .setSummary("Resets the current game.");
 
    app.addCommand(RunCommand_Move, "move <direction>", "Player Actions")
