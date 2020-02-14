@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
    qcore::PluginManager::RegisterPlugin<qcli::ConsolePlayer>("qcli::ConsolePlayer");
 
    // Initialize a local game with 2 players
-   GC.initLocalGame(4);
+   GC.initLocalGame(2);
 
    // Print board at every change
    GC.getBoardState()->registerStateChange(PrintAsciiGameBoard);
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
    app.addCommand([](qarg){ GC.start(); }, "start", "Game Setup")
       .setSummary("Starts the game.");
 
-   app.addCommand([](qarg){ GC.initLocalGame(2); }, "reset", "Game Setup")
+   app.addCommand([](qarg a){ GC.initLocalGame(a.isSet("-p") ? std::stoi(a.getValue("<players>")) : 2); }, "reset -p <players>", "Game Setup")
       .setSummary("Resets the current game.");
 
    app.addCommand(RunCommand_Move, "move <direction>", "Player Actions")
