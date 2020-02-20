@@ -7,6 +7,9 @@ using namespace qcore::literals;
 
 namespace qcore
 {
+   /** Log domain */
+   const char * const DOM = "qcore::BS";
+
    uint8_t& BoardMap::operator() (uint8_t x, uint8_t y)
    {
       if (x < BOARD_MAP_SIZE and y < BOARD_MAP_SIZE)
@@ -201,6 +204,8 @@ namespace qcore
          {
             mFinished = true;
             mWinner = id;
+
+            LOG_INFO(DOM) << "Game finished. Player " << (int) id << " won." << "\n";
          }
 
          // Update position

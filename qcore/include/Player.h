@@ -31,7 +31,7 @@ namespace qcore
       Player(PlayerId id, const std::string& name, GamePtr game);
 
       /** Destruction */
-      virtual ~Player() {};
+      virtual ~Player() = default;
 
       //
       // Getters

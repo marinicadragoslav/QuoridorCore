@@ -6,9 +6,11 @@
 
 // TODO: Replace this with an actual log library
 #include <iostream>
-#define LOG_INFO(DOM) std::cout << DOM << " [info] "
-#define LOG_ERROR(DOM) std::cout << DOM << " [err ] "
-#define LOG_WARN(DOM) std::cout << DOM << " [warn] "
+
+#define LOG_DEBUG(DOM) std::cout << DOM << " [debug] "
+#define LOG_INFO(DOM)  std::cout << DOM << " [info ] "
+#define LOG_ERROR(DOM) std::cout << DOM << " [error] "
+#define LOG_WARN(DOM)  std::cout << DOM << " [warn ] "
 
 namespace qcore
 {

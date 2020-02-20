@@ -1,8 +1,11 @@
 #include "GameController.h"
-#include "Game.h"
-#include "Player.h"
 #include "QcoreUtil.h"
 #include "PluginManager.h"
+#include "Game.h"
+#include "Player.h"
+#include "GameServer.h"
+#include "RemoteGame.h"
+#include "RemotePlayer.h"
 
 namespace qcore
 {
@@ -10,13 +13,59 @@ namespace qcore
    const char * const DOM = "qcore::GC";
 
    /** Construction */
-   GameController::GameController(const std::string&)
+   GameController::GameController(const std::string&) :
+      mIsRemoteGame(false)
    {
       LOG_INFO(DOM) << "Initializing GameController ..." << "\n";
 
       PluginManager::LoadPlayerLibraries();
 
+#ifdef BOOST_AVAILABLE
+      mGameServer = std::make_shared<GameServer>(*this);
+#endif
+
       // TODO Parse config params
+   }
+
+   /** Initializes a new remote game */
+   void GameController::startServer(const std::string& serverName, uint8_t numberOfPlayers)
+   {
+      LOG_INFO(DOM) << "Initializing Remote Game server [" << serverName << "] with " << (int) numberOfPlayers << " players ..." << "\n";
+
+#ifdef BOOST_AVAILABLE
+      // TODO Stop mThread
+
+      mPlayers.clear();
+      mGame = std::make_shared<Game>(numberOfPlayers);
+      mGame->setGameServer(mGameServer);
+      mGameServer->startServer(serverName);
+#else
+      throw util::Exception("Server implementation not available");
+#endif
+   }
+
+   /** Starts network discovery and returns the list of IPs where game servers are running */
+   std::list<Endpoint> GameController::discoverRemoteGames()
+   {
+#ifdef BOOST_AVAILABLE
+      return mGameServer->discoverServers();
+#else
+      throw util::Exception("Server implementation not available");
+#endif
+   }
+
+   void GameController::connectToRemoteGame(const std::string& ip)
+   {
+#ifdef BOOST_AVAILABLE
+      // TODO Stop mThread
+
+      mPlayers.clear();
+      mGame = std::make_shared<RemoteGame>(*this, 2, ip);
+      mIsRemoteGame = true;
+#else
+      (void) ip;
+      throw util::Exception("Server implementation not available");
+#endif
    }
 
    /** Initializes a new local game */
@@ -31,7 +80,45 @@ namespace qcore
    }
 
    /** Adds a new player to the game, with the plugin defining his behavior */
-   void GameController::addPlayer(const std::string& plugin, const std::string& playerName)
+   PlayerId GameController::addPlayer(const std::string& plugin, const std::string& playerName)
+   {
+      if (not mGame)
+      {
+         throw util::Exception("Game not initialized");
+      }
+
+      if (not PluginManager::PluginAvailable(plugin))
+      {
+         throw util::Exception("Plugin not available");
+      }
+
+      PlayerId playerId = 0;
+
+      if (not mIsRemoteGame)
+      {
+         if (mPlayers.size() == mGame->getNumberOfPlayers())
+         {
+            throw util::Exception("Maximum number of players reached");
+         }
+
+         playerId = mPlayers.size();
+      }
+      else
+      {
+#ifdef BOOST_AVAILABLE
+         auto remoteGame = std::dynamic_pointer_cast<RemoteGame>(mGame);
+         playerId = remoteGame->addRemotePlayer(playerName);
+#endif
+      }
+
+      mPlayers[playerId] = PluginManager::CreatePlayer(plugin, playerId, playerName, mGame);
+
+      // TODO: Check player creation failed and notify remote server
+
+      return playerId;
+   }
+
+   PlayerId GameController::addRemotePlayer(std::shared_ptr<RemoteSession> remoteSession, const std::string& playerName)
    {
       if (not mGame)
       {
@@ -43,7 +130,10 @@ namespace qcore
          throw util::Exception("Maximum number of players reached");
       }
 
-      mPlayers.push_back(PluginManager::CreatePlayer(plugin, mPlayers.size(), playerName, mGame));
+      PlayerId playerId = mPlayers.size();
+      mPlayers[playerId] = std::make_shared<RemotePlayer>(remoteSession, playerId, playerName, mGame);
+
+      return playerId;
    }
 
    /** Starts the game */
@@ -52,6 +142,11 @@ namespace qcore
       if (not mGame)
       {
          throw util::Exception("Game not initialized");
+      }
+
+      if (mIsRemoteGame)
+      {
+         throw util::Exception("Game must be started by the remote server");
       }
 
       if (mPlayers.size() != mGame->getNumberOfPlayers())
@@ -66,13 +161,18 @@ namespace qcore
             PlayerId currentPlayer = mGame->getCurrentPlayer();
 
             // Notify the player to make his next move
-            mPlayers[currentPlayer]->doNextMove();
+            try
+            {
+               mPlayers.at(currentPlayer)->doNextMove();
+            }
+            catch (std::exception& e)
+            {
+               LOG_ERROR(DOM) << "Exception during player move: " << e.what() << "\n";
+            }
 
             // Wait for the player to decide
             mGame->waitPlayerMove(currentPlayer);
          }
-
-         LOG_INFO(DOM) << "Game finished. Player " << (int) getBoardState()->getWinner() << " won." << "\n";
       });
    }
 
@@ -95,14 +195,23 @@ namespace qcore
          throw util::Exception("Game not initialized");
       }
 
-      PlayerId playerId = mGame->getCurrentPlayer();
+      return getPlayer(mGame->getCurrentPlayer());
+   }
 
-      if (playerId >= mPlayers.size())
+   PlayerPtr GameController::getPlayer(PlayerId playerId)
+   {
+      auto it = mPlayers.find(playerId);
+      if (it == mPlayers.end())
       {
-         throw util::Exception("Player not available");
+         throw util::Exception("Player " + std::to_string((int) playerId) + " not available");
       }
 
-      return mPlayers.at(playerId);
+      return it->second;
+   }
+
+   GamePtr GameController::getGame()
+   {
+      return mGame;
    }
 
    bool GameController::moveCurrentPlayer(Direction direction)

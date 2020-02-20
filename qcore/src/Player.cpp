@@ -60,12 +60,13 @@ namespace qcore
     */
    bool Player::move(const Position& position)
    {
+      std::string error;
       PlayerAction action;
       action.actionType = ActionType::Move;
       action.playerId = mId;
       action.position = position;
 
-      return mGame->processPlayerAction(action);
+      return mGame->processPlayerAction(action, error);
    }
 
    /**
@@ -74,6 +75,7 @@ namespace qcore
     */
    bool Player::placeWall(uint8_t x, uint8_t y, Orientation orientation)
    {
+      std::string error;
       PlayerAction action;
       action.actionType = ActionType::Wall;
       action.wallOrientation = orientation;
@@ -81,7 +83,7 @@ namespace qcore
       action.position.x = x;
       action.position.y = y;
 
-      return mGame->processPlayerAction(action);
+      return mGame->processPlayerAction(action, error);
    }
 
    bool Player::placeWall(const BoardState::Wall& wall)

@@ -49,6 +49,9 @@ namespace qcore
       /** Returns the list of registered plugin names */
       static std::list<std::string> GetPluginList();
 
+      /** Check if the requested plugin exists */
+      static bool PluginAvailable(const std::string& plugin);
+
       /** Player Factory method */
       static PlayerPtr CreatePlayer(const std::string& plugin, uint8_t id, const std::string& playerName, GamePtr game);
 

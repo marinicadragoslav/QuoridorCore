@@ -2,6 +2,7 @@
 #define Header_qcore_PlayerAction
 
 #include <stdint.h>
+#include <string>
 
 namespace qcore
 {
@@ -67,6 +68,9 @@ namespace qcore
       ActionType actionType;
       Position position;
       Orientation wallOrientation;
+
+      std::string serialize() const;
+      void deserialize(const std::string& s);
    };
 
    namespace literals

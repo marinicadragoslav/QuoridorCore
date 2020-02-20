@@ -9,16 +9,23 @@
 
 namespace qcore
 {
+   class GameServer;
+
    class Game
    {
       // Encapsulated data members
    private:
 
+      /** Number of players in the game */
+      uint8_t mNumberOfPlayers;
+
       /** Keeps the current state of the game */
       std::shared_ptr<BoardState> mBoardState;
 
-      /** Number of players in the game */
-      uint8_t mNumberOfPlayers;
+      /** Pointer to the game server */
+      std::shared_ptr<GameServer> mGameServer;
+
+   protected:
 
       /** The player on move */
       PlayerId mCurrentPlayer;
@@ -33,6 +40,11 @@ namespace qcore
       /** Construction */
       Game(uint8_t players);
 
+      virtual ~Game() = default;
+
+      /** Sets the game server */
+      void setGameServer(std::shared_ptr<GameServer> gameServer);
+
       /** Returns the number of players in the game */
       uint8_t getNumberOfPlayers() const { return mNumberOfPlayers; }
 
@@ -46,15 +58,21 @@ namespace qcore
       void waitPlayerMove(PlayerId playerId);
 
       /** Validates and sets the next user action */
-      bool processPlayerAction(const PlayerAction& action);
+      virtual bool processPlayerAction(const PlayerAction& action, std::string& reason);
+
+   protected:
+
+      /** Sets the specified action on the board, after it has been validated */
+      void setAction(const PlayerAction& action);
 
    private:
 
       /** Checks if player's action is valid */
-      bool isActionValid(const PlayerAction& action);
+      bool isActionValid(const PlayerAction& action, std::string& reason);
 
       /** Checks if the player's path isn't blocked */
       bool checkPlayerPath(const PlayerId playerId, const PlayerAction& action);
+
    };
 
    typedef std::shared_ptr<Game> GamePtr;

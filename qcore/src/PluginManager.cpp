@@ -36,6 +36,11 @@ namespace qcore
       return plugins;
    }
 
+   bool PluginManager::PluginAvailable(const std::string& plugin)
+   {
+      return RegisteredPlugins.find(plugin) != RegisteredPlugins.end();
+   }
+
    /** Player Factory method */
    PlayerPtr PluginManager::CreatePlayer(const std::string& plugin, uint8_t id, const std::string& playerName, GamePtr game)
    {
@@ -66,7 +71,7 @@ namespace qcore
 
 #ifdef WIN32
             // TODO Handle shared libraries in windows
-            throw util::Exception("Not yet implemented");
+            throw util::Exception("Plugin management not available on windows");
 #else
             libHandle = dlopen(p.path().c_str(), RTLD_NOW | RTLD_GLOBAL);
 

@@ -1,4 +1,5 @@
 #include "PlayerAction.h"
+#include "QcoreUtil.h"
 
 #include <cmath>
 
@@ -110,5 +111,26 @@ namespace qcore
       }
 
       return p;
+   }
+
+   std::string PlayerAction::serialize() const
+   {
+      return std::string { (char) playerId, (char) actionType, (char) position.x, (char) position.y, (char) wallOrientation };
+   }
+
+   void PlayerAction::deserialize(const std::string& s)
+   {
+      if (s.size() != 5)
+      {
+         throw util::Exception("PlayerAction deserialize failed");
+      }
+
+      // TODO Validate fields
+
+      playerId = s.at(0);
+      actionType = (ActionType) s.at(1);
+      position.x = s.at(2);
+      position.y = s.at(3);
+      wallOrientation = (Orientation) s.at(4);
    }
 } // namespace qcore

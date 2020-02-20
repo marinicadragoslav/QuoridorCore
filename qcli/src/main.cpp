@@ -147,6 +147,28 @@ void RunCommand_Reset(qarg args)
    GC.getBoardState()->registerStateChange(PrintAsciiGameBoard);
 }
 
+void RunCommand_ServerDiscovery(qarg)
+{
+   auto endpoints = GC.discoverRemoteGames();
+
+   for (auto& e : endpoints)
+   {
+      std::cout << "   " << e.ip << ": " << e.serverName << "\n";
+   }
+}
+
+void RunCommand_ServerStart(qarg args)
+{
+   GC.startServer(args.getValue("<server-name>"), args.isSet("-p") ? std::stoi(args.getValue("<players>")) : 2);
+   GC.getBoardState()->registerStateChange(PrintAsciiGameBoard);
+}
+
+void RunCommand_JoinServer(qarg args)
+{
+   GC.connectToRemoteGame(args.getValue("<server-ip>"));
+   GC.getBoardState()->registerStateChange(PrintAsciiGameBoard);
+}
+
 int main(int argc, char *argv[])
 {
    qcore::PluginManager::RegisterPlugin<qcli::ConsolePlayer>("qcli::ConsolePlayer");
@@ -175,6 +197,15 @@ int main(int argc, char *argv[])
 
    app.addCommand(RunCommand_Reset, "reset -p <players>", "Game Setup")
       .setSummary("Resets the current game.");
+
+   app.addCommand(RunCommand_ServerStart, "server start <server-name> -p <players>", "Remote Game Setup")
+      .setSummary("Starts a quoridor game server.");
+
+   app.addCommand(RunCommand_JoinServer, "join <server-ip>", "Remote Game Setup")
+      .setSummary("Connects to a remote game server.");
+
+   app.addCommand(RunCommand_ServerDiscovery, "server discovery", "Remote Game Setup")
+      .setSummary("Starts a server discovery and lists all found servers.");
 
    app.addCommand(RunCommand_Move, "move <direction>", "Player Actions")
       .setSummary("Moves the current player in the specified direction (up, down, left, right)");

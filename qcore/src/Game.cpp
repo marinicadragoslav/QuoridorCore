@@ -1,8 +1,10 @@
 #include "PlayerAction.h"
+#include "GameServer.h"
 #include "Game.h"
 #include "QcoreUtil.h"
 
 #include <cstring>
+#include <sstream>
 
 using namespace qcore::literals;
 
@@ -13,10 +15,16 @@ namespace qcore
 
    /** Construction */
    Game::Game(uint8_t players) :
-      mBoardState(std::make_shared<BoardState>(players)),
       mNumberOfPlayers(players),
+      mBoardState(std::make_shared<BoardState>(players)),
       mCurrentPlayer(0)
    {
+   }
+
+   void Game::setGameServer(std::shared_ptr<GameServer> gameServer)
+   {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mGameServer = gameServer;
    }
 
    /** Returns the ID of the player on move */
@@ -39,18 +47,41 @@ namespace qcore
    }
 
    /** Validates and sets the next user action */
-   bool Game::processPlayerAction(const PlayerAction& action)
+   bool Game::processPlayerAction(const PlayerAction& action, std::string& reason)
    {
       std::lock_guard<std::mutex> lock(mMutex);
 
-      if (not isActionValid(action))
+      if (not isActionValid(action, reason))
       {
          // TODO: Keep some user statistics and kick player after a configurable number of
          // illegal moves.
+
+         LOG_WARN(DOM) << reason << "\n";
          return false;
       }
 
+#ifdef BOOST_AVAILABLE
+      // Notify all remote boards of the state change
+      if (mGameServer)
+      {
+         LOG_DEBUG(DOM) << "Notify remote players of state change ...\n";
+         mGameServer->send(std::string{ GameServer::BoardStateUpdate } + action.serialize());
+      }
+#endif
+
       // Set the action
+      setAction(action);
+
+      // Update player's turn
+      mCurrentPlayer = (mCurrentPlayer + 1) % mNumberOfPlayers;
+      mCv.notify_all();
+
+      return true;
+   }
+
+   /** Sets the specified action on the board, after it has been validated */
+   void Game::setAction(const PlayerAction& action)
+   {
       switch (action.actionType)
       {
          case ActionType::Move:
@@ -62,174 +93,178 @@ namespace qcore
          default:
             break;
       }
-
-      // Update player's turn
-      mCurrentPlayer = (mCurrentPlayer + 1) % mNumberOfPlayers;
-      mCv.notify_all();
-
-      return true;
    }
 
    /** Check if player's action is valid */
-   bool Game::isActionValid(const PlayerAction& action)
+   bool Game::isActionValid(const PlayerAction& action, std::string& reason)
    {
-      if (getBoardState()->isFinished())
+      try
       {
-         LOG_WARN(DOM) << "Game finished. Please restart another game." << "\n";
-         return false;
-      }
+         std::stringstream ss;
 
-      if (mCurrentPlayer != action.playerId)
-      {
-         LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": Not your turn!" << "\n";
-         return false;
-      }
-
-      BoardMap map;
-      mBoardState->createBoardMap(map, action.playerId);
-
-      if (action.actionType == ActionType::Move)
-      {
-         Position currentPos = mBoardState->getPlayers(action.playerId).at(action.playerId).position;
-         Position p1 = currentPos * 2;
-         Position p2 = action.position * 2;
-         uint8_t dist = action.position.dist(currentPos);
-
-         if (map(p2) == BoardMap::Invalid)
+         if (getBoardState()->isFinished())
          {
-            LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": Cannot move outside board's boundaries!" << "\n";
-            return false;
+            ss << "Game finished. Please restart another game.";
+            throw util::Exception(ss.str());
          }
 
-         if (p1 == p2)
+         if (mCurrentPlayer != action.playerId)
          {
-            LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": Same place as before!" << "\n";
-            return false;
+            ss << "Illegal move player " << (int) action.playerId << ": Not your turn!";
+            throw util::Exception(ss.str());
          }
 
-         if (map(p2))
-         {
-            LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": Space occupied!" << "\n";
-            return false;
-         }
+         BoardMap map;
+         mBoardState->createBoardMap(map, action.playerId);
 
-         if (dist == 1)
+         if (action.actionType == ActionType::Move)
          {
-            if (map((p1 + p2) / 2))
+            Position currentPos = mBoardState->getPlayers(action.playerId).at(action.playerId).position;
+            Position p1 = currentPos * 2;
+            Position p2 = action.position * 2;
+            uint8_t dist = action.position.dist(currentPos);
+
+            if (map(p2) == BoardMap::Invalid)
             {
-               LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": You cannot jump over a wall!" << "\n";
-               return false;
+               ss << "Illegal move player " << (int) action.playerId << ": Cannot move outside board's boundaries!";
+               throw util::Exception(ss.str());
             }
-         }
-         else if (dist == 2)
-         {
-            // Jump over another pawn
-            if (p1.x == p2.x)
+
+            if (p1 == p2)
             {
-               uint8_t mid = (p1.y + p2.y) / 2;
+               ss << "Illegal move player " << (int) action.playerId << ": Same place as before!";
+               throw util::Exception(ss.str());
+            }
 
-               // There's no wall between
-               if (map(p1.x, mid - 1) or map(p1.x, mid + 1))
-               {
-                  LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": You cannot jump over a wall!" << "\n";
-                  return false;
-               }
+            if (map(p2))
+            {
+               ss << "Illegal move player " << (int) action.playerId << ": Space occupied!";
+               throw util::Exception(ss.str());
+            }
 
-               if (not map(p1.x, mid))
+            if (dist == 1)
+            {
+               if (map((p1 + p2) / 2))
                {
-                  LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": You can move only one space!" << "\n";
-                  return false;
+                  ss << "Illegal move player " << (int) action.playerId << ": You cannot jump over a wall!";
+                  throw util::Exception(ss.str());
                }
             }
-            else if (p1.y == p2.y)
+            else if (dist == 2)
             {
-               uint8_t mid = (p1.x + p2.x) / 2;
-
-               // There's no wall between
-               if (map(mid - 1, p1.y) or map(mid + 1, p1.y))
+               // Jump over another pawn
+               if (p1.x == p2.x)
                {
-                  LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": You cannot jump over a wall!" << "\n";
-                  return false;
+                  uint8_t mid = (p1.y + p2.y) / 2;
+
+                  // There's no wall between
+                  if (map(p1.x, mid - 1) or map(p1.x, mid + 1))
+                  {
+                     ss << "Illegal move player " << (int) action.playerId << ": You cannot jump over a wall!";
+                     throw util::Exception(ss.str());
+                  }
+
+                  if (not map(p1.x, mid))
+                  {
+                     ss << "Illegal move player " << (int) action.playerId << ": You can move only one space!";
+                     throw util::Exception(ss.str());
+                  }
                }
-
-               if (not map(mid, p1.y))
+               else if (p1.y == p2.y)
                {
-                  LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": You can move only one space!" << "\n";
-                  return false;
+                  uint8_t mid = (p1.x + p2.x) / 2;
+
+                  // There's no wall between
+                  if (map(mid - 1, p1.y) or map(mid + 1, p1.y))
+                  {
+                     ss << "Illegal move player " << (int) action.playerId << ": You cannot jump over a wall!";
+                     throw util::Exception(ss.str());
+                  }
+
+                  if (not map(mid, p1.y))
+                  {
+                     ss << "Illegal move player " << (int) action.playerId << ": You can move only one space!";
+                     throw util::Exception(ss.str());
+                  }
+               }
+               else
+               {
+                  // If there is a wall or a third pawn behind the second pawn, the player can place his pawn to the left or the right of the other pawn
+                  Position mid1(p1.x, p2.y);
+                  Position diff1 = p1 - mid1;
+
+                  Position mid2(p2.x, p1.y);
+                  Position diff2 = p1 - mid2;
+
+                  if ((not map.isPawn(mid1) or map((p1 + mid1)/2) or map((p2 + mid1) / 2) or (map(mid1 + diff1 / 2) == 0 and not map.isPawn(mid1 + diff1))) and
+                     (not map.isPawn(mid2) or map((p1 + mid2)/2) or map((p2 + mid2) / 2) or (map(mid2 + diff2 / 2) == 0 and not map.isPawn(mid2 + diff2))))
+                  {
+                     ss << "Illegal move player " << (int) action.playerId << ": You can move only one space!";
+                     throw util::Exception(ss.str());
+                  }
                }
             }
             else
             {
-               // If there is a wall or a third pawn behind the second pawn, the player can place his pawn to the left or the right of the other pawn
-               Position mid1(p1.x, p2.y);
-               Position diff1 = p1 - mid1;
+               ss << "Illegal move player " << (int) action.playerId << ": You can move only one space!";
+               throw util::Exception(ss.str());
+            }
+         }
+         else
+         {
+            // Check board limits
+            if (action.position.x >= BOARD_SIZE or action.position.y >= BOARD_SIZE or
+               (action.position.x == 0 and action.position.y == 0) or
+               (action.position.x == 0 and action.wallOrientation == Orientation::Horizontal) or
+               (action.position.y == 0 and action.wallOrientation == Orientation::Vertical) or
+               (action.position.x == BOARD_SIZE - 1 and action.wallOrientation == Orientation::Vertical) or
+               (action.position.y == BOARD_SIZE - 1 and action.wallOrientation == Orientation::Horizontal))
+            {
+               ss << "Illegal move player " << (int) action.playerId << ": Wall outside board's boundaries!";
+               throw util::Exception(ss.str());
+            }
 
-               Position mid2(p2.x, p1.y);
-               Position diff2 = p1 - mid2;
+            // Check if it is not intersecting other wall
+            if (action.wallOrientation == Orientation::Vertical)
+            {
+               Position p = action.position * 2 - 1_y;
 
-               if ((not map.isPawn(mid1) or map((p1 + mid1)/2) or map((p2 + mid1) / 2) or (map(mid1 + diff1 / 2) == 0 and not map.isPawn(mid1 + diff1))) and
-                  (not map.isPawn(mid2) or map((p1 + mid2)/2) or map((p2 + mid2) / 2) or (map(mid2 + diff2 / 2) == 0 and not map.isPawn(mid2 + diff2))))
+               if (map(p) or map(p + 1_x) != BoardMap::MidWall or map(p + 2_x))
                {
-                  LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": You can move only one space!" << "\n";
-                  return false;
+                  ss << "Illegal move player " << (int) action.playerId << ": Intersecting another wall!";
+                  throw util::Exception(ss.str());
+               }
+
+               map(p) = map(p + 1_x) = map(p + 2_x) = BoardMap::VertivalWall;
+            }
+            else
+            {
+               Position p = action.position * 2 - 1_x;
+
+               if (map(p) or map(p + 1_y) != BoardMap::MidWall or map(p + 2_y))
+               {
+                  ss << "Illegal move player " << (int) action.playerId << ": Intersecting another wall!";
+                  throw util::Exception(ss.str());
+               }
+
+               map(p) = map(p + 1_y) = map(p + 2_y) = BoardMap::HorizontalWall;
+            }
+
+            // Check if the wall isn't blocking a pawn's path
+            for (PlayerId pId = 0; pId < mNumberOfPlayers; ++pId)
+            {
+               if (not checkPlayerPath(pId, action))
+               {
+                  ss << "Illegal move player " << (int) action.playerId << ": Wall blocking player's " << (int) pId << " path!";
+                  throw util::Exception(ss.str());
                }
             }
          }
-         else
-         {
-            LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": You can move only one space!" << "\n";
-            return false;
-         }
       }
-      else
+      catch (std::exception& e)
       {
-         // Check board limits
-         if (action.position.x >= BOARD_SIZE or action.position.y >= BOARD_SIZE or
-            (action.position.x == 0 and action.position.y == 0) or
-            (action.position.x == 0 and action.wallOrientation == Orientation::Horizontal) or
-            (action.position.y == 0 and action.wallOrientation == Orientation::Vertical) or
-            (action.position.x == BOARD_SIZE - 1 and action.wallOrientation == Orientation::Vertical) or
-            (action.position.y == BOARD_SIZE - 1 and action.wallOrientation == Orientation::Horizontal))
-         {
-            LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": Wall outside board's boundaries!" << "\n";
-            return false;
-         }
-
-         // Check if it is not intersecting other wall
-         if (action.wallOrientation == Orientation::Vertical)
-         {
-            Position p = action.position * 2 - 1_y;
-
-            if (map(p) or map(p + 1_x) != BoardMap::MidWall or map(p + 2_x))
-            {
-               LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": Intersecting another wall!" << "\n";
-               return false;
-            }
-
-            map(p) = map(p + 1_x) = map(p + 2_x) = BoardMap::VertivalWall;
-         }
-         else
-         {
-            Position p = action.position * 2 - 1_x;
-
-            if (map(p) or map(p + 1_y) != BoardMap::MidWall or map(p + 2_y))
-            {
-               LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": Intersecting another wall!" << "\n";
-               return false;
-            }
-
-            map(p) = map(p + 1_y) = map(p + 2_y) = BoardMap::HorizontalWall;
-         }
-
-         // Check if the wall isn't blocking a pawn's path
-         for (PlayerId pId = 0; pId < mNumberOfPlayers; ++pId)
-         {
-            if (not checkPlayerPath(pId, action))
-            {
-               LOG_WARN(DOM) << "Illegal move player " << (int) action.playerId << ": Wall blocking player's " << (int) pId << " path!" << "\n";
-               return false;
-            }
-         }
+         reason = e.what();
+         return false;
       }
 
       return true;
