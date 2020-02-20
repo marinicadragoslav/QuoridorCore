@@ -129,6 +129,8 @@ namespace qcore
 
       /** Handle new connection */
       void handleAccept(RemoteSessionPtr session, const boost::system::error_code& error);
+
+      std::vector<boost::asio::ip::address_v4> listInterfaces();
    };
 }
 

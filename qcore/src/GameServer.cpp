@@ -4,6 +4,9 @@
 #include "Game.h"
 #include "QcoreUtil.h"
 
+// Linux only TODO the same for windows
+#include <ifaddrs.h>
+
 #include <functional>
 
 using namespace std::literals::chrono_literals;
@@ -179,13 +182,28 @@ namespace qcore
       mBroadcastSocket.set_option(ip::udp::socket::reuse_address(true));
       mBroadcastSocket.set_option(socket_base::broadcast(true));
 
-      ip::udp::endpoint broadcastEndpoint(ip::address_v4::broadcast(), UDP_DISCOVERY_PORT);
-      mBroadcastSocket.send_to(buffer(std::string(CLIENT_ID)), broadcastEndpoint);
-
       mBroadcastSocket.async_receive_from(
          buffer(mBroadcastRecvData),
          mBroadcastRemoteEndpoint,
          bind(&GameServer::handleDiscoveryMessage, this, placeholders::error, placeholders::bytes_transferred));
+
+      auto ipList = listInterfaces();
+
+      for (auto& ip : ipList)
+      {
+         LOG_DEBUG(DOM) << "Discover on interface [" << ip << "] ...\n";
+
+         ip::udp::endpoint broadcastEndpoint(ip::address_v4::broadcast(ip, ip::address_v4::netmask(ip)), UDP_DISCOVERY_PORT);
+
+         try
+         {
+            mBroadcastSocket.send_to(buffer(std::string(CLIENT_ID)), broadcastEndpoint);
+         }
+         catch (...)
+         {
+            // ignore
+         }
+      }
    }
 
    void GameServer::startDiscoveryServer()
@@ -196,7 +214,7 @@ namespace qcore
 
       mDiscoverySocket.open(endpoint.protocol());
       mDiscoverySocket.bind(endpoint);
-      mDiscoverySocket.set_option( ip::udp::socket::broadcast( true ) );
+      mDiscoverySocket.set_option(ip::udp::socket::broadcast( true ));
 
       mDiscoverySocket.async_receive_from(
          buffer(mDiscoveryRecvData),
@@ -289,6 +307,35 @@ namespace qcore
       mAcceptor.async_accept(
          newSession->getSocket(),
          boost::bind(&GameServer::handleAccept, this, newSession, boost::asio::placeholders::error));
+   }
+
+   std::vector<ip::address_v4> GameServer::listInterfaces()
+   {
+      std::vector<ip::address_v4> ipList;
+
+      ifaddrs *interfaces = NULL;
+      int rc = getifaddrs(&interfaces);
+
+      if (rc)
+      {
+         throw util::Exception("Failed to retrieve network interfaces");
+      }
+
+      for (ifaddrs *ifa = interfaces; ifa != NULL; ifa = ifa->ifa_next)
+      {
+         if (ifa->ifa_addr and ifa->ifa_addr->sa_family == AF_INET)
+         {
+            char host[NI_MAXHOST];
+            rc = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
+
+            if (not rc)
+            {
+               ipList.push_back(ip::address_v4::from_string(host));
+            }
+         }
+      }
+
+      return ipList;
    }
 
 } // namespace qcore
