@@ -80,7 +80,7 @@ namespace qcore
                throw util::Exception("Failed to load library " + p.path().string());
             }
 
-            LOG_INFO(DOM) << "Loading " << p.path() << "\n";
+            LOG_INFO(DOM) << "Loading " << p.path();
 
             // Look for the player registration function
             RegisterPlayerFun registration = (RegisterPlayerFun) dlsym(libHandle, "RegisterQuoridorPlayer");

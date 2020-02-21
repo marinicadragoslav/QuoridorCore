@@ -20,7 +20,7 @@ namespace qcore
       mIoServiceThread([&]{ mIoService.run(); }),
       mSocket(mIoService, ip::tcp::v4())
    {
-      LOG_INFO(DOM) << "Connecting to [" << ip << "] ...\n";
+      LOG_INFO(DOM) << "Connecting to [" << ip << "] ...";
 
       try
       {
@@ -67,7 +67,7 @@ namespace qcore
    /** Validates and sets the next user action */
    bool RemoteGame::processPlayerAction(const PlayerAction& action, std::string& reason)
    {
-      LOG_DEBUG(DOM) << "Sending player action ...\n";
+      LOG_DEBUG(DOM) << "Sending player action ...";
 
       std::string request = std::string { GameServer::PlayerAction } + action.serialize();
       std::string response = send(request);
@@ -75,12 +75,12 @@ namespace qcore
 
       if (response.at(0) != GameServer::ServerResponse)
       {
-         LOG_ERROR(DOM) << "Request failed: Invalid response\n";
+         LOG_ERROR(DOM) << "Request failed: Invalid response";
       }
       else if (response.at(1) != 0)
       {
          reason = response.substr(2);
-         LOG_WARN(DOM) << "Request failed: " << reason << "\n";
+         LOG_WARN(DOM) << "Request failed: " << reason;
       }
       else
       {
@@ -93,7 +93,7 @@ namespace qcore
    /** Sends a message to the remote game server */
    std::string RemoteGame::send(const std::string& message)
    {
-      LOG_DEBUG(DOM) << "Sending message type [" << (int) message.at(0) << "] size [" << message.size() << "]\n";
+      LOG_DEBUG(DOM) << "Sending message type [" << (int) message.at(0) << "] size [" << message.size() << "]";
 
       {
          // Reset the promise
@@ -126,7 +126,7 @@ namespace qcore
       }
       else
       {
-         LOG_WARN(DOM) << "Client disconnected: " << error.message() << "\n";
+         LOG_WARN(DOM) << "Client disconnected: " << error.message();
 
          // TODO: stop game
       }
@@ -138,7 +138,7 @@ namespace qcore
       try
       {
          char messageType = message.at(0);
-         LOG_DEBUG(DOM) << "Received message type [" << (int) messageType << "] size [" << message.size() << "]\n";
+         LOG_DEBUG(DOM) << "Received message type [" << (int) messageType << "] size [" << message.size() << "]";
 
          switch (messageType)
          {
@@ -157,7 +157,7 @@ namespace qcore
                }
 
                PlayerId playerId = message.at(1);
-               LOG_DEBUG(DOM) << "Calling next action for player " << (int) playerId << " ...\n";
+               LOG_DEBUG(DOM) << "Calling next action for player " << (int) playerId << " ...";
 
                {
                   std::lock_guard<std::mutex> lock(mMutex);
@@ -179,13 +179,13 @@ namespace qcore
             }
 
             default:
-               LOG_ERROR(DOM) << "Unknown message type\n";
+               LOG_ERROR(DOM) << "Unknown message type";
                break;
          }
       }
       catch (std::exception& e)
       {
-         LOG_ERROR(DOM) << "Failed to process message: " << e.what() << "\n";
+         LOG_ERROR(DOM) << "Failed to process message: " << e.what();
       }
    }
 

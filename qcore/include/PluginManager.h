@@ -40,7 +40,7 @@ namespace qcore
       template<typename T>
       static void RegisterPlugin(const std::string& name)
       {
-         LOG_INFO("qcore::PM") << "Registering Plugin " << name << "\n";
+         LOG_INFO("qcore::PM") << "Registering Plugin " << name;
 
          RegisteredPlugins[name] = [](uint8_t id, const std::string& name, GamePtr game)
             { return std::make_shared<T>(id, name, game); };

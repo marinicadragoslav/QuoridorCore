@@ -205,7 +205,7 @@ namespace qcore
             mFinished = true;
             mWinner = id;
 
-            LOG_INFO(DOM) << "Game finished. Player " << (int) id << " won." << "\n";
+            LOG_INFO(DOM) << "Game finished. Player " << (int) id << " won.";
          }
 
          // Update position

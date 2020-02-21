@@ -19,7 +19,7 @@ namespace qplugin
    /** Defines player's behavior. In this particular case, it's a really dummy one */
    void DummyPlayer::doNextMove()
    {
-      LOG_INFO(DOM) << "Player " << (int)getId() << " is thinking.." << "\n";
+      LOG_INFO(DOM) << "Player " << (int)getId() << " is thinking..";
 
       qcore::Position myPos = getPosition() * 2;
       qcore::BoardMap map;
@@ -65,7 +65,7 @@ namespace qplugin
          }
       }
 
-      LOG_WARN(DOM) << "Something went wrong. Making a random move.\n";
+      LOG_WARN(DOM) << "Something went wrong. Making a random move.";
       move(qcore::Direction::Down) or move(qcore::Direction::Left) or move(qcore::Direction::Right) or move(qcore::Direction::Up);
    }
 

@@ -56,7 +56,7 @@ namespace qcore
          // TODO: Keep some user statistics and kick player after a configurable number of
          // illegal moves.
 
-         LOG_WARN(DOM) << reason << "\n";
+         LOG_WARN(DOM) << reason;
          return false;
       }
 
@@ -64,7 +64,7 @@ namespace qcore
       // Notify all remote boards of the state change
       if (mGameServer)
       {
-         LOG_DEBUG(DOM) << "Notify remote players of state change ...\n";
+         LOG_DEBUG(DOM) << "Notify remote players of state change ...";
          mGameServer->send(std::string{ GameServer::BoardStateUpdate } + action.serialize());
       }
 #endif

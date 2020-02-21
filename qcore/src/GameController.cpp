@@ -16,7 +16,7 @@ namespace qcore
    GameController::GameController(const std::string&) :
       mIsRemoteGame(false)
    {
-      LOG_INFO(DOM) << "Initializing GameController ..." << "\n";
+      LOG_INFO(DOM) << "Initializing GameController ...";
 
       PluginManager::LoadPlayerLibraries();
 
@@ -30,7 +30,7 @@ namespace qcore
    /** Initializes a new remote game */
    void GameController::startServer(const std::string& serverName, uint8_t numberOfPlayers)
    {
-      LOG_INFO(DOM) << "Initializing Remote Game server [" << serverName << "] with " << (int) numberOfPlayers << " players ..." << "\n";
+      LOG_INFO(DOM) << "Initializing Remote Game server [" << serverName << "] with " << (int) numberOfPlayers << " players ...";
 
 #ifdef BOOST_AVAILABLE
       // TODO Stop mThread
@@ -71,7 +71,7 @@ namespace qcore
    /** Initializes a new local game */
    void GameController::initLocalGame(uint8_t numberOfPlayers)
    {
-      LOG_INFO(DOM) << "Initializing Local Game with " << (int) numberOfPlayers <<" players ..." << "\n";
+      LOG_INFO(DOM) << "Initializing Local Game with " << (int) numberOfPlayers <<" players ...";
 
       // TODO Stop mThread
 
@@ -167,7 +167,7 @@ namespace qcore
             }
             catch (std::exception& e)
             {
-               LOG_ERROR(DOM) << "Exception during player move: " << e.what() << "\n";
+               LOG_ERROR(DOM) << "Exception during player move: " << e.what();
             }
 
             // Wait for the player to decide

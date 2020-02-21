@@ -13,7 +13,7 @@ namespace qcore
       mName(name),
       mGame(game)
    {
-      LOG_INFO(DOM) << "Player " << name << " joined the game. Player ID " << (int) id << "\n";
+      LOG_INFO(DOM) << "Player " << name << " joined the game. Player ID " << (int) id;
    }
 
    /** Returns the GameState object */

@@ -34,7 +34,7 @@ namespace qcore
    void RemoteSession::start()
    {
       std::string ip = mSocket.remote_endpoint().address().to_string();
-      LOG_INFO(DOM) << "Client Session [x] connected from [" << ip << "]\n";
+      LOG_INFO(DOM) << "Client Session [x] connected from [" << ip << "]";
 
       mSocket.async_read_some(
          buffer(mRecvData),
@@ -44,7 +44,7 @@ namespace qcore
    /** Sends a message to the client */
    void RemoteSession::send(const std::string& message)
    {
-      LOG_DEBUG(DOM) << "Client Session [x]: Sending message type [" << (int) message.at(0) << "] size [" << message.size() << "]\n";
+      LOG_DEBUG(DOM) << "Client Session [x]: Sending message type [" << (int) message.at(0) << "] size [" << message.size() << "]";
       boost::asio::write(mSocket, buffer(char(message.size()) + message));
    }
 
@@ -69,7 +69,7 @@ namespace qcore
       }
       else
       {
-         LOG_WARN(DOM) << "Client Session [x] disconnected: " << error.message() << "\n";
+         LOG_WARN(DOM) << "Client Session [x] disconnected: " << error.message();
          mServer.removeClient(shared_from_this());
       }
    }
@@ -80,7 +80,7 @@ namespace qcore
       try
       {
          char messageType = message.at(0);
-         LOG_DEBUG(DOM) << "Client Session [x]: Received message type [" << (int) messageType << "] size [" << message.size() << "]\n";
+         LOG_DEBUG(DOM) << "Client Session [x]: Received message type [" << (int) messageType << "] size [" << message.size() << "]";
 
          switch (messageType)
          {
@@ -127,7 +127,7 @@ namespace qcore
       }
       catch (std::exception& e)
       {
-         LOG_ERROR(DOM) << "Client Session [x]: Request failed. " << e.what() << "\n";
+         LOG_ERROR(DOM) << "Client Session [x]: Request failed. " << e.what();
          send(std::string({ GameServer::ServerResponse, 1}) + e.what());
       }
    }
@@ -141,7 +141,7 @@ namespace qcore
       mBroadcastSocket(mIoService),
       mAcceptor(mIoService)
    {
-      LOG_DEBUG(DOM) << "IO service started\n";
+      LOG_DEBUG(DOM) << "IO service started";
    }
 
    void GameServer::startServer(const std::string& serverName)
@@ -153,7 +153,7 @@ namespace qcore
 
    std::list<Endpoint> GameServer::discoverServers()
    {
-      LOG_INFO(DOM) << "Starting server discovery ...\n";
+      LOG_INFO(DOM) << "Starting server discovery ...";
 
       mDiscoveredEndpoints.clear();
       broadcastDiscoverMessage();
@@ -191,7 +191,7 @@ namespace qcore
 
       for (auto& ip : ipList)
       {
-         LOG_DEBUG(DOM) << "Discover on interface [" << ip << "] ...\n";
+         LOG_DEBUG(DOM) << "Discover on interface [" << ip << "] ...";
 
          ip::udp::endpoint broadcastEndpoint(ip::address_v4::broadcast(ip, ip::address_v4::netmask(ip)), UDP_DISCOVERY_PORT);
 
@@ -208,7 +208,7 @@ namespace qcore
 
    void GameServer::startDiscoveryServer()
    {
-      LOG_INFO(DOM) << "Starting discovery server on port " << UDP_DISCOVERY_PORT << " ...\n";
+      LOG_INFO(DOM) << "Starting discovery server on port " << UDP_DISCOVERY_PORT << " ...";
 
       ip::udp::endpoint endpoint( ip::udp::v4(), UDP_DISCOVERY_PORT );
 
@@ -224,7 +224,7 @@ namespace qcore
 
    void GameServer::startAccept()
    {
-      LOG_INFO(DOM) << "Starting game server on port " << TCP_GAME_PORT << " ...\n";
+      LOG_INFO(DOM) << "Starting game server on port " << TCP_GAME_PORT << " ...";
 
       boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), TCP_GAME_PORT);
       mAcceptor = boost::asio::ip::tcp::acceptor(mIoService, endpoint);
@@ -242,7 +242,7 @@ namespace qcore
          std::string address = mDiscoveryRemoteEndpoint.address().to_string();
          std::string data( mDiscoveryRecvData.c_array(), bytesReceived );
 
-         LOG_DEBUG(DOM) << "Received UDP broadcast from [" << address << "] data [" << data << "]\n";
+         LOG_DEBUG(DOM) << "Received UDP broadcast from [" << address << "] data [" << data << "]";
 
          if (data == CLIENT_ID)
          {
@@ -251,7 +251,7 @@ namespace qcore
       }
       else
       {
-         LOG_ERROR(DOM) << "Handle broadcast failed: " << error.message() << "\n";
+         LOG_ERROR(DOM) << "Handle broadcast failed: " << error.message();
       }
 
       mDiscoverySocket.async_receive_from(
@@ -275,7 +275,7 @@ namespace qcore
             if (not serverName.empty())
             {
                mDiscoveredEndpoints.push_back({ serverName, address });
-               LOG_INFO(DOM) << "Discovered quoridor server [" << serverName << "] on [" << address << "]\n";
+               LOG_INFO(DOM) << "Discovered quoridor server [" << serverName << "] on [" << address << "]";
             }
          }
 
@@ -286,7 +286,7 @@ namespace qcore
       }
       else if (error != boost::system::errc::operation_canceled)
       {
-         LOG_ERROR(DOM) << "Handle discovery failed: " << error.message() << "\n";
+         LOG_ERROR(DOM) << "Handle discovery failed: " << error.message();
       }
    }
 
@@ -299,7 +299,7 @@ namespace qcore
       }
       else
       {
-         LOG_ERROR(DOM) << "Handle accept failed: " << error.message() << "\n";
+         LOG_ERROR(DOM) << "Handle accept failed: " << error.message();
       }
 
       RemoteSessionPtr newSession = std::make_shared<RemoteSession>(*this, mIoService);
