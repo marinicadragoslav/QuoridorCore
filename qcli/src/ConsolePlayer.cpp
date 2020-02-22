@@ -12,7 +12,8 @@ namespace qcli
    /** Defines player's behavior */
    void ConsolePlayer::doNextMove()
    {
-      std::cout << "Player " << (int)getId() << "'s turn" << "\n>";
+      std::cout << "Player " << (int)getId() << "'s turn [" << (int) getWallsLeft()
+         << " wall" << (getWallsLeft() == 1 ? "" : "s") << " left]\n>";
    }
 
 } // namespace qcli

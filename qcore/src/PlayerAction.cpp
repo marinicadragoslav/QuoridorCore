@@ -113,14 +113,88 @@ namespace qcore
       return p;
    }
 
+   /** Rotates all coordinates counterclockwise for a number of steps */
+   WallState WallState::rotate(const uint8_t rotations) const
+   {
+      WallState w;
+
+      if (orientation == Orientation::Vertical)
+      {
+         switch (rotations & 3)
+         {
+            case 0:
+               w = *this;
+               break;
+            case 1:
+               w.orientation = Orientation::Horizontal;
+               w.position = Position(position.y, BOARD_SIZE - position.x - 2);
+               break;
+            case 2:
+               w.orientation = Orientation::Vertical;
+               w.position = Position(BOARD_SIZE - position.x - 2, BOARD_SIZE - position.y);
+               break;
+            case 3:
+               w.orientation = Orientation::Horizontal;
+               w.position = Position(BOARD_SIZE - position.y, position.x);
+               break;
+            default:
+               break;
+         }
+      }
+      else
+      {
+         switch (rotations & 3)
+         {
+            case 0:
+               w = *this;
+               break;
+            case 1:
+               w.orientation = Orientation::Vertical;
+               w.position = Position(position.y, BOARD_SIZE - position.x);
+               break;
+            case 2:
+               w.orientation = Orientation::Horizontal;
+               w.position = Position(BOARD_SIZE - position.x, BOARD_SIZE - position.y - 2);
+               break;
+            case 3:
+               w.orientation = Orientation::Vertical;
+               w.position = Position(BOARD_SIZE - position.y - 2, position.x);
+               break;
+            default:
+               break;
+         }
+      }
+
+      return w;
+   }
+
+   /** Rotates all coordinates counterclockwise for a number of steps */
+   PlayerState PlayerState::rotate(const uint8_t rotations) const
+   {
+      return { qcore::rotate(initialState, rotations), position.rotate(rotations), wallsLeft };
+   }
+
+   /** Rotates all coordinates counterclockwise for a number of steps */
+   PlayerAction PlayerAction::rotate(const uint8_t rotations) const
+   {
+      return { playerId, actionType, wallState.rotate(rotations), playerPosition.rotate(rotations) };
+   }
+
    std::string PlayerAction::serialize() const
    {
-      return std::string { (char) playerId, (char) actionType, (char) position.x, (char) position.y, (char) wallOrientation };
+      return std::string {
+         (char) playerId,
+         (char) actionType,
+         (char) playerPosition.x,
+         (char) playerPosition.y,
+         (char) wallState.position.x,
+         (char) wallState.position.y,
+         (char) wallState.orientation };
    }
 
    void PlayerAction::deserialize(const std::string& s)
    {
-      if (s.size() != 5)
+      if (s.size() != 7)
       {
          throw util::Exception("PlayerAction deserialize failed");
       }
@@ -129,8 +203,10 @@ namespace qcore
 
       playerId = s.at(0);
       actionType = (ActionType) s.at(1);
-      position.x = s.at(2);
-      position.y = s.at(3);
-      wallOrientation = (Orientation) s.at(4);
+      playerPosition.x = s.at(2);
+      playerPosition.y = s.at(3);
+      wallState.position.x = s.at(4);
+      wallState.position.y = s.at(5);
+      wallState.orientation = (Orientation) s.at(6);
    }
 } // namespace qcore

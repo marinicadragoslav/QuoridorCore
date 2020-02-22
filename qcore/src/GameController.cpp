@@ -235,8 +235,8 @@ namespace qcore
       auto player = getCurrentPlayer();
       auto initialState = getBoardState()->getPlayers(0).at(player->getId()).initialState;
 
-      BoardState::Wall w { position, orientation };
-      return player->placeWall(w.rotate(static_cast<int>(initialState)));
+      WallState wall { position, orientation };
+      return player->placeWall(wall.rotate(static_cast<int>(initialState)));
    }
 
 } // namespace qcore

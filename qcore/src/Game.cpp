@@ -70,29 +70,13 @@ namespace qcore
 #endif
 
       // Set the action
-      setAction(action);
+      mBoardState->applyAction(action);
 
       // Update player's turn
       mCurrentPlayer = (mCurrentPlayer + 1) % mNumberOfPlayers;
       mCv.notify_all();
 
       return true;
-   }
-
-   /** Sets the specified action on the board, after it has been validated */
-   void Game::setAction(const PlayerAction& action)
-   {
-      switch (action.actionType)
-      {
-         case ActionType::Move:
-            mBoardState->setPlayerPosition(action.playerId, action.position);
-            break;
-         case ActionType::Wall:
-            mBoardState->addWall(action.playerId, action.position, action.wallOrientation);
-            break;
-         default:
-            break;
-      }
    }
 
    /** Check if player's action is valid */
@@ -102,10 +86,14 @@ namespace qcore
       {
          std::stringstream ss;
 
+         if (not action.isValid())
+         {
+            throw util::Exception("Invalid action structure");
+         }
+
          if (getBoardState()->isFinished())
          {
-            ss << "Game finished. Please restart another game.";
-            throw util::Exception(ss.str());
+            throw util::Exception("Game finished. Please restart another game.");
          }
 
          if (mCurrentPlayer != action.playerId)
@@ -121,8 +109,8 @@ namespace qcore
          {
             Position currentPos = mBoardState->getPlayers(action.playerId).at(action.playerId).position;
             Position p1 = currentPos * 2;
-            Position p2 = action.position * 2;
-            uint8_t dist = action.position.dist(currentPos);
+            Position p2 = action.playerPosition * 2;
+            uint8_t dist = action.playerPosition.dist(currentPos);
 
             if (map(p2) == BoardMap::Invalid)
             {
@@ -212,22 +200,29 @@ namespace qcore
          }
          else
          {
+            // Check number of walls left
+            if (mBoardState->getPlayers(action.playerId).at(action.playerId).wallsLeft == 0)
+            {
+               ss << "Illegal move player " << (int) action.playerId << ": No more walls left!";
+               throw util::Exception(ss.str());
+            }
+
             // Check board limits
-            if (action.position.x >= BOARD_SIZE or action.position.y >= BOARD_SIZE or
-               (action.position.x == 0 and action.position.y == 0) or
-               (action.position.x == 0 and action.wallOrientation == Orientation::Horizontal) or
-               (action.position.y == 0 and action.wallOrientation == Orientation::Vertical) or
-               (action.position.x == BOARD_SIZE - 1 and action.wallOrientation == Orientation::Vertical) or
-               (action.position.y == BOARD_SIZE - 1 and action.wallOrientation == Orientation::Horizontal))
+            if (action.wallState.position.x >= BOARD_SIZE or action.wallState.position.y >= BOARD_SIZE or
+               (action.wallState.position.x == 0 and action.wallState.position.y == 0) or
+               (action.wallState.position.x == 0 and action.wallState.orientation == Orientation::Horizontal) or
+               (action.wallState.position.y == 0 and action.wallState.orientation == Orientation::Vertical) or
+               (action.wallState.position.x == BOARD_SIZE - 1 and action.wallState.orientation == Orientation::Vertical) or
+               (action.wallState.position.y == BOARD_SIZE - 1 and action.wallState.orientation == Orientation::Horizontal))
             {
                ss << "Illegal move player " << (int) action.playerId << ": Wall outside board's boundaries!";
                throw util::Exception(ss.str());
             }
 
             // Check if it is not intersecting other wall
-            if (action.wallOrientation == Orientation::Vertical)
+            if (action.wallState.orientation == Orientation::Vertical)
             {
-               Position p = action.position * 2 - 1_y;
+               Position p = action.wallState.position * 2 - 1_y;
 
                if (map(p) or map(p + 1_x) != BoardMap::MidWall or map(p + 2_x))
                {
@@ -239,7 +234,7 @@ namespace qcore
             }
             else
             {
-               Position p = action.position * 2 - 1_x;
+               Position p = action.wallState.position * 2 - 1_x;
 
                if (map(p) or map(p + 1_y) != BoardMap::MidWall or map(p + 2_y))
                {
@@ -282,8 +277,7 @@ namespace qcore
       map(currentPos * 2) = BoardMap::Invalid;
 
       // Place the wall
-      auto wall = BoardState::Wall { action.position, action.wallOrientation }.rotate(
-         4 - static_cast<int>(players.at(action.playerId).initialState));
+      auto wall = action.wallState.rotate(4 - static_cast<int>(players.at(action.playerId).initialState));
 
       if (wall.orientation == Orientation::Vertical)
       {

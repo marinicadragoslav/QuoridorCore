@@ -28,6 +28,12 @@ namespace qcore
       return getBoardState()->getPlayers(mId).at(mId).position;
    }
 
+   /** Returns number of walls left for the current player */
+   uint8_t Player::getWallsLeft() const
+   {
+      return getBoardState()->getPlayers(mId).at(mId).wallsLeft;
+   }
+
    /**
     * Performs a 'move' action
     * @return true if the move is allowed
@@ -64,7 +70,7 @@ namespace qcore
       PlayerAction action;
       action.actionType = ActionType::Move;
       action.playerId = mId;
-      action.position = position;
+      action.playerPosition = position;
 
       return mGame->processPlayerAction(action, error);
    }
@@ -75,20 +81,18 @@ namespace qcore
     */
    bool Player::placeWall(uint8_t x, uint8_t y, Orientation orientation)
    {
+      return placeWall(WallState{ { x, y }, orientation });
+   }
+
+   bool Player::placeWall(const WallState& wall)
+   {
       std::string error;
       PlayerAction action;
       action.actionType = ActionType::Wall;
-      action.wallOrientation = orientation;
       action.playerId = mId;
-      action.position.x = x;
-      action.position.y = y;
+      action.wallState = wall;
 
       return mGame->processPlayerAction(action, error);
-   }
-
-   bool Player::placeWall(const BoardState::Wall& wall)
-   {
-      return placeWall(wall.position.x, wall.position.y, wall.orientation);
    }
 
 } // namespace qcore

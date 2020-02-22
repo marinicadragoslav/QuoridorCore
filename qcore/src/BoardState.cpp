@@ -43,69 +43,8 @@ namespace qcore
       return val == VertivalWall or val == HorizontalWall;
    }
 
-   /** Rotates all coordinates counterclockwise for a number of steps */
-   BoardState::Wall BoardState::Wall::rotate(const uint8_t rotations) const
-   {
-      Wall w;
-
-      if (orientation == Orientation::Vertical)
-      {
-         switch (rotations & 3)
-         {
-            case 0:
-               w = *this;
-               break;
-            case 1:
-               w.orientation = Orientation::Horizontal;
-               w.position = Position(position.y, BOARD_SIZE - position.x - 2);
-               break;
-            case 2:
-               w.orientation = Orientation::Vertical;
-               w.position = Position(BOARD_SIZE - position.x - 2, BOARD_SIZE - position.y);
-               break;
-            case 3:
-               w.orientation = Orientation::Horizontal;
-               w.position = Position(BOARD_SIZE - position.y, position.x);
-               break;
-            default:
-               break;
-         }
-      }
-      else
-      {
-         switch (rotations & 3)
-         {
-            case 0:
-               w = *this;
-               break;
-            case 1:
-               w.orientation = Orientation::Vertical;
-               w.position = Position(position.y, BOARD_SIZE - position.x);
-               break;
-            case 2:
-               w.orientation = Orientation::Horizontal;
-               w.position = Position(BOARD_SIZE - position.x, BOARD_SIZE - position.y - 2);
-               break;
-            case 3:
-               w.orientation = Orientation::Vertical;
-               w.position = Position(BOARD_SIZE - position.y - 2, position.x);
-               break;
-            default:
-               break;
-         }
-      }
-
-      return w;
-   }
-
-   /** Rotates all coordinates counterclockwise for a number of steps */
-   BoardState::Player BoardState::Player::rotate(const uint8_t rotations) const
-   {
-      return { qcore::rotate(initialState, rotations), position.rotate(rotations) };
-   }
-
    /** Construction */
-   BoardState::BoardState(uint8_t players) :
+   BoardState::BoardState(uint8_t players, uint8_t walls) :
       mFinished(false),
       mWinner(0xFF)
    {
@@ -114,25 +53,41 @@ namespace qcore
       // Set initial player position
       if (players == 2)
       {
+         if (walls == 0)
+         {
+            walls = 10;
+         }
+
          mPlayers[0].position = { BOARD_SIZE - 1, BOARD_SIZE / 2 };
          mPlayers[0].initialState = Direction::Down;
+         mPlayers[0].wallsLeft = walls;
 
          mPlayers[1].position = { 0, BOARD_SIZE / 2 };
          mPlayers[1].initialState = Direction::Up;
+         mPlayers[1].wallsLeft = walls;
       }
       else if (players == 4)
       {
+         if (walls == 0)
+         {
+            walls = 5;
+         }
+
          mPlayers[0].position = { BOARD_SIZE - 1, BOARD_SIZE / 2 };
          mPlayers[0].initialState = Direction::Down;
+         mPlayers[0].wallsLeft = walls;
 
          mPlayers[1].position = { BOARD_SIZE / 2, BOARD_SIZE - 1 };
          mPlayers[1].initialState = Direction::Right;
+         mPlayers[1].wallsLeft = walls;
 
          mPlayers[2].position = { 0, BOARD_SIZE / 2 };
          mPlayers[2].initialState = Direction::Up;
+         mPlayers[2].wallsLeft = walls;
 
          mPlayers[3].position = { BOARD_SIZE / 2, 0 };
          mPlayers[3].initialState = Direction::Left;
+         mPlayers[3].wallsLeft = walls;
       }
       else
       {
@@ -147,10 +102,10 @@ namespace qcore
    }
 
    /** Get wall states from the player's perspective */
-   std::list<BoardState::Wall> BoardState::getWalls(const PlayerId id) const
+   std::list<WallState> BoardState::getWalls(const PlayerId id) const
    {
       std::lock_guard<std::mutex> lock(mMutex);
-      std::list<BoardState::Wall> walls;
+      std::list<WallState> walls;
       uint8_t rotations = static_cast<int>(mPlayers.at(id).initialState);
 
       for ( auto& w : mWalls )
@@ -162,10 +117,10 @@ namespace qcore
    }
 
    /** Get player states from the player's perspective */
-   std::vector<BoardState::Player> BoardState::getPlayers(const PlayerId id) const
+   std::vector<PlayerState> BoardState::getPlayers(const PlayerId id) const
    {
       std::lock_guard<std::mutex> lock(mMutex);
-      std::vector<BoardState::Player> players;
+      std::vector<PlayerState> players;
       uint8_t rotations = static_cast<int>(mPlayers.at(id).initialState);
 
       for ( auto& p : mPlayers )
@@ -193,36 +148,69 @@ namespace qcore
       return true;
    }
 
-   /** Move a player on a different position */
-   void BoardState::setPlayerPosition(const PlayerId id, const Position& position)
+   /** Flags if the game has finished */
+   bool BoardState::isFinished() const
    {
-      {
-         std::lock_guard<std::mutex> lock(mMutex);
-
-         // Check winning state
-         if (position.x == 0)
-         {
-            mFinished = true;
-            mWinner = id;
-
-            LOG_INFO(DOM) << "Game finished. Player " << (int) id << " won.";
-         }
-
-         // Update position
-         Player &player = mPlayers.at(id);
-         player.position = position.rotate(4 - static_cast<int>(player.initialState));
-      }
-
-      notifyStateChange();
+      std::lock_guard<std::mutex> lock(mMutex);
+      return mFinished;
    }
 
-   /** Put a wall on the board */
-   void BoardState::addWall(const PlayerId id, const Position& position, Orientation orientation)
+   /** Returns the ID of the player who won the game. Valid only when the game has finished. */
+   PlayerId BoardState::getWinner() const
+   {
+      std::lock_guard<std::mutex> lock(mMutex);
+      return mWinner;
+   }
+
+   /** Returns the last action made */
+   PlayerAction BoardState::getLastAction() const
+   {
+      std::lock_guard<std::mutex> lock(mMutex);
+      return mLastAction;
+   }
+
+   /** Sets the specified action on the board, after it has been validated */
+   void BoardState::applyAction(const PlayerAction& action)
    {
       {
          std::lock_guard<std::mutex> lock(mMutex);
-         Player &player = mPlayers.at(id);
-         mWalls.push_back(Wall{position, orientation}.rotate(4 - static_cast<int>(player.initialState)));
+         PlayerState &player = mPlayers.at(action.playerId);
+         mLastAction = action.rotate(4 - static_cast<int>(player.initialState));
+
+         switch (action.actionType)
+         {
+            case ActionType::Move:
+            {
+               player.position = mLastAction.playerPosition;
+               LOG_DEBUG(DOM) << "Moved player " << (int) action.playerId << " to (" << (int) player.position.x << ", " << (int) player.position.y << ")";
+
+               // Check winning state
+               if (action.playerPosition.x == 0)
+               {
+                  mFinished = true;
+                  mWinner = action.playerId;
+                  LOG_INFO(DOM) << "Game finished. Player " << (int) action.playerId << " won.";
+               }
+
+               break;
+            }
+            case ActionType::Wall:
+            {
+               if (player.wallsLeft)
+               {
+                  --player.wallsLeft;
+               }
+
+               mWalls.push_back(mLastAction.wallState);
+
+               LOG_DEBUG(DOM) << "Placed wall by player " << (int) action.playerId << " at ("
+                  << (int) mLastAction.wallState.position.x << ", " << (int) mLastAction.wallState.position.y << ")";
+
+               break;
+            }
+            default:
+               break;
+         }
       }
 
       notifyStateChange();

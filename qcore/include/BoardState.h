@@ -53,42 +53,25 @@ namespace qcore
       // Type definitions
    public:
 
-      /** Description of a wall on the board */
-      struct Wall
-      {
-         Position position;
-         Orientation orientation;
-
-         /** Rotates all coordinates counterclockwise for a number of steps */
-         Wall rotate(const uint8_t rotations) const;
-      };
-
-      /** Description of a player on the board */
-      struct Player
-      {
-         Direction initialState;
-         Position position;
-
-         /** Rotates all coordinates counterclockwise for a number of steps */
-         Player rotate(const uint8_t rotations) const;
-      };
-
       typedef std::function<void()> StateChangeCb;
 
       // Encapsulated data members
    private:
 
       /** List of walls placed on the board */
-      std::list<Wall> mWalls;
+      std::list<WallState> mWalls;
 
       /** List of players and their position */
-      std::vector<Player> mPlayers;
+      std::vector<PlayerState> mPlayers;
 
       /** Flags if the game has finished */
       bool mFinished;
 
       /** The player who won */
       PlayerId mWinner;
+
+      /** Last action made */
+      PlayerAction mLastAction;
 
       /** List of state change callbacks */
       mutable std::list<StateChangeCb> mStateChangeCb;
@@ -100,7 +83,7 @@ namespace qcore
    public:
 
       /** Construction */
-      BoardState(uint8_t players);
+      BoardState(uint8_t players, uint8_t walls = 0);
 
       /** Registers callback for state change notification */
       void registerStateChange(StateChangeCb cb) const;
@@ -111,19 +94,22 @@ namespace qcore
       //
 
       /** Get wall states */
-      std::list<Wall> getWalls(const PlayerId id) const;
+      std::list<WallState> getWalls(const PlayerId id) const;
 
       /** Get player states */
-      std::vector<Player> getPlayers(const PlayerId id) const;
+      std::vector<PlayerState> getPlayers(const PlayerId id) const;
 
       /** Check if the specified space is occupied by a pawn */
       bool isSpaceEmpty(const Position& position, const PlayerId id) const;
 
       /** Flags if the game has finished */
-      bool isFinished() const { return mFinished; }
+      bool isFinished() const;
 
       /** Returns the ID of the player who won the game. Valid only when the game has finished. */
-      PlayerId getWinner() const { return mWinner; }
+      PlayerId getWinner() const;
+
+      /** Returns the last action made */
+      PlayerAction getLastAction() const;
 
       /**
        * Creates a matrix representing the elements on the board. Between 'pawn' rows / columns are
@@ -136,11 +122,8 @@ namespace qcore
       // Players will not be able to alter the board state directly.
       //
 
-      /** Move a player on a different position */
-      void setPlayerPosition(const PlayerId id, const Position& pos);
-
-      /** Put a wall on the board */
-      void addWall(const PlayerId id, const Position& position, Orientation orientation);
+      /** Sets the specified action on the board, after it has been validated */
+      void applyAction(const PlayerAction& action);
 
    private:
 

@@ -7,14 +7,38 @@
 #include <iostream>
 #include <iomanip>
 
+using namespace qcore::literals;
+
 typedef const qcli::ConsoleApp::CliArgs& qarg;
 
 qcore::GameController GC;
 
 void PrintAsciiGameBoard()
 {
-   qcore::BoardMap map;
+   qcore::BoardMap map, coloredMap;
    GC.getBoardState()->createBoardMap(map, 0);
+   auto lastAction = GC.getBoardState()->getLastAction();
+
+   if (lastAction.isValid())
+   {
+      if (lastAction.actionType == qcore::ActionType::Move)
+      {
+         coloredMap(lastAction.playerPosition * 2) = 1;
+      }
+      else
+      {
+         if (lastAction.wallState.orientation == qcore::Orientation::Vertical)
+         {
+            auto p = lastAction.wallState.position * 2 - 1_y;
+            coloredMap(p) = coloredMap(p + 1_x) = coloredMap(p + 2_x) = 1;
+         }
+         else
+         {
+            auto p = lastAction.wallState.position * 2 - 1_x;
+            coloredMap(p) = coloredMap(p + 1_y) = coloredMap(p + 2_y) = 1;
+         }
+      }
+   }
 
    std::cout << "\n";
 
@@ -45,6 +69,11 @@ void PrintAsciiGameBoard()
 
       for (int j = 0; j < qcore::BOARD_MAP_SIZE; ++j)
       {
+         if (coloredMap(i, j))
+         {
+            std::cout << "\x1B[31m";
+         }
+
          switch (map(i, j))
          {
             case 0:
@@ -71,6 +100,11 @@ void PrintAsciiGameBoard()
             default:
                std::cout << " " << map(i, j) << " ";
                break;
+         }
+
+         if (coloredMap(i, j))
+         {
+            std::cout << "\033[0m";
          }
       }
 
@@ -115,6 +149,11 @@ void RunCommand_Move(qarg args)
    }
 
    GC.moveCurrentPlayer(direction);
+}
+
+void RunCommand_MoveTo(qarg args)
+{
+   GC.moveCurrentPlayer(qcore::Position(std::stoi(args.getValue("<x>")), std::stoi(args.getValue("<y>"))));
 }
 
 void RunCommand_Wall(qarg args)
@@ -210,7 +249,7 @@ int main(int argc, char *argv[])
    app.addCommand(RunCommand_Move, "move <direction>", "Player Actions")
       .setSummary("Moves the current player in the specified direction (up, down, left, right)");
 
-   app.addCommand([](qarg a){ GC.moveCurrentPlayer(qcore::Position(std::stoi(a.getValue("<x>")), std::stoi(a.getValue("<y>")))); }, "moveto <x> <y>", "Player Actions")
+   app.addCommand(RunCommand_MoveTo, "moveto <x> <y>", "Player Actions")
       .setSummary("Moves the current player to the specified position (x, y)");
 
    app.addCommand(RunCommand_Wall, "wall <x> <y> <orientation>", "Player Actions")

@@ -75,12 +75,12 @@ namespace qcore
 
       if (response.at(0) != GameServer::ServerResponse)
       {
-         LOG_ERROR(DOM) << "Request failed: Invalid response";
+         LOG_ERROR(DOM) << "Received invalid response";
       }
       else if (response.at(1) != 0)
       {
          reason = response.substr(2);
-         LOG_WARN(DOM) << "Request failed: " << reason;
+         LOG_WARN(DOM) << reason;
       }
       else
       {
@@ -173,7 +173,7 @@ namespace qcore
             {
                PlayerAction action;
                action.deserialize(message.substr(1));
-               setAction(action);
+               mBoardState->applyAction(action);
 
                break;
             }

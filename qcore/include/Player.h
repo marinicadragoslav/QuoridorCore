@@ -49,6 +49,9 @@ namespace qcore
       /** Returns player's position on the board */
       Position getPosition() const;
 
+      /** Returns number of walls left for the current player */
+      uint8_t getWallsLeft() const;
+
       //
       // Player Actions
       // All coordinates must be set from the player's perspective (relative to the player's start).
@@ -68,7 +71,7 @@ namespace qcore
        * @return true if the move is allowed
        */
       bool placeWall(uint8_t x, uint8_t y, Orientation orientation);
-      bool placeWall(const BoardState::Wall& wall);
+      bool placeWall(const WallState& wall);
 
       /**
        * Notifies the player to choose his next action. Must be implemented in derived classes to

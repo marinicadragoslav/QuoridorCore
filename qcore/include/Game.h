@@ -19,13 +19,13 @@ namespace qcore
       /** Number of players in the game */
       uint8_t mNumberOfPlayers;
 
-      /** Keeps the current state of the game */
-      std::shared_ptr<BoardState> mBoardState;
-
       /** Pointer to the game server */
       std::shared_ptr<GameServer> mGameServer;
 
    protected:
+
+      /** Keeps the current state of the game */
+      std::shared_ptr<BoardState> mBoardState;
 
       /** The player on move */
       PlayerId mCurrentPlayer;
@@ -59,11 +59,6 @@ namespace qcore
 
       /** Validates and sets the next user action */
       virtual bool processPlayerAction(const PlayerAction& action, std::string& reason);
-
-   protected:
-
-      /** Sets the specified action on the board, after it has been validated */
-      void setAction(const PlayerAction& action);
 
    private:
 

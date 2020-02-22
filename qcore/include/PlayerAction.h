@@ -29,6 +29,7 @@ namespace qcore
 
    enum class ActionType
    {
+      Invalid,
       Move,
       Wall
    };
@@ -62,12 +63,39 @@ namespace qcore
       Position rotate(const uint8_t rotations) const;
    };
 
+   /** Description of a wall on the board */
+   struct WallState
+   {
+      Position position;
+      Orientation orientation;
+
+      /** Rotates all coordinates counterclockwise for a number of steps */
+      WallState rotate(const uint8_t rotations) const;
+   };
+
+   /** Description of a player on the board */
+   struct PlayerState
+   {
+      Direction initialState;
+      Position position;
+      uint8_t wallsLeft;
+
+      /** Rotates all coordinates counterclockwise for a number of steps */
+      PlayerState rotate(const uint8_t rotations) const;
+   };
+
    struct PlayerAction
    {
-      PlayerId playerId;
-      ActionType actionType;
-      Position position;
-      Orientation wallOrientation;
+      PlayerId playerId = 0xFF;
+      ActionType actionType = ActionType::Invalid;
+
+      WallState wallState;
+      Position playerPosition;
+
+      bool isValid() const { return actionType == ActionType::Invalid or playerId < 4; }
+
+      /** Rotates all coordinates counterclockwise for a number of steps */
+      PlayerAction rotate(const uint8_t rotations) const;
 
       std::string serialize() const;
       void deserialize(const std::string& s);
