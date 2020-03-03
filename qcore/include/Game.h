@@ -60,13 +60,13 @@ namespace qcore
       /** Validates and sets the next user action */
       virtual bool processPlayerAction(const PlayerAction& action, std::string& reason);
 
+      /** Checks if player's action is valid */
+      bool isActionValid(const PlayerAction& action, std::string& reason) const;
+
    private:
 
-      /** Checks if player's action is valid */
-      bool isActionValid(const PlayerAction& action, std::string& reason);
-
       /** Checks if the player's path isn't blocked */
-      bool checkPlayerPath(const PlayerId playerId, const PlayerAction& action);
+      bool checkPlayerPath(const PlayerId playerId, const PlayerAction& action) const;
 
    };
 

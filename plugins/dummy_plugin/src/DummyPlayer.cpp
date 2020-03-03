@@ -1,10 +1,10 @@
 #include "DummyPlayer.h"
 #include "QcoreUtil.h"
 
-#include <chrono>
 #include <thread>
 
 using namespace qcore::literals;
+using namespace std::chrono_literals;
 
 namespace qplugin
 {
@@ -20,6 +20,9 @@ namespace qplugin
    void DummyPlayer::doNextMove()
    {
       LOG_INFO(DOM) << "Player " << (int)getId() << " is thinking..";
+
+      // Simulate more thinking
+      std::this_thread::sleep_for(1000ms);
 
       qcore::Position myPos = getPosition() * 2;
       qcore::BoardMap map;

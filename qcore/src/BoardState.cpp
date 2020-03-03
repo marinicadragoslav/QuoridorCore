@@ -182,7 +182,7 @@ namespace qcore
             case ActionType::Move:
             {
                player.position = mLastAction.playerPosition;
-               LOG_DEBUG(DOM) << "Moved player " << (int) action.playerId << " to (" << (int) player.position.x << ", " << (int) player.position.y << ")";
+               LOG_INFO(DOM) << "Moved player " << (int) action.playerId << " to (" << (int) player.position.x << ", " << (int) player.position.y << ")";
 
                // Check winning state
                if (action.playerPosition.x == 0)
@@ -203,8 +203,9 @@ namespace qcore
 
                mWalls.push_back(mLastAction.wallState);
 
-               LOG_DEBUG(DOM) << "Placed wall by player " << (int) action.playerId << " at ("
-                  << (int) mLastAction.wallState.position.x << ", " << (int) mLastAction.wallState.position.y << ")";
+               LOG_INFO(DOM) << "Placed wall by player " << (int) action.playerId << " at ("
+                  << (int) mLastAction.wallState.position.x << ", " << (int) mLastAction.wallState.position.y << ", "
+                  << (mLastAction.wallState.orientation == Orientation::Vertical ? "V" : "H") << ")";
 
                break;
             }

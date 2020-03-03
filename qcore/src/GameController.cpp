@@ -163,7 +163,7 @@ namespace qcore
             // Notify the player to make his next move
             try
             {
-               mPlayers.at(currentPlayer)->doNextMove();
+               mPlayers.at(currentPlayer)->notifyMove();
             }
             catch (std::exception& e)
             {

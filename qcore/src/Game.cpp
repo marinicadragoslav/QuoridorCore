@@ -51,6 +51,13 @@ namespace qcore
    {
       std::lock_guard<std::mutex> lock(mMutex);
 
+      if (mCurrentPlayer != action.playerId)
+      {
+         reason = "Not your turn player " + std::to_string((int) action.playerId);
+         LOG_WARN(DOM) << reason;
+         return false;
+      }
+
       if (not isActionValid(action, reason))
       {
          // TODO: Keep some user statistics and kick player after a configurable number of
@@ -80,7 +87,7 @@ namespace qcore
    }
 
    /** Check if player's action is valid */
-   bool Game::isActionValid(const PlayerAction& action, std::string& reason)
+   bool Game::isActionValid(const PlayerAction& action, std::string& reason) const
    {
       try
       {
@@ -94,12 +101,6 @@ namespace qcore
          if (getBoardState()->isFinished())
          {
             throw util::Exception("Game finished. Please restart another game.");
-         }
-
-         if (mCurrentPlayer != action.playerId)
-         {
-            ss << "Illegal move player " << (int) action.playerId << ": Not your turn!";
-            throw util::Exception(ss.str());
          }
 
          BoardMap map;
@@ -266,7 +267,7 @@ namespace qcore
    }
 
    /** Checks if the player's path isn't blocked */
-   bool Game::checkPlayerPath(const PlayerId playerId, const PlayerAction& action)
+   bool Game::checkPlayerPath(const PlayerId playerId, const PlayerAction& action) const
    {
       auto players = mBoardState->getPlayers(playerId);
       auto currentPos = players.at(playerId).position * 2;

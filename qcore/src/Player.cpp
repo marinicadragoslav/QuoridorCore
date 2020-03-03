@@ -16,6 +16,15 @@ namespace qcore
       LOG_INFO(DOM) << "Player " << name << " joined the game. Player ID " << (int) id;
    }
 
+   /** Called by game controller to notify player's next move */
+   void Player::notifyMove()
+   {
+      LOG_INFO(DOM) << "Player " << (int)getId() << "'s turn [" << (int) getWallsLeft()
+         << " wall" << (getWallsLeft() == 1 ? "" : "s") << " left]";
+
+      doNextMove();
+   }
+
    /** Returns the GameState object */
    BoardStatePtr Player::getBoardState() const
    {
@@ -93,6 +102,34 @@ namespace qcore
       action.wallState = wall;
 
       return mGame->processPlayerAction(action, error);
+   }
+
+   /**
+    * Checks if placing the specified wall is allowed
+    */
+   bool Player::isValid(const WallState& wall) const
+   {
+      std::string error;
+      PlayerAction action;
+      action.actionType = ActionType::Wall;
+      action.playerId = mId;
+      action.wallState = wall;
+
+      return mGame->isActionValid(action, error);
+   }
+
+   /**
+    * Checks if moving the specified position is allowed
+    */
+   bool Player::isValid(const Position& position) const
+   {
+      std::string error;
+      PlayerAction action;
+      action.actionType = ActionType::Move;
+      action.playerId = mId;
+      action.playerPosition = position;
+
+      return mGame->isActionValid(action, error);
    }
 
 } // namespace qcore

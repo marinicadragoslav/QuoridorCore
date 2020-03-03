@@ -33,6 +33,9 @@ namespace qcore
       /** Destruction */
       virtual ~Player() = default;
 
+      /** Called by game controller to notify player's next move */
+      void notifyMove();
+
       //
       // Getters
       //
@@ -72,6 +75,18 @@ namespace qcore
        */
       bool placeWall(uint8_t x, uint8_t y, Orientation orientation);
       bool placeWall(const WallState& wall);
+
+      /**
+       * Checks if placing the specified wall is allowed
+       */
+      bool isValid(const WallState& wall) const;
+
+      /**
+       * Checks if moving the specified position is allowed
+       */
+      bool isValid(const Position& position) const;
+
+   private:
 
       /**
        * Notifies the player to choose his next action. Must be implemented in derived classes to

@@ -164,7 +164,7 @@ namespace qcore
                   mCurrentPlayer = playerId;
                }
 
-               mGameController.getPlayer(playerId)->doNextMove();
+               mGameController.getPlayer(playerId)->notifyMove();
 
                break;
             }
