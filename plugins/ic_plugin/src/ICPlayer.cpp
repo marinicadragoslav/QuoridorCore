@@ -2,42 +2,49 @@
 #include "QcoreUtil.h"
 
 #include <queue>
-#include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <chrono>
 
 using namespace qcore::literals;
 using namespace std::chrono_literals;
 
+namespace
+{
+   /** Log domain */
+   const char * const DOM = "qplugin::IC";
+}
+
 namespace util
 {
    void PrintAsciiGameBoard(const qcore::BoardMap& map)
    {
-      std::cout << ">> PrintAsciiGameBoard >> \n";
+      std::stringstream ss;
+      ss << "\n";
 
       for (int i = 0; i < qcore::BOARD_SIZE; ++i)
       {
-         std::cout << std::setfill(' ') << std::setw(6) << i;
+         ss << std::setfill(' ') << std::setw(6) << i;
       }
 
-      std::cout << "\n   0 \u2554";
+      ss << "\n   0 \u2554";
 
       for (int i = 0; i < qcore::BOARD_SIZE * 6 - 1; ++i)
       {
-         std::cout << "\u2550";
+         ss << "\u2550";
       }
 
-      std::cout << "\u2557\n";
+      ss << "\u2557\n";
 
       for (int i = 0; i < qcore::BOARD_MAP_SIZE; ++i)
       {
          if (i & 1)
          {
-            std::cout << std::setfill(' ') << std::setw(4) << (i / 2) + 1 << " \u2551 ";
+            ss << std::setfill(' ') << std::setw(4) << (i / 2) + 1 << " \u2551 ";
          }
          else
          {
-            std::cout << "     \u2551 ";
+            ss << "     \u2551 ";
          }
 
          for (int j = 0; j < qcore::BOARD_MAP_SIZE; ++j)
@@ -45,43 +52,45 @@ namespace util
             switch (map(i, j))
             {
                case 0:
-                  std::cout << "   ";
+                  ss << "   ";
                   break;
                case qcore::BoardMap::VertivalWall:
-                  std::cout << " \u2502 ";
+                  ss << " \u2502 ";
                   break;
                case qcore::BoardMap::HorizontalWall:
-                  std::cout << "\u2500\u2500\u2500";
+                  ss << "\u2500\u2500\u2500";
                   break;
                case qcore::BoardMap::Pawn0:
-                  std::cout << " 0 ";
+                  ss << " 0 ";
                   break;
                case qcore::BoardMap::Pawn1:
-                  std::cout << " 1 ";
+                  ss << " 1 ";
                   break;
                case qcore::BoardMap::Pawn2:
-                  std::cout << " 2 ";
+                  ss << " 2 ";
                   break;
                case qcore::BoardMap::Pawn3:
-                  std::cout << " 3 ";
+                  ss << " 3 ";
                   break;
                default:
-                  std::cout << " " << map(i, j) << " ";
+                  ss << " " << map(i, j) << " ";
                   break;
             }
          }
 
-         std::cout << " \u2551\n";
+         ss << " \u2551\n";
       }
 
-      std::cout << "     \u255A";
+      ss << "     \u255A";
 
       for (int i = 0; i < qcore::BOARD_SIZE * 6 - 1; ++i)
       {
-         std::cout << "\u2550";
+         ss << "\u2550";
       }
 
-      std::cout << "\u255D\n\n";
+      ss << "\u255D\n";
+
+      LOG_TRACE(DOM) << ss.str();
    }
 
    bool wallValid(const qcore::Player& player, const qcore::BoardMap& map, const qcore::WallState& wall)
@@ -115,9 +124,6 @@ namespace util
 
 namespace qplugin
 {
-   /** Log domain */
-   const char * const DOM = "qplugin::IC";
-
    BState::BState(const qcore::Player& player, bool opw) :
       level( 0 )
    {
@@ -329,8 +335,8 @@ namespace qplugin
                break;
             }
 
-            LOG_DEBUG(DOM) << "Finishing in " << bs->myPathLen << " VS " << bs->opPathLen << " moves [lv: " << bs->level << ", sc: " << bs->score << "]";
-            LOG_DEBUG(DOM) << "                                             >> score [" << bs->score << "] level [" << bs->level << "] wall ["
+            LOG_TRACE(DOM) << "Finishing in " << bs->myPathLen << " VS " << bs->opPathLen << " moves [lv: " << bs->level << ", sc: " << bs->score << "]";
+            LOG_TRACE(DOM) << "                                             >> score [" << bs->score << "] level [" << bs->level << "] wall ["
                << (int) bs->wall.position.x << ", " << (int) bs->wall.position.y << ", " << (bs->wall.orientation == qcore::Orientation::Vertical ? "V" : "H" ) << "]";
 
             util::PrintAsciiGameBoard(bs->baseMap);
@@ -347,7 +353,7 @@ namespace qplugin
 
             if (std::chrono::steady_clock::now() - time > 10s)
             {
-               LOG_DEBUG(DOM) << "TIMEOUT";
+               LOG_TRACE(DOM) << "TIMEOUT";
                break;
             }
 
@@ -381,10 +387,10 @@ namespace qplugin
             }
          }
 
-         LOG_DEBUG(DOM) << "queue size" << queue.size();
+         LOG_TRACE(DOM) << "queue size" << queue.size();
       }
 
-      LOG_DEBUG(DOM) << "BEST   >> Score [" << best->score << "] level [" << best->level << "] path [" << best->myPathLen << " VS " << best->opPathLen
+      LOG_TRACE(DOM) << "BEST   >> Score [" << best->score << "] level [" << best->level << "] path [" << best->myPathLen << " VS " << best->opPathLen
          << "] pathNo [" << best->myPathNo << " VS " << best->opPathNo << "] wall [" << (int) best->initWall.position.x << ", " << (int) best->initWall.position.y
          << ", " << (best->initWall.orientation == qcore::Orientation::Vertical ? "V" : "H" ) << "]";
 

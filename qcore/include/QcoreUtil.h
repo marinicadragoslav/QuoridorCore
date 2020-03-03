@@ -29,7 +29,8 @@ namespace qcore
             Error,
             Warn,
             Info,
-            Debug
+            Debug,
+            Trace
          };
 
          ~Log() { std::cout << std::endl; }
@@ -48,6 +49,7 @@ namespace qcore
 
 #define LOG(level) if (level <= LOG_LEVEL) qcore::util::Log()
 
+#define LOG_TRACE(DOM) LOG(qcore::util::Log::Trace) << DOM << " [trace] "
 #define LOG_DEBUG(DOM) LOG(qcore::util::Log::Debug) << DOM << " [debug] "
 #define LOG_INFO(DOM)  LOG(qcore::util::Log::Info)  << DOM << " [info ] "
 #define LOG_WARN(DOM)  LOG(qcore::util::Log::Warn)  << DOM << " [warn ] "
