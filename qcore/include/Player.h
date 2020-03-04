@@ -66,14 +66,14 @@ namespace qcore
        * @return true if the move is allowed
        */
       bool move(Direction direction);
-      bool move(uint8_t x, uint8_t y);
+      bool move(int8_t x, int8_t y);
       bool move(const Position& position);
 
       /**
        * Places a wall at the specified coordinates (starting from the top right corner)
        * @return true if the move is allowed
        */
-      bool placeWall(uint8_t x, uint8_t y, Orientation orientation);
+      bool placeWall(int8_t x, int8_t y, Orientation orientation);
       bool placeWall(const WallState& wall);
 
       /**

@@ -17,7 +17,7 @@ namespace
 
 namespace util
 {
-   void PrintAsciiGameBoard(const qcore::BoardMap& map)
+   void PrintAsciiGameBoard(const qcore::BoardMap& map, qcore::util::Log::Level level = qcore::util::Log::Trace)
    {
       std::stringstream ss;
       ss << "\n";
@@ -90,7 +90,7 @@ namespace util
 
       ss << "\u255D\n";
 
-      LOG_TRACE(DOM) << ss.str();
+      LOG(level) << ss.str();
    }
 
    bool wallValid(const qcore::Player& player, const qcore::BoardMap& map, const qcore::WallState& wall)
@@ -244,17 +244,24 @@ namespace qplugin
       qcore::BoardMap map = baseMap;
       int result = -1;
       int &pathNo = me ? myPathNo : opPathNo;
+
       pathNo = -1;
+      map(myPos) = 0;
+
+//      qcore::BoardMap mapXX;
 
       for (uint8_t i = 0; i < qcore::BOARD_MAP_SIZE; i += 2)
       {
          qcore::Position p = me ? qcore::Position(0, i) : qcore::Position(qcore::BOARD_MAP_SIZE - 1, i);
-         map(p) = qcore::BoardMap::Invalid;
-         pList.push_back(p);
-         steps.push_back(1);
+         if (map(p) == 0 or myPos.dist(p) > 1)
+         {
+            map(p) = qcore::BoardMap::Invalid;
+            pList.push_back(p);
+            steps.push_back(1);
+         }
       }
 
-      auto checkPos = [&](const qcore::Position& p, qcore::Direction d, int s) -> bool
+      auto checkPos = [&](const qcore::Position& p, const qcore::Position& f, int s) -> bool
       {
          if (myPos == p)
          {
@@ -265,7 +272,7 @@ namespace qplugin
 
                if ( me )
                {
-                  direction = d;
+                  direction = f / 2;
                }
             }
             else if (result == s)
@@ -278,11 +285,54 @@ namespace qplugin
             }
          }
 
-         if(map(p) < qcore::BoardMap::HorizontalWall)
+         if(map(p) == 0)
          {
             map(p) = qcore::BoardMap::Invalid;
             pList.emplace_back(p);
             steps.push_back(s + 1);
+//            mapXX(p) = (s%10) + '0';
+         }
+
+         return false;
+      };
+
+      auto findPath = [&](const qcore::Position& p, const qcore::Position& d, const qcore::Position& wd, int s) -> bool
+      {
+         if (map(p + d) == 0)
+         {
+            if (map(p + d * 2) == 0)
+            {
+               if (checkPos(p + d * 2, p, s))
+               {
+                  return true;
+               }
+            }
+            else if (map.isPawn(p + d * 2))
+            {
+               if (map(p + d * 3) == 0)
+               {
+                  if (checkPos(p + d * 4, p, s))
+                  {
+                     return true;
+                  }
+               }
+
+               if (map(p + d * 2 - wd) == 0 and map(p + d * 2 + wd))
+               {
+                  if (checkPos(p + d * 2 - wd * 2, p, s))
+                  {
+                     return true;
+                  }
+               }
+
+               if (map(p + d * 2 + wd) == 0 and map(p + d * 2 - wd))
+               {
+                  if (checkPos(p + d * 2 + wd * 2, p, s))
+                  {
+                     return true;
+                  }
+               }
+            }
          }
 
          return false;
@@ -295,19 +345,22 @@ namespace qplugin
          pList.pop_front();
          steps.pop_front();
 
-         if ((map(p + 1_x) == 0 and checkPos(p + 2_x, qcore::Direction::Up, s)) or
-            (map(p - 1_x) == 0 and checkPos(p - 2_x, qcore::Direction::Down, s)) or
-            (map(p + 1_y) == 0 and checkPos(p + 2_y, qcore::Direction::Left, s)) or
-            (map(p - 1_y) == 0 and checkPos(p - 2_y, qcore::Direction::Right, s)))
+         if (findPath(p, 1_x, 1_y, s) or
+            findPath(p, -1_x, 1_y, s) or
+            findPath(p, 1_y, 1_x, s) or
+            findPath(p, -1_y, 1_x, s))
          {
             break;
          }
       }
 
+//      if (level == 0)
+//         util::PrintAsciiGameBoard(mapXX, qcore::util::Log::Debug);
+
       return result;
    }
 
-   ICPlayer::ICPlayer(uint8_t id, const std::string& name, qcore::GamePtr game) :
+   ICPlayer::ICPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
       qcore::Player(id, name, game),
       mMoves(0)
    {
@@ -397,11 +450,6 @@ namespace qplugin
       if (best->level == 0)
       {
          move(best->direction);
-
-         if (best->score < -2)
-         {
-            LOG_INFO(DOM) << "It seems I've already lost. Good game!";
-         }
       }
       else
       {

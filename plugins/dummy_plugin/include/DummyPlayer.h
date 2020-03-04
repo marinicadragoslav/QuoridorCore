@@ -10,7 +10,7 @@ namespace qplugin
    public:
 
       /** Construction */
-      DummyPlayer(uint8_t id, const std::string& name, qcore::GamePtr game);
+      DummyPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game);
 
       /** Defines player's behavior. In this particular case, it's a really dummy one */
       void doNextMove() override;

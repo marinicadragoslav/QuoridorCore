@@ -10,7 +10,7 @@ namespace qcli
    public:
 
       /** Construction */
-      ConsolePlayer(uint8_t id, const std::string& name, qcore::GamePtr game);
+      ConsolePlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game);
 
       /** Defines player's behavior */
       void doNextMove() override;

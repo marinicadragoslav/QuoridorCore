@@ -38,8 +38,8 @@ namespace qcore
       // Methods
    public:
 
-      uint8_t& operator() (uint8_t x, uint8_t y);
-      uint8_t operator() (uint8_t x, uint8_t y) const;
+      uint8_t& operator() (int8_t x, int8_t y);
+      uint8_t operator() (int8_t x, int8_t y) const;
 
       uint8_t& operator() (const Position& p) { return operator()(p.x, p.y); }
       uint8_t operator() (const Position& p) const { return operator()(p.x, p.y); }

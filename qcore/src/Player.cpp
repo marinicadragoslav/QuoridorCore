@@ -8,7 +8,7 @@ namespace qcore
    const char * const DOM = "qcore::PL";
 
    /** Construction */
-   Player::Player(uint8_t id, const std::string& name, GamePtr game) :
+   Player::Player(PlayerId id, const std::string& name, GamePtr game) :
       mId(id),
       mName(name),
       mGame(game)
@@ -64,7 +64,7 @@ namespace qcore
     * Performs a 'move' action
     * @return true if the move is allowed
     */
-   bool Player::move(uint8_t x, uint8_t y)
+   bool Player::move(int8_t x, int8_t y)
    {
       return move(Position(x, y));
    }
@@ -88,7 +88,7 @@ namespace qcore
     * Places a wall at the specified coordinates (starting from the top right corner)
     * @return true if the move is allowed
     */
-   bool Player::placeWall(uint8_t x, uint8_t y, Orientation orientation)
+   bool Player::placeWall(int8_t x, int8_t y, Orientation orientation)
    {
       return placeWall(WallState{ { x, y }, orientation });
    }

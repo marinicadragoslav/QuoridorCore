@@ -66,7 +66,7 @@ namespace qcore
       PlayerId addRemotePlayer(std::shared_ptr<RemoteSession> client, const std::string& playerName);
 
       /** Starts the game */
-      void start();
+      void start(bool oneStep = false);
 
       /** Returns the current game state */
       BoardStatePtr getBoardState() const;

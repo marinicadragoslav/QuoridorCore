@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
       .setSummary("Adds a new player to the current game.")
       .setDescription("EXAMPLE:\n   add player qplugin::DummyPlayer P1\n   add player qcli::ConsolePlayer P2");
 
-   app.addCommand([](qarg){ PrintAsciiGameBoard(); GC.start(); }, "start", "Game Setup")
+   app.addCommand([](qarg a){ PrintAsciiGameBoard(); GC.start(a.isSet("-one")); }, "start -one", "Game Setup")
       .setSummary("Starts the game.");
 
    app.addCommand(RunCommand_Reset, "reset -p <players>", "Game Setup")

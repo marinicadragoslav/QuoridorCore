@@ -25,12 +25,12 @@ namespace qcore
    /** Multiplies each coordinate with the given factor */
    Position Position::operator*(uint8_t m) const
    {
-      return Position(uint8_t(x * m), uint8_t(y * m));
+      return Position(int8_t(x * m), int8_t(y * m));
    }
 
    Position Position::operator/(uint8_t m) const
    {
-      return Position(uint8_t(x / m), uint8_t(y / m));
+      return Position(int8_t(x / m), int8_t(y / m));
    }
 
    /** Moves the coordinates in the specified direction */
@@ -72,6 +72,11 @@ namespace qcore
    Position Position::operator-(const Position& p) const
    {
       return Position(x - p.x, y - p.y);
+   }
+
+   Position Position::operator-() const
+   {
+      return Position(-x, -y);
    }
 
    namespace literals

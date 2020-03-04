@@ -42,7 +42,7 @@ namespace qcore
    }
 
    /** Player Factory method */
-   PlayerPtr PluginManager::CreatePlayer(const std::string& plugin, uint8_t id, const std::string& playerName, GamePtr game)
+   PlayerPtr PluginManager::CreatePlayer(const std::string& plugin, PlayerId id, const std::string& playerName, GamePtr game)
    {
       auto it = RegisteredPlugins.find(plugin);
 

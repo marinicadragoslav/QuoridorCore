@@ -2,6 +2,7 @@
 #define Header_qcore_PluginManager
 
 #include "QcoreUtil.h"
+#include "PlayerAction.h"
 
 #include <functional>
 #include <memory>
@@ -25,7 +26,7 @@ namespace qcore
       // Type definition
    public:
 
-      typedef std::function<PlayerPtr(uint8_t, const std::string&, GamePtr)> ConstructPlayerFun;
+      typedef std::function<PlayerPtr(PlayerId, const std::string&, GamePtr)> ConstructPlayerFun;
       typedef void (*RegisterPlayerFun)();
 
       // Encapsulated data members
@@ -42,7 +43,7 @@ namespace qcore
       {
          LOG_INFO("qcore::PM") << "Registering Plugin " << name;
 
-         RegisteredPlugins[name] = [](uint8_t id, const std::string& name, GamePtr game)
+         RegisteredPlugins[name] = [](PlayerId id, const std::string& name, GamePtr game)
             { return std::make_shared<T>(id, name, game); };
       }
 
@@ -53,7 +54,7 @@ namespace qcore
       static bool PluginAvailable(const std::string& plugin);
 
       /** Player Factory method */
-      static PlayerPtr CreatePlayer(const std::string& plugin, uint8_t id, const std::string& playerName, GamePtr game);
+      static PlayerPtr CreatePlayer(const std::string& plugin, PlayerId id, const std::string& playerName, GamePtr game);
 
       /** Loads libraries and registers all players found */
       static void LoadPlayerLibraries();

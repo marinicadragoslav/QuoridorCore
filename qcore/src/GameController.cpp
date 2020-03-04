@@ -137,7 +137,7 @@ namespace qcore
    }
 
    /** Starts the game */
-   void GameController::start()
+   void GameController::start(bool oneStep)
    {
       if (not mGame)
       {
@@ -154,7 +154,13 @@ namespace qcore
          throw util::Exception("Not all players joined the game");
       }
 
-      mThread = std::thread([&]()
+      if (mThread.joinable())
+      {
+         // TODO: Stop thread
+         mThread.join();
+      }
+
+      mThread = std::thread([&, oneStep]()
       {
          while(not getBoardState()->isFinished())
          {
@@ -172,6 +178,9 @@ namespace qcore
 
             // Wait for the player to decide
             mGame->waitPlayerMove(currentPlayer);
+
+            if (oneStep)
+               break;
          }
       });
    }

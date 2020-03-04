@@ -10,9 +10,9 @@ namespace qcore
    /** Log domain */
    const char * const DOM = "qcore::BS";
 
-   uint8_t& BoardMap::operator() (uint8_t x, uint8_t y)
+   uint8_t& BoardMap::operator() (int8_t x, int8_t y)
    {
-      if (x < BOARD_MAP_SIZE and y < BOARD_MAP_SIZE)
+      if (x >= 0 and y >= 0 and x < BOARD_MAP_SIZE and y < BOARD_MAP_SIZE)
       {
          return map[x][y];
       }
@@ -21,9 +21,9 @@ namespace qcore
       return invalidPos;
    }
 
-   uint8_t BoardMap::operator() (uint8_t x, uint8_t y) const
+   uint8_t BoardMap::operator() (int8_t x, int8_t y) const
    {
-      if (x < BOARD_MAP_SIZE and y < BOARD_MAP_SIZE)
+      if (x >= 0 and y >= 0 and x < BOARD_MAP_SIZE and y < BOARD_MAP_SIZE)
       {
          return map[x][y];
       }

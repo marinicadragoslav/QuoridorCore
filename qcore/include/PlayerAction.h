@@ -36,12 +36,12 @@ namespace qcore
 
    struct Position
    {
-      uint8_t x;
-      uint8_t y;
+      int8_t x;
+      int8_t y;
 
       Position() : x(0), y(0) {}
       Position(const Position& p) : x(p.x), y(p.y) {}
-      Position(uint8_t x, uint8_t y) : x(x), y(y) {}
+      Position(int8_t x, int8_t y) : x(x), y(y) {}
 
       bool operator==(const Position& p) const;
 
@@ -58,6 +58,7 @@ namespace qcore
 
       Position operator+(const Position& p) const;
       Position operator-(const Position& p) const;
+      Position operator-() const;
 
       /** Rotates all coordinates counterclockwise for a number of steps */
       Position rotate(const uint8_t rotations) const;

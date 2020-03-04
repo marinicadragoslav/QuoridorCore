@@ -2,7 +2,7 @@
 
 namespace qcli
 {
-   ConsolePlayer::ConsolePlayer(uint8_t id, const std::string& name, qcore::GamePtr game) :
+   ConsolePlayer::ConsolePlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
       qcore::Player(id, name, game)
    {
    }

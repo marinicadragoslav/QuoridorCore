@@ -51,6 +51,18 @@ namespace qcore
    {
       std::lock_guard<std::mutex> lock(mMutex);
 
+      if (action.actionType == ActionType::Move)
+      {
+         LOG_DEBUG(DOM) << "Process Action: player [" << (int) action.playerId << "] move ["
+            << (int) action.playerPosition.x << ", " << (int) action.playerPosition.y << "]";
+      }
+      else
+      {
+         LOG_DEBUG(DOM) << "Process Action: player [" << (int) action.playerId << "] wall ["
+            << (int) action.wallState.position.x << ", " << (int) action.wallState.position.y << ", "
+            << (action.wallState.orientation == Orientation::Vertical ? "V" : "H") << "]";
+      }
+
       if (mCurrentPlayer != action.playerId)
       {
          reason = "Not your turn player " + std::to_string((int) action.playerId);
@@ -144,7 +156,7 @@ namespace qcore
                // Jump over another pawn
                if (p1.x == p2.x)
                {
-                  uint8_t mid = (p1.y + p2.y) / 2;
+                  int8_t mid = (p1.y + p2.y) / 2;
 
                   // There's no wall between
                   if (map(p1.x, mid - 1) or map(p1.x, mid + 1))
@@ -161,7 +173,7 @@ namespace qcore
                }
                else if (p1.y == p2.y)
                {
-                  uint8_t mid = (p1.x + p2.x) / 2;
+                  int8_t mid = (p1.x + p2.x) / 2;
 
                   // There's no wall between
                   if (map(mid - 1, p1.y) or map(mid + 1, p1.y))
@@ -210,6 +222,7 @@ namespace qcore
 
             // Check board limits
             if (action.wallState.position.x >= BOARD_SIZE or action.wallState.position.y >= BOARD_SIZE or
+               action.wallState.position.x < 0 or action.wallState.position.y < 0 or
                (action.wallState.position.x == 0 and action.wallState.position.y == 0) or
                (action.wallState.position.x == 0 and action.wallState.orientation == Orientation::Horizontal) or
                (action.wallState.position.y == 0 and action.wallState.orientation == Orientation::Vertical) or
@@ -275,7 +288,7 @@ namespace qcore
       BoardMap map;
 
       getBoardState()->createBoardMap(map, playerId);
-      map(currentPos * 2) = BoardMap::Invalid;
+      map(currentPos) = BoardMap::Invalid;
 
       // Place the wall
       auto wall = action.wallState.rotate(4 - static_cast<int>(players.at(action.playerId).initialState));

@@ -14,7 +14,7 @@ namespace qplugin
       qcore::Position opPos;
       qcore::WallState wall;
       qcore::WallState initWall;
-      qcore::Direction direction;
+      qcore::Position direction;
 
       int myPathLen;
       int opPathLen;
@@ -47,7 +47,7 @@ namespace qplugin
 
    public:
 
-      ICPlayer(uint8_t id, const std::string& name, qcore::GamePtr game);
+      ICPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game);
       void doNextMove() override;
    };
 }

@@ -11,7 +11,7 @@ namespace qplugin
    /** Log domain */
    const char * const DOM = "qplugin::PL";
 
-   DummyPlayer::DummyPlayer(uint8_t id, const std::string& name, qcore::GamePtr game) :
+   DummyPlayer::DummyPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
       qcore::Player(id, name, game)
    {
    }
