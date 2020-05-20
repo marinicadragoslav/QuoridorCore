@@ -36,8 +36,8 @@ namespace TermAi
 
 //#define LVL_VERY_EASY
 //#define LVL_EASY
-//#define LVL_MEDIUM
-#define LVL_HARD
+#define LVL_MEDIUM
+//#define LVL_HARD
 
 
 
