@@ -68,7 +68,7 @@ namespace TermAi
 		refresh_info();
 	}
 
-	// todo: convert shortest paths to coordinates - and remove this.
+
 	Board::Board(const Board &b2)
 	{
 		std::copy( b2.m_board, b2.m_board + (BOARD_SIZE * BOARD_SIZE), m_board );
@@ -77,13 +77,6 @@ namespace TermAi
 		m_gameOver = b2.m_gameOver;
 		m_isValid = b2.m_isValid;
 
-
-
-
-//		for (uint8_t idx = 0;idx<Player_last;++idx)
-//		{
-//			m_shortest_path[idx] = b2.m_shortest_path[idx];
-//		}
 	}
 
 	void Board::refresh_info()
@@ -101,8 +94,6 @@ namespace TermAi
 			}
 		}
 
-
-
 		m_lastMove.score = (m_shortest_path[Player_1].size() - m_shortest_path[Player_2].size());
 	}
 
@@ -117,6 +108,8 @@ namespace TermAi
 	// Set board boundaries
 	void Board::update_links()
 	{
+		// todo: default Cell to LEFT|RIGHT|UP|DOWN and set boundaries to false - for less assignments
+
 		for (int i=0;i<BOARD_SIZE * BOARD_SIZE;i++)
 		{
 			if ((i%BOARD_SIZE)>0)
@@ -145,10 +138,9 @@ namespace TermAi
 		}
 	}
 
+	// Internal function. Should only be called after "can_place_wall"
 	void Board::place_wall(uint8_t row, uint8_t col, bool horizontal)
 	{
-		//if (row > 0 and col > 0 and row <= BOARD_SIZE and col <= BOARD_SIZE )
-
 		LOG_DEBUG(DOM) << "placing wall on corner: " << (int)row<<":"<<(int)col << "o: " << horizontal;
 
 		if (horizontal)
@@ -165,8 +157,6 @@ namespace TermAi
 			getCell(row+1, col)->right()->left(false);
 			getCell(row+1, col)->right(false);
 		}
-
-		//assert?
 	}
 
 	bool Board::can_place_wall(uint8_t row, uint8_t col, bool horizontal)
@@ -290,19 +280,14 @@ namespace TermAi
 	std::vector< std::pair<Coord, CellSides> > Board::get_diff_path_cells(uint8_t player)
 	{
 		std::vector< std::pair<Coord, CellSides> > outVec;
-
-		Coord frontCell;
 		CellSides side;
-
 		uint8_t otherPlayer = player == Player_1 ? Player_2 : Player_1;
-
 		bool prevCellInSet = false;
 
 		auto it = m_shortest_path[player].begin();
 
-		while ( it != m_shortest_path[player].end() ) // direction ??
+		while ( it != m_shortest_path[player].end() )
 		{
-			// todo: ? use whole path instead ? ? switchable
 			if (targetOnlyPathDiffs and std::find( m_shortest_path[otherPlayer].begin(), m_shortest_path[otherPlayer].end(), (*it) ) != m_shortest_path[otherPlayer].end() )
 			{
 				LOG_DEBUG(DOM) <<"Found common cell in path " << (int)it->first << ":" <<(int)it->second;
@@ -331,11 +316,9 @@ namespace TermAi
 					break;
 				}
 
-				frontCell = (*it); //remove temp var
+				LOG_DEBUG(DOM)<<"result true on: " <<(int)(*it).first << ":" << (int)(*it).second << " - side: "<<side;
 
-				LOG_DEBUG(DOM)<<"result true on: " <<(int)frontCell.first << ":" << (int)frontCell.second << " - side: "<<side;
-
-				outVec.push_back( {frontCell, side} );
+				outVec.push_back( {(*it), side} );
 				prevCellInSet = true;
 			}
 			++it;
@@ -399,7 +382,6 @@ namespace TermAi
 
 				parseVec.push_back(make_pair(it->first->left(), std::distance(it, parseVec.end()) ) );
 
-				//if (it->first->left()->is_player_finish_pt[player])
 				if ( is_player_finish_pt(it->first->left(),player))
 				{
 					it = std::prev(parseVec.end(), 1); // the parent of this element is the last elem in list
