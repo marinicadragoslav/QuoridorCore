@@ -2,10 +2,17 @@
 #include "Game.h"
 #include "QcoreUtil.h"
 
+#include <chrono>
+#include <thread>
+
+using namespace std::chrono_literals;
+
 namespace qcore
 {
    /** Log domain */
    const char * const DOM = "qcore::PL";
+
+   const auto PLAYER_MIN_TIME_MS = 500ms;
 
    /** Construction */
    Player::Player(PlayerId id, const std::string& name, GamePtr game) :
@@ -22,7 +29,18 @@ namespace qcore
       LOG_INFO(DOM) << "Player " << (int)getId() << "'s turn [" << (int) getWallsLeft()
          << " wall" << (getWallsLeft() == 1 ? "" : "s") << " left]";
 
+      auto timeref = std::chrono::steady_clock::now();
+
       doNextMove();
+
+      auto duration = std::chrono::steady_clock::now() - timeref;
+
+      LOG_INFO(DOM) << "Move duration [" << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() / 1000.0 << " sec]";
+
+      if (duration < PLAYER_MIN_TIME_MS)
+      {
+         std::this_thread::sleep_for(PLAYER_MIN_TIME_MS - duration);
+      }
    }
 
    /** Returns the GameState object */

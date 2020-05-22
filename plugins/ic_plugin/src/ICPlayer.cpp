@@ -192,9 +192,9 @@ namespace qplugin
          myPathLen = -1;
          opPathLen = -1;
 
-         for (int i = 0; i < qcore::BOARD_SIZE - 1; ++i)
+         for (int i = 0; i < qcore::BOARD_SIZE; ++i)
          {
-            for (int j = 0; j < qcore::BOARD_SIZE - 1; ++j)
+            for (int j = 0; j < qcore::BOARD_SIZE; ++j)
             {
                qcore::WallState ws1 { qcore::Position(i, j), qcore::Orientation::Vertical };
                qcore::WallState ws2 { qcore::Position(i, j), qcore::Orientation::Horizontal };
@@ -410,9 +410,9 @@ namespace qplugin
                break;
             }
 
-            for (int i = 0; i < qcore::BOARD_SIZE - 1; ++i)
+            for (int i = 0; i < qcore::BOARD_SIZE; ++i)
             {
-               for (int j = 0; j < qcore::BOARD_SIZE - 1; ++j)
+               for (int j = 0; j < qcore::BOARD_SIZE; ++j)
                {
                   qcore::WallState ws1 { qcore::Position(i, j), qcore::Orientation::Vertical };
                   qcore::WallState ws2 { qcore::Position(i, j), qcore::Orientation::Horizontal };

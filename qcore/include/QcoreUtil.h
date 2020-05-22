@@ -4,6 +4,7 @@
 #include <exception>
 #include <string>
 #include <iostream>
+#include <iomanip>
 
 namespace qcore
 {
@@ -33,13 +34,23 @@ namespace qcore
             Trace
          };
 
-         ~Log() { std::cout << std::endl; }
+         ~Log() { ss << std::endl; std::cout << ss.str(); }
 
          template<typename T> Log& operator <<(const T &p)
          {
-            std::cout << p;
+            if (not domLogged)
+            {
+               ss << std::left << std::setw(15);
+               domLogged = true;
+            }
+
+            ss << p;
             return *this;
          }
+
+      private:
+         bool domLogged = false;
+         std::stringstream ss;
       };
    }
 }
@@ -51,8 +62,8 @@ namespace qcore
 
 #define LOG_TRACE(DOM) LOG(qcore::util::Log::Trace) << DOM << " [trace] "
 #define LOG_DEBUG(DOM) LOG(qcore::util::Log::Debug) << DOM << " [debug] "
-#define LOG_INFO(DOM)  LOG(qcore::util::Log::Info)  << DOM << " [info ] "
-#define LOG_WARN(DOM)  LOG(qcore::util::Log::Warn)  << DOM << " [warn ] "
+#define LOG_INFO(DOM)  LOG(qcore::util::Log::Info)  << DOM << " [info]  "
+#define LOG_WARN(DOM)  LOG(qcore::util::Log::Warn)  << DOM << " [warn]  "
 #define LOG_ERROR(DOM) LOG(qcore::util::Log::Error) << DOM << " [error] "
 
 
