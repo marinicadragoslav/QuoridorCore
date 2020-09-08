@@ -1,6 +1,7 @@
 #ifndef Header_qcore_GameState
 #define Header_qcore_GameState
 
+#include "Qcore_API.h"
 #include "PlayerAction.h"
 
 #include <list>
@@ -8,12 +9,13 @@
 #include <memory>
 #include <mutex>
 #include <functional>
+#include <cstring>
 
 namespace qcore
 {
    const uint8_t BOARD_MAP_SIZE = BOARD_SIZE * 2 - 1;
 
-   class BoardMap
+   class QCODE_API BoardMap
    {
       // Type definitions
    public:
@@ -44,11 +46,14 @@ namespace qcore
       uint8_t& operator() (const Position& p) { return operator()(p.x, p.y); }
       uint8_t operator() (const Position& p) const { return operator()(p.x, p.y); }
 
-      bool isPawn(const Position& p);
-      bool isWall(const Position& p);
+      BoardMap& operator=(const BoardMap& from) { std::memcpy(map, from.map, sizeof(map)); invalidPos = from.invalidPos; return *this; };
+
+      bool isPawn(const Position& p) const;
+      bool isWall(const Position& p) const;
+      bool isPawnSpace(const Position& p) const;
    };
 
-   class BoardState
+   class QCODE_API BoardState
    {
       // Type definitions
    public:
@@ -84,6 +89,15 @@ namespace qcore
 
       /** Construction */
       BoardState(uint8_t players, uint8_t walls = 0);
+
+      BoardState(const BoardState& bs) :
+          mWalls(bs.mWalls),
+          mPlayers(bs.mPlayers),
+          mFinished(bs.mFinished),
+          mWinner(bs.mWinner),
+          mLastAction(bs.mLastAction),
+          mStateChangeCb(bs.mStateChangeCb)
+      {};
 
       /** Registers callback for state change notification */
       void registerStateChange(StateChangeCb cb) const;

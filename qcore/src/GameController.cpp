@@ -223,6 +223,18 @@ namespace qcore
       return mGame;
    }
 
+   const Game GameController::exportGame() const
+   {
+       return *mGame;
+   }
+
+   void GameController::loadGame(const Game& game) 
+   {
+       *mGame = game;
+
+       mGame->restore();
+   }
+
    bool GameController::moveCurrentPlayer(Direction direction)
    {
       auto player = getCurrentPlayer();

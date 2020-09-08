@@ -1,6 +1,7 @@
 #ifndef Header_qcore_RemotePlayer
 #define Header_qcore_RemotePlayer
 
+#include "Qcore_API.h"
 #include "Player.h"
 
 namespace qcore
@@ -8,7 +9,7 @@ namespace qcore
    class RemoteSession;
    typedef std::shared_ptr<RemoteSession> RemoteSessionPtr;
 
-   class RemotePlayer : public Player
+   class QCODE_API RemotePlayer : public Player
    {
       // Data members
    private:

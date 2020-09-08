@@ -16,6 +16,13 @@ namespace qcore
       return x == p.x and y == p.y;
    }
 
+   Position Position::operator=(const Position& p)
+   {
+        x = p.x;
+        y = p.y;
+        return *this;
+   }
+
    /** Computes the distance between 2 positions */
    uint8_t Position::dist(const Position& p) const
    {

@@ -3,6 +3,7 @@
 
 #ifdef BOOST_AVAILABLE
 
+#include "Qcore_API.h"
 #include "Game.h"
 
 #include <thread>
@@ -17,7 +18,7 @@ namespace qcore
    // Forward declaration
    class GameController;
 
-   class RemoteGame : public Game
+   class QCODE_API RemoteGame : public Game
    {
       // Encapsulated data members
    private:

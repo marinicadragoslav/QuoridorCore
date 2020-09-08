@@ -12,7 +12,6 @@
 
 #include <thread>
 #include <future>
-#include <unistd.h>
 #include <chrono>
 
 #include "QcoreUtil.h"

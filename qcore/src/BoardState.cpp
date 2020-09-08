@@ -31,16 +31,21 @@ namespace qcore
       return Invalid;
    }
 
-   bool BoardMap::isPawn(const Position& p)
+   bool BoardMap::isPawn(const Position& p) const
    {
       uint8_t val = operator ()(p);
       return val >= Pawn3 and val <= Pawn0;
    }
 
-   bool BoardMap::isWall(const Position& p)
+   bool BoardMap::isWall(const Position& p) const
    {
       uint8_t val = operator ()(p);
       return val == VertivalWall or val == HorizontalWall;
+   }
+
+   bool BoardMap::isPawnSpace(const Position& p) const
+   {
+       return p.x % 2 == 0 and p.y % 2 == 0;
    }
 
    /** Construction */

@@ -1,6 +1,7 @@
 #ifndef Header_qcore_Player
 #define Header_qcore_Player
 
+#include "Qcore_API.h"
 #include "BoardState.h"
 #include "PlayerAction.h"
 
@@ -10,7 +11,7 @@ namespace qcore
    class Game;
    typedef std::shared_ptr<Game> GamePtr;
 
-   class Player
+   class QCODE_API Player
    {
       // Encapsulated data members
    private:
