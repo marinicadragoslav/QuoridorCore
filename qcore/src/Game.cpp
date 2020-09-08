@@ -21,6 +21,25 @@ namespace qcore
    {
    }
 
+   Game::Game(const Game& g) :
+       mNumberOfPlayers(g.mNumberOfPlayers),
+       mGameServer(g.mGameServer),
+       mBoardState(std::make_shared<BoardState>(*g.mBoardState)),
+       mCurrentPlayer(g.mCurrentPlayer)
+   {
+
+   }
+
+   Game& Game::operator=(const Game& g)
+   {
+       mNumberOfPlayers = g.mNumberOfPlayers;
+       mGameServer = g.mGameServer;
+       mBoardState = std::make_shared<BoardState>(*g.mBoardState);
+       mCurrentPlayer = g.mCurrentPlayer;
+
+       return *this;
+   }
+
    void Game::setGameServer(std::shared_ptr<GameServer> gameServer)
    {
       std::lock_guard<std::mutex> lock(mMutex);
@@ -92,7 +111,7 @@ namespace qcore
       mBoardState->applyAction(action);
 
       // Update player's turn
-      mCurrentPlayer = (mCurrentPlayer + 1) % mNumberOfPlayers;
+      nextPlayer();
       mCv.notify_all();
 
       return true;
@@ -336,6 +355,18 @@ namespace qcore
       }
 
       return false;
+   }
+
+   void Game::nextPlayer()
+   {
+       mCurrentPlayer = (mCurrentPlayer + 1) % mNumberOfPlayers;
+   }
+
+   void Game::restore()
+   {
+       // The last move is done by the current player.
+       // Go to the next player
+       nextPlayer();
    }
 
 } // namespace qcore

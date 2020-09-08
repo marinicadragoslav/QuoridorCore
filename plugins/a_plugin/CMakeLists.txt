@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 # Set dependencies
 find_library(qcore ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # Create qcore shared library
 add_library(a-plugin SHARED
    src/APlugin.cpp
@@ -11,6 +12,5 @@ add_library(a-plugin SHARED
    src/TurnGenerator.cpp
 )
 
-target_compile_options(a-plugin PRIVATE -Werror -Wall -Wextra)
 target_include_directories(a-plugin PUBLIC include)
 target_link_libraries(a-plugin qcore)

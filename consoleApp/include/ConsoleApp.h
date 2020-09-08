@@ -6,6 +6,10 @@
 #include <vector>
 #include <list>
 #include <set>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <algorithm>
 
 namespace qcli
 {
@@ -27,7 +31,7 @@ namespace qcli
          std::set<std::string> mOptions;
       };
 
-      typedef std::function<void(const CliArgs&)> CommandCb;
+      typedef std::function<void(std::ostream& out, const CliArgs&)> CommandCb;
 
       class CliCommand
       {
@@ -38,6 +42,15 @@ namespace qcli
             bool hasValue;
          };
 
+         class Parameter
+         {
+         public:
+             typedef std::function<std::list<std::string>(const std::string& cmd)> AutocompleteCb;
+
+             std::string name;
+             AutocompleteCb autocompleteCb;
+         };
+
          enum Action
          {
             Ignore = 0,
@@ -46,7 +59,10 @@ namespace qcli
          };
 
       private:
-         Action processGlobalOption(std::string& option);
+         Action processGlobalOption(std::string& option, std::ostream& out);
+
+         const bool canAutocomplete(std::string& cmd) const;
+         const bool getParamsAutocomplete(std::string& cmd, std::list<std::string>& candidates) const;
 
          std::string mCommandName;
          CommandCb mExec;
@@ -55,7 +71,7 @@ namespace qcli
          std::string mDescription;
 
          std::map<std::string, Option> mOptions;
-         std::vector<std::string> mParameters;
+         std::vector<Parameter> mParameters;
 
       public:
          CliCommand(CommandCb exec, const std::string& syntax);
@@ -63,15 +79,30 @@ namespace qcli
          CliCommand& setName(std::string name) { mCommandName = name; return *this; }
          CliCommand& setSummary(std::string summary) { this->mSummary = summary; return *this; }
          CliCommand& setDescription(std::string description) { this->mDescription = description; return *this; }
-         CliCommand& addParameter(std::string name) { mParameters.push_back(name); return *this; }
+         CliCommand& addParameter(std::string name, Parameter::AutocompleteCb autocompleteCb = nullptr) { mParameters.push_back({name, autocompleteCb}); return *this; }
+         CliCommand& registerParameterAutocompleteCb(std::string name, Parameter::AutocompleteCb autocompleteCb) 
+         {
+             auto param = std::find_if( mParameters.begin(), mParameters.end(), [&name](const auto& x) { return x.name == name;});
+             if (param == mParameters.end())
+             {
+                 throw "Parameter not found";
+             }
+
+             if(param->autocompleteCb)
+               throw "Callback already registred";
+
+             param->autocompleteCb = autocompleteCb; 
+             return *this; 
+         }
          CliCommand& addOption(std::string name, std::string valueName = "")  { mOptions[name] = { name, valueName, !valueName.empty() }; return *this; }
 
-         void execute(std::list<std::string>& argList);
+         void execute(std::list<std::string>& argList, std::ostream& out);
 
          const std::string& getName() const { return mCommandName; }
          const std::string& getSyntax() const { return mSyntax; }
          const std::string& getSummary() const { return mSummary; }
          const std::string& getDescription() const { return mDescription; }
+         const bool getAutocompleteCandidates(std::string& cmd, std::list<std::string>& candidates) const;
       };
 
    private:
@@ -79,17 +110,24 @@ namespace qcli
       static std::string OwnName;
       std::map<std::string, CliCommand*> mCommands;
       std::map<std::string, std::list<CliCommand*>> mOrderedCommands;
+      std::ostream& mOut;
 
    public:
 
-      ConsoleApp();
+       ConsoleApp(std::ostream& out);
       ~ConsoleApp();
 
       // syntax example: command subcommand1 subcommand2 <param1> <param2> <param3> -option1 <optionValue1> -option2 <optionValue2> -option3
       CliCommand& addCommand(CommandCb exec, const std::string& syntax, const std::string& section = "");
+      CliCommand& RegisterParameterAutocomplete(const std::string);
       int executeOnce(int argc, char** argv);
-      int execute(int argc, char** argv);
+      int runCli(int argc, char** argv);
+      int executeCommand(const char* cmd);
       void printHelp();
+      const std::string getAutocomplete(std::list<std::string>& candidates) const;
+      const std::list<std::string> getAutocompletePosibilities(const char* cmd) const;
+      std::string getResponse() { std::ostringstream buf; buf << mOut.rdbuf(); return buf.str(); };
+
    };
 }
 

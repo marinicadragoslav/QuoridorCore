@@ -5,11 +5,13 @@
 #include <string>
 #include <iostream>
 
+#include "Qcore_API.h"
+
 namespace qcore
 {
    namespace util
    {
-      class Exception : public std::exception
+      class QCODE_API Exception : public std::exception
       {
       public:
          explicit Exception(const std::string &what) : exception(), cause(what) {}

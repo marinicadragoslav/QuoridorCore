@@ -1,6 +1,8 @@
 #include "PluginManager.h"
 #include "QcoreUtil.h"
-
+#ifdef WIN32
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+#endif
 #include <experimental/filesystem>
 
 #ifdef WIN32
@@ -19,7 +21,11 @@ namespace qcore
    const char * const DOM = "qcore::PM";
 
    // TODO: Move lib path should be in config file
-   const char * const SHARED_LIBRARY_PATH = "../lib";
+#ifdef WIN32
+   const char * const SHARED_LIBRARY_PATH = ""; // VS writes the dlls in bin folder
+#else
+   const char* const SHARED_LIBRARY_PATH = "/../lib";
+#endif
 
    std::map<std::string, PluginManager::ConstructPlayerFun> PluginManager::RegisteredPlugins;
 
@@ -58,44 +64,51 @@ namespace qcore
    void PluginManager::LoadPlayerLibraries()
    {
       // Check all shared libraries from our path
-      if (not fs::exists(SHARED_LIBRARY_PATH) and not fs::is_directory(SHARED_LIBRARY_PATH))
+       std::cout << fs::current_path().concat(SHARED_LIBRARY_PATH) << std::endl;
+      if (not fs::exists(fs::current_path().concat(SHARED_LIBRARY_PATH)) and not fs::is_directory(fs::current_path().concat(SHARED_LIBRARY_PATH)))
       {
          throw util::Exception("Invalid shared library path");
       }
 
-      for (auto& p: fs::directory_iterator(SHARED_LIBRARY_PATH))
+      for (auto& p: fs::directory_iterator(fs::current_path().concat(SHARED_LIBRARY_PATH)))
       {
          if (p.path().extension() == SHARED_LIBRARY_EXT)
          {
             void* libHandle = nullptr;
 
 #ifdef WIN32
-            // TODO Handle shared libraries in windows
-            throw util::Exception("Plugin management not available on windows");
+            libHandle = LoadLibrary(p.path().string().c_str());
 #else
             libHandle = dlopen(p.path().c_str(), RTLD_NOW | RTLD_GLOBAL);
-
+#endif
             if (not libHandle)
             {
-               throw util::Exception("Failed to load library " + p.path().string());
+                throw util::Exception("Failed to load library " + p.path().string());
             }
 
             LOG_INFO(DOM) << "Loading " << p.path();
 
             // Look for the player registration function
-            RegisterPlayerFun registration = (RegisterPlayerFun) dlsym(libHandle, "RegisterQuoridorPlayer");
+#ifdef WIN32
+            RegisterPlayerFun registration = (RegisterPlayerFun)GetProcAddress(static_cast<HINSTANCE>(libHandle), "RegisterQuoridorPlayer");
+#else
+            RegisterPlayerFun registration = (RegisterPlayerFun)dlsym(libHandle, "RegisterQuoridorPlayer");
+#endif
 
             if (registration)
             {
-               registration();
+                registration();
 
-               // TODO: Keep all libHandle to be freed later
+                // TODO: Keep all libHandle to be freed later
             }
             else
             {
-               dlclose(libHandle);
-            }
+#ifdef WIN32
+                FreeLibrary(static_cast<HINSTANCE>(libHandle));
+#else 
+                dlclose(libHandle);
 #endif
+            }
          }
       }
    }

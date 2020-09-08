@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <string>
 
+#include "Qcore_API.h"
+
 namespace qcore
 {
    typedef uint8_t PlayerId;
@@ -34,7 +36,7 @@ namespace qcore
       Wall
    };
 
-   struct Position
+   struct QCODE_API Position
    {
       int8_t x;
       int8_t y;
@@ -44,6 +46,7 @@ namespace qcore
       Position(int8_t x, int8_t y) : x(x), y(y) {}
 
       bool operator==(const Position& p) const;
+      Position operator=(const Position& p);
 
       /** Computes the distance between 2 positions */
       uint8_t dist(const Position& p) const;
@@ -65,7 +68,7 @@ namespace qcore
    };
 
    /** Description of a wall on the board */
-   struct WallState
+   struct QCODE_API WallState
    {
       Position position;
       Orientation orientation;
@@ -75,7 +78,7 @@ namespace qcore
    };
 
    /** Description of a player on the board */
-   struct PlayerState
+   struct QCODE_API PlayerState
    {
       Direction initialState;
       Position position;
@@ -85,7 +88,7 @@ namespace qcore
       PlayerState rotate(const uint8_t rotations) const;
    };
 
-   struct PlayerAction
+   struct QCODE_API PlayerAction
    {
       PlayerId playerId = 0xFF;
       ActionType actionType = ActionType::Invalid;
@@ -104,8 +107,8 @@ namespace qcore
 
    namespace literals
    {
-      Position operator "" _x(unsigned long long int x);
-      Position operator "" _y(unsigned long long int y);
+      QCODE_API Position operator "" _x(unsigned long long int x);
+      QCODE_API Position operator "" _y(unsigned long long int y);
    }
 }
 

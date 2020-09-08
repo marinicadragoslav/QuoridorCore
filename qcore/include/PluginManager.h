@@ -1,6 +1,7 @@
 #ifndef Header_qcore_PluginManager
 #define Header_qcore_PluginManager
 
+#include "Qcore_API.h"
 #include "QcoreUtil.h"
 #include "PlayerAction.h"
 
@@ -21,7 +22,7 @@ namespace qcore
    typedef std::shared_ptr<Player> PlayerPtr;
    typedef std::shared_ptr<Game> GamePtr;
 
-   class PluginManager
+   class QCODE_API PluginManager
    {
       // Type definition
    public:

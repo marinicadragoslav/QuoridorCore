@@ -9,6 +9,8 @@
 #include <list>
 #include <iomanip>
 #include <valarray>
+#include <string>
+#include <sstream>
 
 #include "Board.h"
 
@@ -300,7 +302,10 @@ namespace TermAi
 					it = std::prev(it, 1);
 				}
 
-				auto nxt = *(std::next(it,1));
+				std::next(it, 1);
+				if (it == m_shortest_path[player].end())
+					break;
+				auto nxt = *it;
 
 				if ( (*it).first == nxt.first and (*it).second == (nxt.second  + 1))//( (*it)->left() ==  *(std::next(it,1)))
 					side = LEFT;
@@ -458,7 +463,7 @@ namespace TermAi
 		stringstream ss;
 		for(int i=0;i<Player_last;i++)
 		{
-			ss<<"Shortest path for player "<< (int)(i+1) << " is: ";
+			ss << "Shortest path for player "<< (int)(i+1) << " is: ";
 			for (auto it : m_shortest_path[i])
 			{
 				ss << (int)it.first<<":"<< (int)it.second <<" - ";

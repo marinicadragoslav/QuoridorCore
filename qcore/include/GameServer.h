@@ -11,6 +11,7 @@
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 
+#include "Qcore_API.h"
 #include "GameController.h"
 
 namespace qcore
@@ -22,7 +23,7 @@ namespace qcore
    const char * const SERVER_ID = "b767eacd-64b6-4bbd-9a38-b4788a94b1f7";
 
    /** Manages a TCP connection to a client */
-   class RemoteSession : public std::enable_shared_from_this<RemoteSession>
+   class QCODE_API RemoteSession : public std::enable_shared_from_this<RemoteSession>
    {
       // Encapsulated data members
    private:
@@ -61,7 +62,7 @@ namespace qcore
 
    typedef std::shared_ptr<RemoteSession> RemoteSessionPtr;
 
-   class GameServer
+   QCODE_API class GameServer
    {
       // Type definitions
    public:
