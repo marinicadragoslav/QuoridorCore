@@ -216,7 +216,7 @@ void RunCommand_Move(std::ostream& out, qarg args)
    GC.moveCurrentPlayer(direction);
 }
 
-void RunCommand_MoveTo(std::ostream& out, qarg args)
+void RunCommand_MoveTo(std::ostream&, qarg args)
 {
    GC.moveCurrentPlayer(qcore::Position(std::stoi(args.getValue("<x>")), std::stoi(args.getValue("<y>"))));
 }
@@ -245,7 +245,7 @@ void RunCommand_Wall(std::ostream& out, qarg args)
    GC.placeWallForCurrentPlayer(qcore::Position(x, y), orientation);
 }
 
-void RunCommand_Reset(std::ostream& out, qarg args)
+void RunCommand_Reset(std::ostream&, qarg args)
 {
    GC.initLocalGame(args.isSet("-p") ? std::stoi(args.getValue("<players>")) : 2);
    GC.getBoardState()->registerStateChange(PrintAsciiGameBoard);
@@ -261,13 +261,13 @@ void RunCommand_ServerDiscovery(std::ostream& out, qarg)
    }
 }
 
-void RunCommand_ServerStart(std::ostream& out, qarg args)
+void RunCommand_ServerStart(std::ostream&, qarg args)
 {
    GC.startServer(args.getValue("<server-name>"), args.isSet("-p") ? std::stoi(args.getValue("<players>")) : 2);
    GC.getBoardState()->registerStateChange(PrintAsciiGameBoard);
 }
 
-void RunCommand_JoinServer(std::ostream& out, qarg args)
+void RunCommand_JoinServer(std::ostream&, qarg args)
 {
    GC.connectToRemoteGame(args.getValue("<server-ip>"));
    GC.getBoardState()->registerStateChange(PrintAsciiGameBoard);
@@ -286,16 +286,16 @@ int main(int argc, char *argv[])
    // Setup console application menu
    qcli::ConsoleApp app(std::cout);
 
-   app.addCommand([](std::ostream& out, qarg){ PrintAsciiGameBoard(); }, "board", "Game Setup")
+   app.addCommand([](std::ostream&, qarg){ PrintAsciiGameBoard(); }, "board", "Game Setup")
       .setSummary("Prints the current state of the board.");
 
    app.addCommand([](std::ostream& out, qarg){ for (auto& p : qcore::PluginManager::GetPluginList()) out << "   " << p << "\n"; }, "plugins", "Game Setup")
       .setSummary("Lists all available plugins.");
 
-   app.addCommand([](std::ostream& out, qarg a){ GC.addPlayer(a.getValue("<plugin>"), a.getValue("<player-name>")); }, "add player <plugin> <player-name>", "Game Setup")
+   app.addCommand([](std::ostream&, qarg a){ GC.addPlayer(a.getValue("<plugin>"), a.getValue("<player-name>")); }, "add player <plugin> <player-name>", "Game Setup")
       .setSummary("Adds a new player to the current game.")
       .setDescription("EXAMPLE:\n   add player qplugin::DummyPlayer P1\n   add player qcli::ConsolePlayer P2")
-      .registerParameterAutocompleteCb("<plugin>", [](const std::string& cmd)->std::list<std::string> {return qcore::PluginManager::GetPluginList();})
+      .registerParameterAutocompleteCb("<plugin>", [](const std::string&)->std::list<std::string> {return qcore::PluginManager::GetPluginList();})
       .registerParameterAutocompleteCb(
           "<player-name>", 
           [](const std::string& cmd)->std::list<std::string> 
@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
               return { std::to_string(c) };
           });
 
-   app.addCommand([](std::ostream& out, qarg a){ PrintAsciiGameBoard(); GC.start(a.isSet("-one")); }, "start -one", "Game Setup")
+   app.addCommand([](std::ostream&, qarg a){ PrintAsciiGameBoard(); GC.start(a.isSet("-one")); }, "start -one", "Game Setup")
       .setSummary("Starts the game.");
 
    app.addCommand(RunCommand_Reset, "reset -p <players>", "Game Setup")
@@ -334,7 +334,7 @@ int main(int argc, char *argv[])
               candidates.remove_if(
                   [&cmd](const std::string& e)
                   {
-                      for (auto i = 0; i < cmd.size() && i < e.size(); i++)
+                      for (size_t i = 0; i < cmd.size() && i < e.size(); i++)
                           if (toupper(cmd[i]) != toupper(e[i]))
                               return true;
                       return false;

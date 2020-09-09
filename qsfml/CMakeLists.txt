@@ -33,7 +33,7 @@ target_include_directories(quoridor-sfml PRIVATE include)
 set(CONAN_EXTRA_REQUIRES ${CONAN_EXTRA_REQUIRES}
                          imgui-sfml/2.1@bincrafters/stable)
 
-include(../cmake/Conan.cmake)
+include(../cmake/conan.cmake)
 run_conan()
 
 set (source "${CMAKE_CURRENT_SOURCE_DIR}/resources")

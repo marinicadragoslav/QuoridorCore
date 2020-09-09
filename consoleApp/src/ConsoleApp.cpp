@@ -15,7 +15,7 @@ namespace qcli
 
    ConsoleApp::ConsoleApp(std::ostream& out) : mOut(out)
    {
-       addCommand([=](std::ostream& out, const CliArgs&) { this->printHelp(); }, "Help", "Help")
+       addCommand([=](std::ostream&, const CliArgs&) { this->printHelp(); }, "Help", "Help")
            .setSummary("Prints help message");
    }
 
@@ -327,12 +327,12 @@ namespace qcli
    }
 
 
-   const bool ConsoleApp::CliCommand::canAutocomplete(std::string& cmd) const
+   bool ConsoleApp::CliCommand::canAutocomplete(std::string& cmd) const
    {
        return Strnicmp(mCommandName.c_str(), cmd.c_str(), std::min(mCommandName.size(), cmd.size())) == 0;
    }
 
-   const bool ConsoleApp::CliCommand::getAutocompleteCandidates(std::string& command, std::list<std::string>& candidates) const
+   bool ConsoleApp::CliCommand::getAutocompleteCandidates(std::string& command, std::list<std::string>& candidates) const
    {
        auto cmd = trim(command);
 
@@ -351,7 +351,7 @@ namespace qcli
    }
 
 
-   const bool ConsoleApp::CliCommand::getParamsAutocomplete(std::string& cmd, std::list<std::string>& candidates) const
+   bool ConsoleApp::CliCommand::getParamsAutocomplete(std::string& cmd, std::list<std::string>& candidates) const
    {
        if (mParameters.empty())
        {

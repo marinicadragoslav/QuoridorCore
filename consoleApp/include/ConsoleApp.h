@@ -61,8 +61,8 @@ namespace qcli
       private:
          Action processGlobalOption(std::string& option, std::ostream& out);
 
-         const bool canAutocomplete(std::string& cmd) const;
-         const bool getParamsAutocomplete(std::string& cmd, std::list<std::string>& candidates) const;
+         bool canAutocomplete(std::string& cmd) const;
+         bool getParamsAutocomplete(std::string& cmd, std::list<std::string>& candidates) const;
 
          std::string mCommandName;
          CommandCb mExec;
@@ -102,7 +102,7 @@ namespace qcli
          const std::string& getSyntax() const { return mSyntax; }
          const std::string& getSummary() const { return mSummary; }
          const std::string& getDescription() const { return mDescription; }
-         const bool getAutocompleteCandidates(std::string& cmd, std::list<std::string>& candidates) const;
+         bool getAutocompleteCandidates(std::string& cmd, std::list<std::string>& candidates) const;
       };
 
    private:

@@ -463,7 +463,7 @@ namespace TermAi
 		stringstream ss;
 		for(int i=0;i<Player_last;i++)
 		{
-			ss << "Shortest path for player "<< (int)(i+1) << " is: ";
+			ss << "Shortest path for player "<< (i+1) << " is: ";
 			for (auto it : m_shortest_path[i])
 			{
 				ss << (int)it.first<<":"<< (int)it.second <<" - ";
