@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 
 project(quoridor VERSION 1.0.0 LANGUAGES CXX)
 
-option(BUILD_GUI "Build UI" ON)
+option(BUILD_GUI "Build UI" OFF)
 
 # Set the output folder where your program will be created
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/export/lib)

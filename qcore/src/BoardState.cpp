@@ -10,6 +10,12 @@ namespace qcore
    /** Log domain */
    const char * const DOM = "qcore::BS";
 
+   BoardMap::BoardMap(const BoardMap &from)
+   {
+      std::memcpy(map, from.map, sizeof(map));
+      invalidPos = Invalid;
+   }
+
    uint8_t& BoardMap::operator() (int8_t x, int8_t y)
    {
       if (x >= 0 and y >= 0 and x < BOARD_MAP_SIZE and y < BOARD_MAP_SIZE)

@@ -34,11 +34,13 @@ namespace qcore
       // Encapsulated data members
    private:
 
-      uint8_t map[BOARD_MAP_SIZE][BOARD_MAP_SIZE] = {};
-      uint8_t invalidPos = 0;
+      uint8_t map[BOARD_MAP_SIZE][BOARD_MAP_SIZE];
+      uint8_t invalidPos;
 
       // Methods
    public:
+      BoardMap() : map{}, invalidPos(Invalid) {}
+      BoardMap(const BoardMap&);
 
       uint8_t& operator() (int8_t x, int8_t y);
       uint8_t operator() (int8_t x, int8_t y) const;
