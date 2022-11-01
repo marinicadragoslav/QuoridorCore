@@ -52,6 +52,13 @@ void PrintPlayerInfo(const std::string info, bool highlight)
    std::cout << (highlight ? TEXT_ASCII_COLOR::RED : TEXT_ASCII_COLOR::OFF) << std::setw(25) << info << TEXT_ASCII_COLOR::OFF;
 }
 
+std::string DurationToString(uint32_t ms)
+{
+   std::stringstream ss;
+   ss << std::setprecision(4) << ms / 1000.0 << " sec";
+   return ss.str();
+}
+
 void PrintAsciiGameBoard()
 {
 #ifdef WIN32
@@ -206,8 +213,8 @@ void PrintAsciiGameBoard()
    PrintPlayerInfo(std::to_string((int)GC.getPlayer(1)->getWallsLeft()), pId == 1);
 
    std::cout << "\n Move duration:     ";
-   PrintPlayerInfo(std::to_string(GC.getPlayer(0)->getLastMoveDuration() / 1000.0) + " sec ", pId == 0);
-   PrintPlayerInfo(std::to_string(GC.getPlayer(1)->getLastMoveDuration() / 1000.0) + " sec ", pId == 1);
+   PrintPlayerInfo(DurationToString(GC.getPlayer(0)->getLastMoveDuration()), pId == 0);
+   PrintPlayerInfo(DurationToString(GC.getPlayer(1)->getLastMoveDuration()), pId == 1);
    std::cout << "\n\n";
 
    if (GC.getBoardState()->isFinished())
