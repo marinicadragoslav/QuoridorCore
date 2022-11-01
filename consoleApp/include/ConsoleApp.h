@@ -6,6 +6,7 @@
 #include <vector>
 #include <list>
 #include <set>
+#include <deque>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -62,7 +63,7 @@ namespace qcli
          Action processGlobalOption(std::string& option, std::ostream& out);
 
          bool canAutocomplete(std::string& cmd) const;
-         bool getParamsAutocomplete(std::string& cmd, std::list<std::string>& candidates) const;
+         bool getParamsAutocomplete(const std::string& cmd, std::list<std::string>& candidates) const;
 
          std::string mCommandName;
          CommandCb mExec;
@@ -111,6 +112,7 @@ namespace qcli
       std::map<std::string, CliCommand*> mCommands;
       std::map<std::string, std::list<CliCommand*>> mOrderedCommands;
       std::ostream& mOut;
+      std::deque<std::string> mHistory;
 
    public:
 

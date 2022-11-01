@@ -141,10 +141,8 @@ namespace qcore
       /** Sets the specified action on the board, after it has been validated */
       void applyAction(const PlayerAction& action);
 
-   private:
-
       /** Notifies all listeners that the board state has changed */
-      void notifyStateChange();
+      void notifyStateChange() const;
    };
 
    typedef std::shared_ptr<const BoardState> BoardStatePtr;

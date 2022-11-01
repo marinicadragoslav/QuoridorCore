@@ -404,7 +404,7 @@ namespace qplugin
                break;
             }
 
-            if (std::chrono::steady_clock::now() - time > 10s)
+            if (std::chrono::steady_clock::now() - time > 8s)
             {
                LOG_TRACE(DOM) << "TIMEOUT";
                break;

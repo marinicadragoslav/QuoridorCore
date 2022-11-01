@@ -12,7 +12,7 @@ namespace qcore
    /** Log domain */
    const char * const DOM = "qcore::PL";
 
-   const auto PLAYER_MIN_TIME_MS = 500ms;
+   const auto PLAYER_MIN_TIME_MS = 1000ms;
 
    /** Construction */
    Player::Player(PlayerId id, const std::string& name, GamePtr game) :
@@ -34,8 +34,9 @@ namespace qcore
       doNextMove();
 
       auto duration = std::chrono::steady_clock::now() - timeref;
+      mLastMoveDurationMs = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
 
-      LOG_INFO(DOM) << "Move duration [" << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() / 1000.0 << " sec]";
+      LOG_INFO(DOM) << "Move duration [" << mLastMoveDurationMs / 1000.0 << " sec]";
 
       if (duration < PLAYER_MIN_TIME_MS)
       {

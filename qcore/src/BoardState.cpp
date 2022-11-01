@@ -183,49 +183,45 @@ namespace qcore
    /** Sets the specified action on the board, after it has been validated */
    void BoardState::applyAction(const PlayerAction& action)
    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      PlayerState &player = mPlayers.at(action.playerId);
+      mLastAction = action.rotate(4 - static_cast<int>(player.initialState));
+
+      switch (action.actionType)
       {
-         std::lock_guard<std::mutex> lock(mMutex);
-         PlayerState &player = mPlayers.at(action.playerId);
-         mLastAction = action.rotate(4 - static_cast<int>(player.initialState));
-
-         switch (action.actionType)
+         case ActionType::Move:
          {
-            case ActionType::Move:
+            player.position = mLastAction.playerPosition;
+            LOG_INFO(DOM) << "Moved player " << (int) action.playerId << " to (" << (int) player.position.x << ", " << (int) player.position.y << ")";
+
+            // Check winning state
+            if (action.playerPosition.x == 0)
             {
-               player.position = mLastAction.playerPosition;
-               LOG_INFO(DOM) << "Moved player " << (int) action.playerId << " to (" << (int) player.position.x << ", " << (int) player.position.y << ")";
-
-               // Check winning state
-               if (action.playerPosition.x == 0)
-               {
-                  mFinished = true;
-                  mWinner = action.playerId;
-                  LOG_INFO(DOM) << "Game finished. Player " << (int) action.playerId << " won.";
-               }
-
-               break;
+               mFinished = true;
+               mWinner = action.playerId;
+               LOG_INFO(DOM) << "Game finished. Player " << (int) action.playerId << " won.";
             }
-            case ActionType::Wall:
-            {
-               if (player.wallsLeft)
-               {
-                  --player.wallsLeft;
-               }
 
-               mWalls.push_back(mLastAction.wallState);
-
-               LOG_INFO(DOM) << "Placed wall by player " << (int) action.playerId << " at ("
-                  << (int) mLastAction.wallState.position.x << ", " << (int) mLastAction.wallState.position.y << ", "
-                  << (mLastAction.wallState.orientation == Orientation::Vertical ? "V" : "H") << ")";
-
-               break;
-            }
-            default:
-               break;
+            break;
          }
-      }
+         case ActionType::Wall:
+         {
+            if (player.wallsLeft)
+            {
+               --player.wallsLeft;
+            }
 
-      notifyStateChange();
+            mWalls.push_back(mLastAction.wallState);
+
+            LOG_INFO(DOM) << "Placed wall by player " << (int) action.playerId << " at ("
+               << (int) mLastAction.wallState.position.x << ", " << (int) mLastAction.wallState.position.y << ", "
+               << (mLastAction.wallState.orientation == Orientation::Vertical ? "V" : "H") << ")";
+
+            break;
+         }
+         default:
+            break;
+      }
    }
 
    /**
@@ -266,7 +262,7 @@ namespace qcore
    }
 
    /** Notifies all listeners that the board state has changed */
-   void BoardState::notifyStateChange()
+   void BoardState::notifyStateChange() const
    {
       for (auto& cb : mStateChangeCb)
       {

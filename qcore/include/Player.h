@@ -4,6 +4,7 @@
 #include "Qcore_API.h"
 #include "BoardState.h"
 #include "PlayerAction.h"
+#include <atomic>
 
 namespace qcore
 {
@@ -24,6 +25,9 @@ namespace qcore
 
       /** Pointer to the 'game board' */
       GamePtr mGame;
+
+      /** Last move duration, in milliseconds */
+      std::atomic_int mLastMoveDurationMs;
 
       // Methods
    public:
@@ -46,6 +50,9 @@ namespace qcore
 
       /** Returns player's name */
       std::string getName() const { return mName; }
+
+      /** Returns the duration of the last move */
+      uint32_t getLastMoveDuration() const { return mLastMoveDurationMs; }
 
       /** Returns the BoardState object */
       BoardStatePtr getBoardState() const;

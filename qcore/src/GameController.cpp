@@ -16,6 +16,7 @@ namespace qcore
    GameController::GameController(const std::string&) :
       mIsRemoteGame(false)
    {
+      LOG_INIT("quoridor.log");
       LOG_INFO(DOM) << "Initializing GameController ...";
 
       PluginManager::LoadPlayerLibraries();
@@ -178,6 +179,7 @@ namespace qcore
 
             // Wait for the player to decide
             mGame->waitPlayerMove(currentPlayer);
+            getBoardState()->notifyStateChange();
 
             if (oneStep)
                break;

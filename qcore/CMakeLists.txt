@@ -16,6 +16,7 @@ add_library(qcore SHARED
    src/PlayerAction.cpp
    src/PluginManager.cpp
    src/GameServer.cpp
+   src/QcoreUtil.cpp
 )
 target_compile_definitions(qcore PRIVATE "QCORE_API_EXPORT")
 target_include_directories(qcore PUBLIC include)

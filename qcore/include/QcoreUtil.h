@@ -12,6 +12,7 @@ namespace qcore
 {
    namespace util
    {
+      /** Custom exception to be used whithin qcore framework */
       class QCODE_API Exception : public std::exception
       {
       public:
@@ -24,6 +25,7 @@ namespace qcore
          std::string cause;
       };
 
+      /** Simple mechanism to facilitate logging throughout the application */
       class Log
       {
       public:
@@ -36,13 +38,13 @@ namespace qcore
             Trace
          };
 
-         ~Log() { ss << std::endl; std::cout << ss.str(); }
+         ~Log();
 
          template<typename T> Log& operator <<(const T &p)
          {
             if (not domLogged)
             {
-               ss << std::left << std::setw(15);
+               ss << std::left << std::setw(12);
                domLogged = true;
             }
 
@@ -50,9 +52,12 @@ namespace qcore
             return *this;
          }
 
+         static void init(const std::string &file);
+
       private:
          bool domLogged = false;
          std::stringstream ss;
+         static std::ostream *logStream;
       };
    }
 }
@@ -62,6 +67,7 @@ namespace qcore
 
 #define LOG(level) if (level <= LOG_LEVEL) qcore::util::Log()
 
+#define LOG_INIT(file) qcore::util::Log::init(file)
 #define LOG_TRACE(DOM) LOG(qcore::util::Log::Trace) << DOM << " [trace] "
 #define LOG_DEBUG(DOM) LOG(qcore::util::Log::Debug) << DOM << " [debug] "
 #define LOG_INFO(DOM)  LOG(qcore::util::Log::Info)  << DOM << " [info]  "
