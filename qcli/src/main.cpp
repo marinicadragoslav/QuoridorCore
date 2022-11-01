@@ -194,7 +194,7 @@ void PrintAsciiGameBoard()
 
    std::cout << TABLE_BOTTOM_RIGHT_BORDER << TABLE_RIGHT_MARGIN << "\n" << TABLE_BOTTOM_MARGIN;
 
-   qcore::PlayerId pId = GC.getGame()->getCurrentPlayer();
+   qcore::PlayerId pId = GC.getGame()->getCurrentPlayer() ^ 1;
 
    // Print players state
    std::cout << "                    ";
