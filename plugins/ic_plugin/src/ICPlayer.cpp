@@ -13,6 +13,9 @@ namespace
 {
    /** Log domain */
    const char * const DOM = "qplugin::IC";
+
+   constexpr auto TM = 4s;
+   constexpr auto RF = 1;
 }
 
 namespace util
@@ -183,7 +186,7 @@ namespace qplugin
       {
          myPathLen = compute(baseMap, myPos, true);
          opPathLen = compute(baseMap, opPos, false);
-         score = opPathLen - myPathLen - level;
+         score = opPathLen - myPathLen - level * RF;
       }
       else
       {
@@ -209,7 +212,7 @@ namespace qplugin
                      opPathLen = b1->opPathLen;
                      myPathNo = b1->myPathNo;
                      opPathNo = b1->opPathNo;
-                     score = b1->opPathLen - b1->myPathLen - level;
+                     score = b1->opPathLen - b1->myPathLen - level * RF;
                      refMap = b1->baseMap;
                   }
                }
@@ -224,7 +227,7 @@ namespace qplugin
                      opPathLen = b2->opPathLen;
                      myPathNo = b2->myPathNo;
                      opPathNo = b2->opPathNo;
-                     score = b2->opPathLen - b2->myPathLen - level;
+                     score = b2->opPathLen - b2->myPathLen - level * RF;
                      refMap = b2->baseMap;
                   }
                }
@@ -399,14 +402,8 @@ namespace qplugin
                best = bs;
             }
 
-            if (bs->level >= 4)
+            if (bs->level >= 4 || std::chrono::steady_clock::now() - time > TM)
             {
-               break;
-            }
-
-            if (std::chrono::steady_clock::now() - time > 8s)
-            {
-               LOG_TRACE(DOM) << "TIMEOUT";
                break;
             }
 

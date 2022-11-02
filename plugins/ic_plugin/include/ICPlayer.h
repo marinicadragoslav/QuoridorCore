@@ -20,7 +20,7 @@ namespace qplugin
       int opPathLen;
       int myPathNo;
       int opPathNo;
-      int score;
+      double score;
 
    public:
       BState(const qcore::Player& player, bool opw);
