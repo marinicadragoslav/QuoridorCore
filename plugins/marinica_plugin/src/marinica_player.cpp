@@ -1,6 +1,7 @@
 #include "marinica_player.h"
 #include "QcoreUtil.h"
-
+#include "board.h"
+#include "debug.h"
 #include <thread>
 
 using namespace qcore::literals;
@@ -46,7 +47,12 @@ namespace qplugin
     */      
    void MarinicaPlayer::doNextMove()
    {
-      static int myTurnCounter;
+      static int turnCount;
+
+      if (turnCount == 0)
+      {
+         InitBoard();
+      }
 
       // get game info 
       uint8_t              myID              = getId(); // = 0 if I am the first player to move or 1 otherwise.
@@ -65,7 +71,7 @@ namespace qplugin
 
       // print game info
       LOG_INFO(DOM) << "-----------------------------------------------------";
-      LOG_INFO(DOM) << "  Turn #: " << myTurnCounter;
+      LOG_INFO(DOM) << "  Turn #: " << turnCount;
       LOG_INFO(DOM) << "      Me: id = " << (int)myID       << ", pos = [" << (int)myPos.x       << ", " << (int)myPos.y       << "], walls left = " << (int)myWallsLeft;
       LOG_INFO(DOM) << "Opponent: id = " << (int)opponentID << ", pos = [" << (int)opponentPos.x << ", " << (int)opponentPos.y << "], walls left = " << (int)opponentWallsLeft;
       LOG_INFO(DOM) << "Last act: " << (lastActType == qcore::ActionType::Invalid ? "Invalid" : (lastActType == qcore::ActionType::Move ? "Move" : "Wall"));
@@ -73,9 +79,20 @@ namespace qplugin
       {
          LOG_INFO(DOM) << "Wall pos: [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "], orientation: " << (lastActWallOrient == qcore::Orientation::Horizontal ? "H" : " V");
       }
+
+      UpdateMyPos({(uint8_t)myPos.x, (uint8_t)myPos.y});
+      UpdateOpponentPos({(uint8_t)opponentPos.x, (uint8_t)opponentPos.y});
+
+      debug_PrintTileStructure(GetBoard());
+
+      debug_PrintWallHStructure(GetBoard());
+
+      debug_PrintWallVStructure(GetBoard());
+
+
       LOG_INFO(DOM) << "-----------------------------------------------------";
 
-      myTurnCounter++;
+      turnCount++;
 
       // ----------------------------------------------------------------------------
       LOG_INFO(DOM) << "Player " << (int)getId() << " is thinking..";

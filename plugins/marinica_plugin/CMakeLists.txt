@@ -8,6 +8,8 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 add_library(qmarinica-plugin SHARED
    src/marinica_player.cpp
    src/player_registration.cpp
+   src/board.cpp
+   src/debug.cpp
 )
 
 target_include_directories(qmarinica-plugin PUBLIC include)
