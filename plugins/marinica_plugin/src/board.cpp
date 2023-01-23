@@ -28,9 +28,9 @@ Board_t* GetBoard(void)
 void InitBoard(void)
 {
     // init tiles
-    for (uint8_t x = 0; x < BOARD_SZ; x++)
+    for (int8_t x = 0; x < BOARD_SZ; x++)
     {
-        for (uint8_t y = 0; y < BOARD_SZ; y++)
+        for (int8_t y = 0; y < BOARD_SZ; y++)
         {
             // set current tile's position
             board.tiles[x][y].pos = {x, y};
@@ -48,9 +48,9 @@ void InitBoard(void)
     }
 
     // init horizontal walls
-    for (uint8_t x = 0; x < L; x++)
+    for (int8_t x = 0; x < L; x++)
     {
-        for (uint8_t y = 0; y < L; y++)
+        for (int8_t y = 0; y < L; y++)
         {
             board.hWalls[x][y].pos = {x, y};
 
@@ -77,9 +77,9 @@ void InitBoard(void)
     }
 
     // init vertical walls
-    for (uint8_t x = 0; x < L; x++)
+    for (int8_t x = 0; x < L; x++)
     {
-        for (uint8_t y = 0; y < L; y++)
+        for (int8_t y = 0; y < L; y++)
         {
             board.vWalls[x][y].pos = {x, y};
 

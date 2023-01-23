@@ -15,7 +15,7 @@ namespace qplugin
     * 
     *  Player positions, as given by the game's API, are always relative (so the opponent's position always
     *  needs converting to my perspective), but a wall's position as the last action performed by the opponent 
-    *  is absolute - so it needs converting when I am the second registered player (second player to move). 
+    *  is absolute - so it needs converting when I am the second registered player (second player to move).
     */
 
    /** Log domain */
@@ -80,13 +80,47 @@ namespace qplugin
          LOG_INFO(DOM) << "Wall pos: [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "], orientation: " << (lastActWallOrient == qcore::Orientation::Horizontal ? "H" : " V");
       }
 
-      UpdateMyPos({(uint8_t)myPos.x, (uint8_t)myPos.y});
-      UpdateOpponentPos({(uint8_t)opponentPos.x, (uint8_t)opponentPos.y});
+      UpdateMyPos({myPos.x, myPos.y});
+      UpdateOpponentPos({opponentPos.x, opponentPos.y});
 
       debug_PrintTileStructure(GetBoard());
-
       debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
 
+      PlaceVWallByMe({6, 6});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+
+      PlaceVWallByOpponent({7, 7});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+
+      PlaceHWallByMe({7, 6});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+
+      UndoHWallByMe({7, 6});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+
+      UndoVWallByOpponent({7, 7});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+
+      UndoVWallByMe({6, 6});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
       debug_PrintWallVStructure(GetBoard());
 
 
