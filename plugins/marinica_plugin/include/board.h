@@ -66,7 +66,6 @@ typedef struct HWall_t
    Tile_t* northeast;
    Tile_t* southwest;
    Tile_t* southeast;
-   bool debug_isPossible;
 }HWall_t;
 
 typedef struct VWall_t
@@ -79,7 +78,6 @@ typedef struct VWall_t
    Tile_t* northeast;
    Tile_t* southwest;
    Tile_t* southeast;
-   bool debug_isPossible;
 }VWall_t;
 
 typedef struct HorizWallsListItem_t
@@ -87,6 +85,10 @@ typedef struct HorizWallsListItem_t
    HWall_t* wall;
    HorizWallsListItem_t* next;
    HorizWallsListItem_t* prev;
+   bool debug_isRemoved;
+   bool debug_isPrintedAsRemoved;
+   bool debug_isAdded;
+   bool debug_isPrintedAsAdded;
 }HorizWallsListItem_t;
 
 typedef struct VertWallsListItem_t
@@ -94,6 +96,10 @@ typedef struct VertWallsListItem_t
    VWall_t* wall;
    struct VertWallsListItem_t* next;
    struct VertWallsListItem_t* prev;
+   bool debug_isRemoved;
+   bool debug_isPrintedAsRemoved;
+   bool debug_isAdded;
+   bool debug_isPrintedAsAdded;
 }VertWallsListItem_t;
 
 typedef struct

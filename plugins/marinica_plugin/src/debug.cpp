@@ -59,7 +59,6 @@ void debug_PrintWallHStructure(Board_t* board)
             sprintf(buff + strlen(buff), ".tSE [%u, %u], ", se->pos.x, se->pos.y);
 
             sprintf(buff + strlen(buff), ".pF %u, ", w.possibleFlag);
-            if (w.debug_isPossible) sprintf(buff + strlen(buff), "P"); else sprintf(buff + strlen(buff), "X");
 
             LOG_WARN(DOM) << buff;
         }
@@ -90,7 +89,6 @@ void debug_PrintWallVStructure(Board_t* board)
             sprintf(buff + strlen(buff), ".tSE [%u, %u], ", se->pos.x, se->pos.y);
 
             sprintf(buff + strlen(buff), ".pF %u, ", w.possibleFlag);
-            if (w.debug_isPossible) sprintf(buff + strlen(buff), "P"); else sprintf(buff + strlen(buff), "X");
 
             LOG_WARN(DOM) << buff;
         }
@@ -115,6 +113,38 @@ void debug_PrintPossibleHWallsList(Board_t* board)
         LOG_WARN(DOM) << buff;
     }
     while(item);
+
+    ClearBuff();
+    LOG_WARN(DOM) << "Removed from H Walls list since last time:";
+    for (uint8_t x = 0; x < BOARD_SZ - 1; x++)
+    {
+        for (uint8_t y = 0; y < BOARD_SZ - 1; y++)
+        {
+            HorizWallsListItem_t* item = &(board->possibleHorizWallsList[x * (BOARD_SZ - 1) + y]);
+            if (item->debug_isRemoved && !item->debug_isPrintedAsRemoved)
+            {
+                sprintf(buff + strlen(buff), "[%u, %u],", item->wall->pos.x, item->wall->pos.y);
+                item->debug_isPrintedAsRemoved = true;
+            }
+        }
+    }
+    LOG_WARN(DOM) << buff;
+
+    ClearBuff();
+    LOG_WARN(DOM) << "Added to H Walls list since last time:";
+    for (uint8_t x = 0; x < BOARD_SZ - 1; x++)
+    {
+        for (uint8_t y = 0; y < BOARD_SZ - 1; y++)
+        {
+            HorizWallsListItem_t* item = &(board->possibleHorizWallsList[x * (BOARD_SZ - 1) + y]);
+            if (item->debug_isAdded && !item->debug_isPrintedAsAdded)
+            {
+                sprintf(buff + strlen(buff), "[%u, %u],", item->wall->pos.x, item->wall->pos.y);
+                item->debug_isPrintedAsAdded = true;
+            }
+        }
+    }
+    LOG_WARN(DOM) << buff;
 }
 
 void debug_PrintPossibleVWallsList(Board_t* board)
@@ -134,6 +164,38 @@ void debug_PrintPossibleVWallsList(Board_t* board)
         LOG_WARN(DOM) << buff;
     }
     while(item);
+
+    ClearBuff();
+    LOG_WARN(DOM) << "Removed from V Walls list since last time:";
+    for (uint8_t x = 0; x < BOARD_SZ - 1; x++)
+    {
+        for (uint8_t y = 0; y < BOARD_SZ - 1; y++)
+        {
+            VertWallsListItem_t* item = &(board->possibleVertWallsList[x * (BOARD_SZ - 1) + y]);
+            if (item->debug_isRemoved && !item->debug_isPrintedAsRemoved)
+            {
+                sprintf(buff + strlen(buff), "[%u, %u],", item->wall->pos.x, item->wall->pos.y);
+                item->debug_isPrintedAsRemoved = true;
+            }
+        }
+    }
+    LOG_WARN(DOM) << buff;
+
+    ClearBuff();
+    LOG_WARN(DOM) << "Added to V Walls list since last time:";
+    for (uint8_t x = 0; x < BOARD_SZ - 1; x++)
+    {
+        for (uint8_t y = 0; y < BOARD_SZ - 1; y++)
+        {
+            VertWallsListItem_t* item = &(board->possibleVertWallsList[x * (BOARD_SZ - 1) + y]);
+            if (item->debug_isAdded && !item->debug_isPrintedAsAdded)
+            {
+                sprintf(buff + strlen(buff), "[%u, %u],", item->wall->pos.x, item->wall->pos.y);
+                item->debug_isPrintedAsAdded = true;
+            }
+        }
+    }
+    LOG_WARN(DOM) << buff;
 }
 
 static void ClearBuff(void)

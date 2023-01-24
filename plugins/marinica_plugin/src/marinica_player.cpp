@@ -113,6 +113,38 @@ namespace qplugin
       debug_PrintPossibleHWallsList(GetBoard());
       debug_PrintPossibleVWallsList(GetBoard());
 
+      PlaceVertWallByOpponent({7, 5});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
+
+      PlaceHorizWallByMe({7, 4});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
+
+      UndoHorizWallByMe({7, 4});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
+
+      UndoVertWallByOpponent({7, 5});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
+
       UndoHorizWallByMe({7, 6});
 
       debug_PrintTileStructure(GetBoard());
