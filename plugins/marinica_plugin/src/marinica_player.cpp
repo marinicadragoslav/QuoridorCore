@@ -86,42 +86,56 @@ namespace qplugin
       debug_PrintTileStructure(GetBoard());
       debug_PrintWallHStructure(GetBoard());
       debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
 
-      PlaceVWallByMe({6, 6});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-
-      PlaceVWallByOpponent({7, 7});
+      PlaceVertWallByMe({6, 6});
 
       debug_PrintTileStructure(GetBoard());
       debug_PrintWallHStructure(GetBoard());
       debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
 
-      PlaceHWallByMe({7, 6});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-
-      UndoHWallByMe({7, 6});
+      PlaceVertWallByOpponent({7, 7});
 
       debug_PrintTileStructure(GetBoard());
       debug_PrintWallHStructure(GetBoard());
       debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
 
-      UndoVWallByOpponent({7, 7});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-
-      UndoVWallByMe({6, 6});
+      PlaceHorizWallByMe({7, 6});
 
       debug_PrintTileStructure(GetBoard());
       debug_PrintWallHStructure(GetBoard());
       debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
+
+      UndoHorizWallByMe({7, 6});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
+
+      UndoVertWallByOpponent({7, 7});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
+
+      UndoVertWallByMe({6, 6});
+
+      debug_PrintTileStructure(GetBoard());
+      debug_PrintWallHStructure(GetBoard());
+      debug_PrintWallVStructure(GetBoard());
+      debug_PrintPossibleHWallsList(GetBoard());
+      debug_PrintPossibleVWallsList(GetBoard());
 
 
       LOG_INFO(DOM) << "-----------------------------------------------------";

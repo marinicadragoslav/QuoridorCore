@@ -97,6 +97,45 @@ void debug_PrintWallVStructure(Board_t* board)
     }
 }
 
+
+void debug_PrintPossibleHWallsList(Board_t* board)
+{
+    HorizWallsListItem_t* item = board->headPHWL;    
+    LOG_WARN(DOM) << "Possible H Walls list:";
+
+    do
+    {
+        ClearBuff();
+        int perRow = 8;
+        while (item && (perRow--) > 0)
+        {
+            sprintf(buff + strlen(buff), "[%u, %u]->", item->wall->pos.x, item->wall->pos.y);
+            item = item->next;
+        }
+        LOG_WARN(DOM) << buff;
+    }
+    while(item);
+}
+
+void debug_PrintPossibleVWallsList(Board_t* board)
+{
+    VertWallsListItem_t* item = board->headPVWL;
+    LOG_WARN(DOM) << "Possible V Walls list:";
+
+    do
+    {
+        ClearBuff();
+        int perRow = 8;
+        while (item && (perRow--) > 0)
+        {
+            sprintf(buff + strlen(buff), "[%u, %u]->", item->wall->pos.x, item->wall->pos.y);
+            item = item->next;
+        }
+        LOG_WARN(DOM) << buff;
+    }
+    while(item);
+}
+
 static void ClearBuff(void)
 {
     memset(buff, 0, sizeof(buff));

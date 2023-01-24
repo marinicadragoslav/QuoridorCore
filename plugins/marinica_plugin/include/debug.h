@@ -8,6 +8,7 @@
 void debug_PrintTileStructure(Board_t* board);
 void debug_PrintWallHStructure(Board_t* board);
 void debug_PrintWallVStructure(Board_t* board);
-
+void debug_PrintPossibleHWallsList(Board_t* board);
+void debug_PrintPossibleVWallsList(Board_t* board);
 
 #endif // Header_qplugin_marinica_debug

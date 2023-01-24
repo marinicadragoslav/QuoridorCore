@@ -5,18 +5,18 @@
 #define L (BOARD_SZ - 1)
 #define WALL_POSSIBLE 1U
 
-static void PlaceHWall(Position_t pos);
-static void PlaceVWall(Position_t pos);
-static void RenderImpossibleHWall(HWall_t* wall);
-static void RenderImpossibleVWall(VWall_t* wall);
-static void UndoHWall(Position_t pos);
-static void UndoVWall(Position_t pos);
-static void RenderPossibleHWall(HWall_t* wall);
-static void RenderPossibleVWall(VWall_t* wall);
-static void RemoveFromPossibleHWallsList(HWall_t* wall);
-static void RemoveFromPossibleVWallsList(VWall_t* wall);
-static void AddToPossibleHWallsList(HWall_t* wall);
-static void AddToPossibleVWallsList(VWall_t* wall);
+static void PlaceHorizWall(Position_t pos);
+static void PlaceVertWall(Position_t pos);
+static void ForbidHorizWall(HWall_t* wall);
+static void ForbidVertWall(VWall_t* wall);
+static void UndoHorizWall(Position_t pos);
+static void UndoVertWall(Position_t pos);
+static void AllowHorizWall(HWall_t* wall);
+static void AllowVertWall(VWall_t* wall);
+static void RemoveFromPossibleHorizWallsList(HWall_t* wall);
+static void RemoveFromPossibleVertWallsList(VWall_t* wall);
+static void AddToPossibleHorizWallsList(HWall_t* wall);
+static void AddToPossibleVertWallsList(VWall_t* wall);
 
 static Board_t board;
 
@@ -58,12 +58,6 @@ void InitBoard(void)
             board.hWalls[x][y].possibleFlag = WALL_POSSIBLE;
             board.hWalls[x][y].debug_isPossible = true;
 
-            /*
-            // link hWalls doubly-linked style
-            
-            board.hWalls[x][y].prev = ((x == 0 && y == 0) ? NULL : ((y == 0) ? &(board.hWalls[x - 1][L]) : &(board.hWalls[x][y - 1])));
-            board.hWalls[x][y].next = ((x == L && y == L) ? NULL : ((y == L) ? &(board.hWalls[x + 1][0]) : &(board.hWalls[x][y + 1])));
-            */
             // link to neighbour walls
             board.hWalls[x][y].west = ((y == 0) ?     NULL : &(board.hWalls[x][y - 1]));
             board.hWalls[x][y].east = ((y == L - 1) ? NULL : &(board.hWalls[x][y + 1]));
@@ -73,6 +67,14 @@ void InitBoard(void)
             board.hWalls[x][y].northeast = board.tiles[x][y].east;
             board.hWalls[x][y].southwest = board.tiles[x][y].south;
             board.hWalls[x][y].southeast = (board.tiles[x][y].south)->east;
+
+            // add to possible horizontal walls list
+            int8_t i = x * L + y;
+            board.possibleHorizWallsList[i].wall = &(board.hWalls[x][y]);
+
+            // link list item
+            board.possibleHorizWallsList[i].prev = ((x == 0 && y == 0) ? NULL : &(board.possibleHorizWallsList[i - 1]));
+            board.possibleHorizWallsList[i].next = ((x == L - 1 && y == L - 1) ? NULL : &(board.possibleHorizWallsList[i + 1]));
         }
     }
 
@@ -87,11 +89,6 @@ void InitBoard(void)
             board.vWalls[x][y].possibleFlag = WALL_POSSIBLE;
             board.vWalls[x][y].debug_isPossible = true;
 
-            /*
-            // link vWalls doubly-linked style
-            board.vWalls[x][y].prev = ((x == 0 && y == 0) ? NULL : ((y == 0) ? &(board.vWalls[x - 1][L]) : &(board.vWalls[x][y - 1])));
-            board.vWalls[x][y].next = ((x == L && y == L) ? NULL : ((y == L) ? &(board.vWalls[x + 1][0]) : &(board.vWalls[x][y + 1])));
-            */
             // link to neighbour walls
             board.vWalls[x][y].north = ((x == 0) ?     NULL : &(board.vWalls[x - 1][y]));
             board.vWalls[x][y].south = ((x == L - 1) ? NULL : &(board.vWalls[x + 1][y]));
@@ -101,13 +98,34 @@ void InitBoard(void)
             board.vWalls[x][y].northeast = board.tiles[x][y].east;
             board.vWalls[x][y].southwest = board.tiles[x][y].south;
             board.vWalls[x][y].southeast = (board.tiles[x][y].south)->east;
+
+            // add to possible vertical walls list
+            int8_t i = x * L + y;
+            board.possibleVertWallsList[i].wall = &(board.vWalls[x][y]);
+
+            // link list item
+            board.possibleVertWallsList[i].prev = ((x == 0 && y == 0) ? NULL : &(board.possibleVertWallsList[i - 1]));
+            board.possibleVertWallsList[i].next = ((x == L - 1 && y == L - 1) ? NULL : &(board.possibleVertWallsList[i + 1]));
         }
     }
 
+    // init moves
+    for (int i = MOVE_FIRST; i <= MOVE_LAST; i++)
+    {
+        board.moves[i] = (Move_t)i;
+
+        // add to possible moves list
+        board.possibleMovesList[i].move = &(board.moves[i]);
+
+        // link list item
+        board.possibleMovesList[i].prev = (i == MOVE_FIRST ? NULL : &(board.possibleMovesList[i - 1]));
+        board.possibleMovesList[i].next = (i == MOVE_LAST ? NULL : &(board.possibleMovesList[i - 1]));
+    }
+
     // init linked list heads
-    board.hWallFirst = &(board.hWalls[0][0]);
-    board.vWallFirst = &(board.vWalls[0][0]);
-    board.moveFirst = &(board.moves[0]);
+    board.headPHWL = &(board.possibleHorizWallsList[0]);
+    board.headPVWL = &(board.possibleVertWallsList[0]);
+    board.headPML = &(board.possibleMovesList[MOVE_FIRST]);
 
     // init number of walls left
     board.myWallsLeft = 10;
@@ -138,64 +156,64 @@ void UpdateOpponentWallsLeft(uint8_t n)
     board.oppWallsLeft = n;
 }
 
-void PlaceHWallByMe(Position_t pos)
+void PlaceHorizWallByMe(Position_t pos)
 {
-    PlaceHWall(pos);
+    PlaceHorizWall(pos);
     board.myWallsLeft--;
 }
 
-void PlaceHWallByOpponent(Position_t pos)
+void PlaceHorizWallByOpponent(Position_t pos)
 {
-    PlaceHWall(pos);
+    PlaceHorizWall(pos);
     board.oppWallsLeft--;
 }
 
-void PlaceVWallByMe(Position_t pos)
+void PlaceVertWallByMe(Position_t pos)
 {
-    PlaceVWall(pos);
+    PlaceVertWall(pos);
     board.myWallsLeft--;
 }
 
-void PlaceVWallByOpponent(Position_t pos)
+void PlaceVertWallByOpponent(Position_t pos)
 {
-    PlaceVWall(pos);
+    PlaceVertWall(pos);
     board.oppWallsLeft--;
 }
 
-void UndoHWallByMe(Position_t pos)
+void UndoHorizWallByMe(Position_t pos)
 {
-    UndoHWall(pos);
+    UndoHorizWall(pos);
     board.myWallsLeft++;
 }
 
-void UndoHWallByOpponent(Position_t pos)
+void UndoHorizWallByOpponent(Position_t pos)
 {
-    UndoHWall(pos);
+    UndoHorizWall(pos);
     board.oppWallsLeft++;
 }
 
-void UndoVWallByMe(Position_t pos)
+void UndoVertWallByMe(Position_t pos)
 {
-    UndoVWall(pos);
+    UndoVertWall(pos);
     board.myWallsLeft++;
 }
 
-void UndoVWallByOpponent(Position_t pos)
+void UndoVertWallByOpponent(Position_t pos)
 {
-    UndoVWall(pos);
+    UndoVertWall(pos);
     board.oppWallsLeft++;
 }
 
-static void PlaceHWall(Position_t pos)
+static void PlaceHorizWall(Position_t pos)
 {
     HWall_t* wall = &(board.hWalls[pos.x][pos.y]);
 
-    RenderImpossibleHWall(wall);
+    ForbidHorizWall(wall);
 
     // each H wall renders impossible 3 other walls (the 2 H neighbours and one V wall)
-    RenderImpossibleHWall(wall->west);
-    RenderImpossibleHWall(wall->east);
-    RenderImpossibleVWall(&(board.vWalls[pos.x][pos.y]));
+    ForbidHorizWall(wall->west);
+    ForbidHorizWall(wall->east);
+    ForbidVertWall(&(board.vWalls[pos.x][pos.y]));
 
     // remove links between tiles separated by the wall
     wall->northwest->south = NULL;
@@ -204,16 +222,16 @@ static void PlaceHWall(Position_t pos)
     wall->southeast->north = NULL;
 }
 
-static void PlaceVWall(Position_t pos)
+static void PlaceVertWall(Position_t pos)
 {
     VWall_t* wall = &(board.vWalls[pos.x][pos.y]);
 
-    RenderImpossibleVWall(wall);
+    ForbidVertWall(wall);
 
     // each V wall renders impossible 3 other walls (the 2 V neighbours and one H wall)
-    RenderImpossibleVWall(wall->north);
-    RenderImpossibleVWall(wall->south);
-    RenderImpossibleHWall(&(board.hWalls[pos.x][pos.y]));
+    ForbidVertWall(wall->north);
+    ForbidVertWall(wall->south);
+    ForbidHorizWall(&(board.hWalls[pos.x][pos.y]));
 
     // remove links between tiles separated by the wall
     wall->northwest->east = NULL;
@@ -222,34 +240,42 @@ static void PlaceVWall(Position_t pos)
     wall->southeast->west = NULL;
 }
 
-static void RenderImpossibleHWall(HWall_t* wall)
+static void ForbidHorizWall(HWall_t* wall)
 {
     if (wall)
     {
-        wall->possibleFlag <<= 1U;
-        RemoveFromPossibleHWallsList(wall);
+        if (wall->possibleFlag == WALL_POSSIBLE)
+        {
+            RemoveFromPossibleHorizWallsList(wall);
+        }
+
+        wall->possibleFlag <<= 1U;        
     }
 }
 
-static void RenderImpossibleVWall(VWall_t* wall)
+static void ForbidVertWall(VWall_t* wall)
 {
     if (wall)
     {
+        if (wall->possibleFlag == WALL_POSSIBLE)
+        {
+            RemoveFromPossibleVertWallsList(wall);
+        }
+
         wall->possibleFlag <<= 1U;
-        RemoveFromPossibleVWallsList(wall);
     }
 }
 
-static void UndoHWall(Position_t pos)
+static void UndoHorizWall(Position_t pos)
 {
     HWall_t* wall = &(board.hWalls[pos.x][pos.y]);
 
-    RenderPossibleHWall(wall);
+    AllowHorizWall(wall);
 
     // revert constraints on the 2 H neighbours and one V wall
-    RenderPossibleHWall(wall->west);
-    RenderPossibleHWall(wall->east);
-    RenderPossibleVWall(&(board.vWalls[pos.x][pos.y]));
+    AllowHorizWall(wall->west);
+    AllowHorizWall(wall->east);
+    AllowVertWall(&(board.vWalls[pos.x][pos.y]));
 
     // restore links between tiles that were separated by the wall
     wall->northwest->south = wall->southwest;
@@ -258,16 +284,16 @@ static void UndoHWall(Position_t pos)
     wall->southeast->north = wall->northeast;
 }
 
-static void UndoVWall(Position_t pos)
+static void UndoVertWall(Position_t pos)
 {
     VWall_t* wall = &(board.vWalls[pos.x][pos.y]);
 
-    RenderPossibleVWall(wall);
+    AllowVertWall(wall);
 
     // revert constraints on the 2 V neighbours and one H wall
-    RenderPossibleVWall(wall->north);
-    RenderPossibleVWall(wall->south);
-    RenderPossibleHWall(&(board.hWalls[pos.x][pos.y]));
+    AllowVertWall(wall->north);
+    AllowVertWall(wall->south);
+    AllowHorizWall(&(board.hWalls[pos.x][pos.y]));
 
     // restore links between tiles that were separated by the wall
     wall->northwest->east = wall->northeast;
@@ -276,7 +302,7 @@ static void UndoVWall(Position_t pos)
     wall->southeast->west = wall->southwest;
 }
 
-static void RenderPossibleHWall(HWall_t* wall)
+static void AllowHorizWall(HWall_t* wall)
 {
     if (wall)
     {
@@ -284,12 +310,12 @@ static void RenderPossibleHWall(HWall_t* wall)
 
         if (wall->possibleFlag == WALL_POSSIBLE)
         {
-            AddToPossibleHWallsList(wall);
+            AddToPossibleHorizWallsList(wall);
         }
     }
 }
 
-static void RenderPossibleVWall(VWall_t* wall)
+static void AllowVertWall(VWall_t* wall)
 {
     if (wall)
     {
@@ -297,28 +323,84 @@ static void RenderPossibleVWall(VWall_t* wall)
 
         if (wall->possibleFlag == WALL_POSSIBLE)
         {
-            AddToPossibleVWallsList(wall);
+            AddToPossibleVertWallsList(wall);
         }
     }
 }
 
-static void RemoveFromPossibleHWallsList(HWall_t* wall)
+static void RemoveFromPossibleHorizWallsList(HWall_t* wall)
 {
-    wall->debug_isPossible = false;
+    if ((board.headPHWL)->wall == wall)
+    {
+        // head to be removed so just update head
+        board.headPHWL = (board.headPHWL)->next;
+        (board.headPHWL)->prev = NULL;
+    }
+    else
+    {
+        // find item
+        int8_t index = wall->pos.x * L + wall->pos.y;
+        HorizWallsListItem_t* item = &(board.possibleHorizWallsList[index]);
+
+        // bypass item
+        item->prev->next = item->next;
+        if (item->next)
+        {
+            item->next->prev = item->prev;
+        }
+    }
 }
 
-static void RemoveFromPossibleVWallsList(VWall_t* wall)
+static void RemoveFromPossibleVertWallsList(VWall_t* wall)
 {
-    wall->debug_isPossible = false;
+    if ((board.headPVWL)->wall == wall)
+    {
+        // head to be removed so just update head
+        board.headPVWL = (board.headPVWL)->next;
+        (board.headPVWL)->prev = NULL;
+    }
+    else
+    {
+        // find item
+        int8_t index = wall->pos.x * L + wall->pos.y;
+        VertWallsListItem_t* item = &(board.possibleVertWallsList[index]);
+
+        // bypass item
+        item->prev->next = item->next;
+        if (item->next)
+        {
+            item->next->prev = item->prev;
+        }
+    }
 }
 
-static void AddToPossibleHWallsList(HWall_t* wall)
+static void AddToPossibleHorizWallsList(HWall_t* wall)
 {
-    wall->debug_isPossible = true;
+    // locate list item to add
+    int8_t index = wall->pos.x * L + wall->pos.y;
+    HorizWallsListItem_t* item = &(board.possibleHorizWallsList[index]);
+
+    // add item in front of the list
+    item->prev = NULL;
+    item->next = board.headPHWL;
+    (board.headPHWL)->prev = item;
+
+    // update head
+    board.headPHWL = item;
 }
 
-static void AddToPossibleVWallsList(VWall_t* wall)
+static void AddToPossibleVertWallsList(VWall_t* wall)
 {
-    wall->debug_isPossible = true;
+    // locate list item to add
+    int8_t index = wall->pos.x * L + wall->pos.y;
+    VertWallsListItem_t* item = &(board.possibleVertWallsList[index]);
+
+    // add item in front of the list
+    item->prev = NULL;
+    item->next = board.headPVWL;
+    (board.headPVWL)->prev = item;
+
+    // update head
+    board.headPVWL = item;
 }
 

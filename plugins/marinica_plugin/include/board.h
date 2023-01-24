@@ -43,16 +43,18 @@ typedef enum
    JUMP_NORTH_WEST,
    JUMP_SOUTH_EAST,
    JUMP_SOUTH_WEST,
-   MOVE_ID_COUNT
-}MoveID_t;
-
-typedef struct Move_t
-{
-   MoveID_t id;
-   bool isPossible;
-   struct Move_t* next;
-   struct Move_t* prev;   
+   
+   MOVE_COUNT,
+   MOVE_FIRST = MOVE_NORTH,
+   MOVE_LAST = JUMP_SOUTH_WEST,
 }Move_t;
+
+typedef struct MovesListItem_t
+{
+   Move_t* move;
+   struct MovesListItem_t* next;
+   struct MovesListItem_t* prev;   
+}MovesListItem_t;
 
 typedef struct HWall_t
 {
@@ -80,19 +82,40 @@ typedef struct VWall_t
    bool debug_isPossible;
 }VWall_t;
 
+typedef struct HorizWallsListItem_t
+{
+   HWall_t* wall;
+   HorizWallsListItem_t* next;
+   HorizWallsListItem_t* prev;
+}HorizWallsListItem_t;
+
+typedef struct VertWallsListItem_t
+{
+   VWall_t* wall;
+   struct VertWallsListItem_t* next;
+   struct VertWallsListItem_t* prev;
+}VertWallsListItem_t;
+
 typedef struct
 {
    Position_t myPos;
    Position_t oppPos;
    uint8_t myWallsLeft;
    uint8_t oppWallsLeft;
+
    Tile_t tiles[BOARD_SZ][BOARD_SZ];
    HWall_t hWalls[BOARD_SZ - 1][BOARD_SZ - 1];
    VWall_t vWalls[BOARD_SZ - 1][BOARD_SZ - 1];
-   Move_t moves[MOVE_ID_COUNT];
-   HWall_t* hWallFirst;
-   VWall_t* vWallFirst;
-   Move_t* moveFirst;
+   Move_t moves[MOVE_COUNT];
+
+   HorizWallsListItem_t possibleHorizWallsList[(BOARD_SZ - 1) * (BOARD_SZ - 1)];
+   HorizWallsListItem_t* headPHWL; // head of Possible Horiz Walls List
+
+   VertWallsListItem_t possibleVertWallsList[(BOARD_SZ - 1) * (BOARD_SZ - 1)];
+   VertWallsListItem_t* headPVWL; // head of Possible Vert Walls List
+
+   MovesListItem_t possibleMovesList[MOVE_COUNT];
+   MovesListItem_t* headPML; // head of Possible Moves List
 }Board_t;
 
 Board_t* GetBoard(void);
@@ -101,13 +124,13 @@ void UpdateMyPos(Position_t pos);
 void UpdateOpponentPos(Position_t pos);
 void UpdateMyWallsLeft(uint8_t n);
 void UpdateOpponentWallsLeft(uint8_t n);
-void PlaceHWallByMe(Position_t pos);
-void PlaceHWallByOpponent(Position_t pos);
-void PlaceVWallByMe(Position_t pos);
-void PlaceVWallByOpponent(Position_t pos);
-void UndoHWallByMe(Position_t pos);
-void UndoHWallByOpponent(Position_t pos);
-void UndoVWallByMe(Position_t pos);
-void UndoVWallByOpponent(Position_t pos);
+void PlaceHorizWallByMe(Position_t pos);
+void PlaceHorizWallByOpponent(Position_t pos);
+void PlaceVertWallByMe(Position_t pos);
+void PlaceVertWallByOpponent(Position_t pos);
+void UndoHorizWallByMe(Position_t pos);
+void UndoHorizWallByOpponent(Position_t pos);
+void UndoVertWallByMe(Position_t pos);
+void UndoVertWallByOpponent(Position_t pos);
 
 #endif // Header_qplugin_marinica_board
