@@ -1,5 +1,5 @@
-#ifndef Header_qcore_marinica_player
-#define Header_qcore_marinica_player
+#ifndef Header_qplugin_marinica_player
+#define Header_qplugin_marinica_player
 
 #include "Player.h"
 
@@ -17,4 +17,4 @@ namespace qplugin
    };
 }
 
-#endif // Header_qcore_marinica_player
+#endif // Header_qplugin_marinica_player

@@ -10,6 +10,7 @@ add_library(qmarinica-plugin SHARED
    src/player_registration.cpp
    src/board.cpp
    src/debug.cpp
+   src/tests.cpp
 )
 
 target_include_directories(qmarinica-plugin PUBLIC include)

@@ -198,6 +198,26 @@ void debug_PrintPossibleVWallsList(Board_t* board)
     LOG_WARN(DOM) << buff;
 }
 
+void debug_PrintTestMessage(const char* msg)
+{
+    LOG_WARN(DOM) << msg;
+}
+
+void debug_PrintTestPassed(void)
+{
+    LOG_WARN(DOM) << "TEST PASSED!";
+}
+
+void debug_PrintTestFailed(void)
+{
+    LOG_ERROR(DOM) << "TEST FAILED!";
+}
+
+void debug_PrintTestErrorMsg(const char* errMsg)
+{
+    LOG_ERROR(DOM) << errMsg;
+}
+
 static void ClearBuff(void)
 {
     memset(buff, 0, sizeof(buff));

@@ -2,6 +2,7 @@
 #include "QcoreUtil.h"
 #include "board.h"
 #include "debug.h"
+#include "tests.h"
 #include <thread>
 
 using namespace qcore::literals;
@@ -83,11 +84,19 @@ namespace qplugin
       UpdateMyPos({myPos.x, myPos.y});
       UpdateOpponentPos({opponentPos.x, opponentPos.y});
 
+      test_1_CheckInitialBoardStructure(GetBoard());
+      test_2_PlaceOneHorizWallThatIsNotOnTheBorder(GetBoard());
+      test_3_RemoveOneHorizWallThatIsNotOnTheBorder(GetBoard());
+      test_4_PlaceTwoConsecutiveHorizWalls(GetBoard());
+
+
+      /*
       debug_PrintTileStructure(GetBoard());
       debug_PrintWallHStructure(GetBoard());
       debug_PrintWallVStructure(GetBoard());
       debug_PrintPossibleHWallsList(GetBoard());
       debug_PrintPossibleVWallsList(GetBoard());
+      
 
       PlaceVertWallByMe({6, 6});
 
@@ -168,6 +177,7 @@ namespace qplugin
       debug_PrintWallVStructure(GetBoard());
       debug_PrintPossibleHWallsList(GetBoard());
       debug_PrintPossibleVWallsList(GetBoard());
+      */
 
 
       LOG_INFO(DOM) << "-----------------------------------------------------";
