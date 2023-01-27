@@ -16,7 +16,7 @@ namespace qplugin
     * 
     *  Player positions, as given by the game's API, are always relative (so the opponent's position always
     *  needs converting to my perspective), but a wall's position as the last action performed by the opponent 
-    *  is absolute - so it needs converting when I am the second registered player (second player to move).
+    *  is absolute - so it needs converting only when I am the second registered player (second player to move).
     */
 
    /** Log domain */
@@ -84,100 +84,16 @@ namespace qplugin
       UpdateMyPos({myPos.x, myPos.y});
       UpdateOpponentPos({opponentPos.x, opponentPos.y});
 
+#if (RUN_TESTS)
       test_1_CheckInitialBoardStructure(GetBoard());
       test_2_PlaceOneHorizWallThatIsNotOnTheBorder(GetBoard());
-      test_3_RemoveOneHorizWallThatIsNotOnTheBorder(GetBoard());
+      test_3_UndoLastWall(GetBoard());
       test_4_PlaceTwoConsecutiveHorizWalls(GetBoard());
-
-
-      /*
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-      
-
-      PlaceVertWallByMe({6, 6});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-
-      PlaceVertWallByOpponent({7, 7});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-
-      PlaceHorizWallByMe({7, 6});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-
-      PlaceVertWallByOpponent({7, 5});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-
-      PlaceHorizWallByMe({7, 4});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-
-      UndoHorizWallByMe({7, 4});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-
-      UndoVertWallByOpponent({7, 5});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-
-      UndoHorizWallByMe({7, 6});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-
-      UndoVertWallByOpponent({7, 7});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-
-      UndoVertWallByMe({6, 6});
-
-      debug_PrintTileStructure(GetBoard());
-      debug_PrintWallHStructure(GetBoard());
-      debug_PrintWallVStructure(GetBoard());
-      debug_PrintPossibleHWallsList(GetBoard());
-      debug_PrintPossibleVWallsList(GetBoard());
-      */
+      test_5_UndoLastTwoWallsOneByOne(GetBoard());
+      test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(GetBoard());
+      test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(GetBoard());
+      test_8_PlaceAndUndoGroupsOf3Walls(GetBoard());
+#endif
 
 
       LOG_INFO(DOM) << "-----------------------------------------------------";

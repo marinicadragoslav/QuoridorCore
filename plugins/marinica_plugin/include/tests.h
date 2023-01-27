@@ -18,7 +18,7 @@ typedef enum
     POSSIBLE = 1,
     FORBIDDEN_1X = 2,
     FORBIDDEN_2X = 4,
-    FORBIDDEN_3x = 8
+    FORBIDDEN_3X = 8
 }PossibilityFlag_t;
 
 typedef struct 
@@ -43,13 +43,14 @@ typedef struct
     PossibilityFlag_t possibilityFlag;
 }TestPossibilityFlag_t;
 
-
-
-
 void test_1_CheckInitialBoardStructure(Board_t* board);
 void test_2_PlaceOneHorizWallThatIsNotOnTheBorder(Board_t* board);
-void test_3_RemoveOneHorizWallThatIsNotOnTheBorder(Board_t* board);
+void test_3_UndoLastWall(Board_t* board);
 void test_4_PlaceTwoConsecutiveHorizWalls(Board_t* board);
+void test_5_UndoLastTwoWallsOneByOne(Board_t* board);
+void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* board);
+void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board);
+void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board);
 
 
 #endif // Header_qplugin_marinica_debug
