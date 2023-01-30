@@ -47,14 +47,12 @@ typedef enum
    MOVE_COUNT,
    MOVE_FIRST = MOVE_NORTH,
    MOVE_LAST = JUMP_SOUTH_WEST,
-}Move_t;
+}MoveID_t;
 
-typedef struct MovesListItem_t
+typedef struct Move_t
 {
-   Move_t* move;
-   struct MovesListItem_t* next;
-   struct MovesListItem_t* prev;   
-}MovesListItem_t;
+   bool isPossible; 
+}Move_t;
 
 typedef struct HWall_t
 {
@@ -112,7 +110,6 @@ typedef struct
    Tile_t tiles[BOARD_SZ][BOARD_SZ];
    HWall_t hWalls[BOARD_SZ - 1][BOARD_SZ - 1];
    VWall_t vWalls[BOARD_SZ - 1][BOARD_SZ - 1];
-   Move_t moves[MOVE_COUNT];
 
    HorizWallsListItem_t possibleHorizWallsList[(BOARD_SZ - 1) * (BOARD_SZ - 1)];
    HorizWallsListItem_t* headPHWL; // head of Possible Horiz Walls List
@@ -120,14 +117,25 @@ typedef struct
    VertWallsListItem_t possibleVertWallsList[(BOARD_SZ - 1) * (BOARD_SZ - 1)];
    VertWallsListItem_t* headPVWL; // head of Possible Vert Walls List
 
-   MovesListItem_t possibleMovesList[MOVE_COUNT];
-   MovesListItem_t* headPML; // head of Possible Moves List
+   Move_t myMoves[MOVE_COUNT];
+   Move_t oppMoves[MOVE_COUNT];
+
+   bool debug_isOnMyMinPath[BOARD_SZ][BOARD_SZ];
 }Board_t;
+
+typedef enum RelativePlayerPos_t
+{
+   NOT_FACE_TO_FACE,
+   OPPONENT_ABOVE_ME,
+   OPPONENT_BELOW_ME,
+   OPPONENT_TO_MY_LEFT,
+   OPPONENT_TO_MY_RIGHT
+}RelativePlayerPos_t;
 
 Board_t* GetBoard(void);
 void InitBoard(void);
 void UpdateMyPos(Position_t pos);
-void UpdateOpponentPos(Position_t pos);
+void UpdateOpponentsPos(Position_t pos);
 void UpdateMyWallsLeft(uint8_t n);
 void UpdateOpponentWallsLeft(uint8_t n);
 void PlaceHorizWallByMe(Position_t pos);
@@ -138,5 +146,9 @@ void UndoHorizWallByMe(Position_t pos);
 void UndoHorizWallByOpponent(Position_t pos);
 void UndoVertWallByMe(Position_t pos);
 void UndoVertWallByOpponent(Position_t pos);
+void UpdateMyPossibleMoves(void);
+//void UpdateOpponentsPossibleMoves(void);
+bool IsMyPos(Position_t pos);
+bool IsOpponentsPos(Position_t pos);
 
 #endif // Header_qplugin_marinica_board

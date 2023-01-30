@@ -1,5 +1,6 @@
 
 #include <stddef.h>
+#include <string.h>
 #include "board.h"
 
 #define L (BOARD_SZ - 1)
@@ -17,6 +18,7 @@ static void RemoveFromPossibleHorizWallsList(HWall_t* wall);
 static void RemoveFromPossibleVertWallsList(VWall_t* wall);
 static void AddToPossibleHorizWallsList(HWall_t* wall);
 static void AddToPossibleVertWallsList(VWall_t* wall);
+static RelativePlayerPos_t GetPlayersRelativePos(void);
 
 static Board_t board;
 
@@ -112,21 +114,9 @@ void InitBoard(void)
         }
     }
 
-    // init moves
-    for (int i = MOVE_FIRST; i <= MOVE_LAST; i++)
-    {
-        board.moves[i] = (Move_t)i;
-
-        // add to the linked list of possible moves and set links
-        board.possibleMovesList[i].move = &(board.moves[i]);
-        board.possibleMovesList[i].prev = (i == MOVE_FIRST ? NULL : &(board.possibleMovesList[i - 1]));
-        board.possibleMovesList[i].next = (i == MOVE_LAST ?  NULL : &(board.possibleMovesList[i + 1]));
-    }
-
     // init linked list heads
     board.headPHWL = &(board.possibleHorizWallsList[0]);
     board.headPVWL = &(board.possibleVertWallsList[0]);
-    board.headPML = &(board.possibleMovesList[MOVE_FIRST]);
 
     // init number of walls left
     board.myWallsLeft = 10;
@@ -137,12 +127,22 @@ void InitBoard(void)
     board.oppPos = {0, BOARD_SZ / 2};
 }
 
+bool IsMyPos(Position_t pos)
+{
+    return ((pos.x == board.myPos.x) && (pos.y == board.myPos.y));
+}
+
+bool IsOpponentsPos(Position_t pos)
+{
+    return ((pos.x == board.oppPos.x) && (pos.y == board.oppPos.y));
+}
+
 void UpdateMyPos(Position_t pos)
 {
     board.myPos = pos;
 }
 
-void UpdateOpponentPos(Position_t pos)
+void UpdateOpponentsPos(Position_t pos)
 {
     board.oppPos = pos;
 }
@@ -203,6 +203,307 @@ void UndoVertWallByOpponent(Position_t pos)
 {
     UndoVertWall(pos);
     board.oppWallsLeft++;
+}
+
+void UpdateMyPossibleMoves(void)  // optimize this FFS! maybe
+{
+    // first, set all moves to NOT POSSIBLE
+    memset(board.myMoves, 0, sizeof(board.myMoves));
+
+    // get my tile & opponent's tile
+    Tile_t* myTile = &(board.tiles[board.myPos.x][board.myPos.y]);   
+    Tile_t* oppTile = &(board.tiles[board.oppPos.x][board.oppPos.y]);      
+
+    switch (GetPlayersRelativePos())
+    {
+        case NOT_FACE_TO_FACE: // most often                       
+            // no jumps possible, so only worry about one-step-moves:               
+            board.myMoves[MOVE_NORTH].isPossible = (myTile->north ? true : false);
+            board.myMoves[MOVE_SOUTH].isPossible = (myTile->south ? true : false);
+            board.myMoves[MOVE_EAST].isPossible = (myTile->east ? true : false);
+            board.myMoves[MOVE_WEST].isPossible = (myTile->west ? true : false);
+        break;
+
+        case OPPONENT_ABOVE_ME:
+            // moving one step north not possible, check for jumping:
+            if (myTile->north) // no wall above me
+            {
+                if (oppTile->north) // no wall or border above him
+                {
+                    board.myMoves[JUMP_NORTH].isPossible = true; // allow jumping straight over
+                }
+                else // wall or border above him
+                {
+                    if (oppTile->west) // no wall or border to his left
+                    {
+                        board.myMoves[JUMP_NORTH_WEST].isPossible = true;
+                    }
+                    if (oppTile->east) // no wall or border to his right
+                    {
+                        board.myMoves[JUMP_NORTH_EAST].isPossible = true;
+                    }
+                }
+            }
+            // check for possible one-step-moves in the other directions
+            board.myMoves[MOVE_SOUTH].isPossible = (myTile->south ? true : false);
+            board.myMoves[MOVE_EAST].isPossible = (myTile->east ? true : false);
+            board.myMoves[MOVE_WEST].isPossible = (myTile->west ? true : false);
+        break;
+
+        case OPPONENT_BELOW_ME:
+            // moving one step south not possible, check for jumping:
+            if (myTile->south) // no wall below me
+            {
+                if (oppTile->south) // no wall or border below him
+                {
+                    board.myMoves[JUMP_SOUTH].isPossible = true; // allow jumping straight over
+                }
+                else // wall or border below him
+                {
+                    if (oppTile->west) // no wall or border to his left
+                    {
+                        board.myMoves[JUMP_SOUTH_WEST].isPossible = true;
+                    }
+                    if (oppTile->east) // no wall or border to his right
+                    {
+                        board.myMoves[JUMP_SOUTH_EAST].isPossible = true;
+                    }
+                }
+            }
+            // check for possible one-step-moves in the other directions
+            board.myMoves[MOVE_NORTH].isPossible = (myTile->north ? true : false);
+            board.myMoves[MOVE_EAST].isPossible = (myTile->east ? true : false);
+            board.myMoves[MOVE_WEST].isPossible = (myTile->west ? true : false);
+        break;
+
+        case OPPONENT_TO_MY_LEFT:
+            // moving one step west not possible, check for jumping:
+            if (myTile->west) // no wall to my left
+            {
+                if (oppTile->west) // no wall or border to his left
+                {
+                    board.myMoves[JUMP_WEST].isPossible = true; // allow jumping straight over
+                }
+                else // wall or border to his left
+                {
+                    if (oppTile->north) // no wall or border above him
+                    {
+                        board.myMoves[JUMP_NORTH_WEST].isPossible = true;
+                    }
+                    if (oppTile->south) // no wall or border below him
+                    {
+                        board.myMoves[JUMP_SOUTH_WEST].isPossible = true;
+                    }
+                }
+            }
+            // check for possible one-step-moves in the other directions
+            board.myMoves[MOVE_NORTH].isPossible = (myTile->north ? true : false);
+            board.myMoves[MOVE_SOUTH].isPossible = (myTile->south ? true : false);
+            board.myMoves[MOVE_EAST].isPossible = (myTile->east ? true : false);
+        break;
+
+        case OPPONENT_TO_MY_RIGHT:
+            // moving one step east not possible, check for jumping:
+            if (myTile->east) // no wall to my right
+            {
+                if (oppTile->east) // no wall or border to his right
+                {
+                    board.myMoves[JUMP_EAST].isPossible = true; // allow jumping straight over
+                }
+                else // wall or border to his right
+                {
+                    if (oppTile->north) // no wall or border above him
+                    {
+                        board.myMoves[JUMP_NORTH_EAST].isPossible = true;
+                    }
+                    if (oppTile->south) // no wall or border below him
+                    {
+                        board.myMoves[JUMP_SOUTH_EAST].isPossible = true;
+                    }
+                }
+            }
+            // check for possible one-step-moves in the other directions
+            board.myMoves[MOVE_NORTH].isPossible = (myTile->north ? true : false);
+            board.myMoves[MOVE_SOUTH].isPossible = (myTile->south ? true : false);
+            board.myMoves[MOVE_WEST].isPossible = (myTile->west ? true : false);
+        break;
+
+        default: // this can't happen
+        break;
+    }
+}
+
+/*
+void UpdateOpponentsPossibleMoves(void)  // optimize this FFS! maybe
+{
+    if (board.PMsNeedUpdate)
+    {
+        // first, set all moves to NOT POSSIBLE
+        memset(board.oppMoves, 0, sizeof(board.oppMoves));
+
+        // get my tile & opponent's tile
+        Tile_t* myTile = &(board.tiles[board.myPos.x][board.myPos.y]);   
+        Tile_t* oppTile = &(board.tiles[board.oppPos.x][board.oppPos.y]);      
+
+        switch (GetPlayersRelativePos())
+        {
+            case NOT_FACE_TO_FACE: // most often                
+                // no jumps possible, so only worry about one-step-moves:               
+                board.oppMoves[MOVE_NORTH].isPossible = (oppTile->north ? true : false);
+                board.oppMoves[MOVE_SOUTH].isPossible = (oppTile->south ? true : false);
+                board.oppMoves[MOVE_EAST].isPossible = (oppTile->east ? true : false);
+                board.oppMoves[MOVE_WEST].isPossible = (oppTile->west ? true : false);
+            break;
+
+            case OPPONENT_ABOVE_ME:
+
+
+        }
+        if (!ArePlayersFaceToFace())
+        {
+            
+        }
+        else // players are face to face so this is more complicated - luckily it won't happen too often
+        {
+            // North
+            if (oppTile->north) // no wall or border above him
+            {
+                if ((IsMyPos(oppTile->north->pos))) // I am above him
+                {
+                    if (myTile->north) // no wall or border above me
+                    {
+                        board.oppMoves[JUMP_NORTH].isPossible = true; // allow jumping straight over
+                    }
+                    else // wall or border above me
+                    {
+                        if (myTile->west) // no wall or border to my left
+                        {
+                            board.oppMoves[JUMP_NORTH_WEST].isPossible = true;
+                        }
+                        if (myTile->east) // no wall or border to my right
+                        {
+                            board.oppMoves[JUMP_NORTH_EAST].isPossible = true;
+                        }
+                    }
+                }
+                else // there is a free tile above him
+                {
+                    board.oppMoves[MOVE_NORTH].isPossible = true;
+                }
+            }
+
+            			// South
+            if (oppTile->south) // no wall or border below him
+            {
+                if ((IsMyPos(oppTile->south->pos))) // I am below him
+                {
+                    if (myTile->south) // no wall or border below me
+                    {
+                        board.oppMoves[JUMP_SOUTH].isPossible = true; // allow jumping straight over
+                    }
+                    else // wall or border below me
+                    {
+                        if (myTile->west) // no wall or border to my left
+                        {
+                            board.oppMoves[JUMP_SOUTH_WEST].isPossible = true;
+                        }
+                        if (myTile->east) // no wall or border to my right
+                        {
+                            board.oppMoves[JUMP_SOUTH_EAST].isPossible = true;
+                        }
+                    }
+                }
+                else // there is a free tile below him
+                {
+                    board.oppMoves[MOVE_SOUTH].isPossible = true;
+                }
+            }
+
+            // West
+            if (oppTile->west) // no wall or border to his left
+            {
+                if ((IsMyPos(oppTile->west->pos))) // I am on his left
+                {
+                    if (myTile->west) // no wall or border to my left
+                    {
+                        board.oppMoves[JUMP_WEST].isPossible = true; // allow jumping straight over
+                    }
+                    else // wall or border to my left
+                    {
+                        if (myTile->north) // no wall or border above me
+                        {
+                            board.oppMoves[JUMP_NORTH_WEST].isPossible = true;
+                        }
+                        if (myTile->south) // no wall or border below me
+                        {
+                            board.oppMoves[JUMP_SOUTH_WEST].isPossible = true;
+                        }
+                    }
+                }
+                else // there is a free tile to his left
+                {
+                    board.oppMoves[MOVE_WEST].isPossible = true;
+                }
+            }
+
+            // East
+            if (oppTile->east) // no wall or border to his right
+            {
+                if ((IsMyPos(oppTile->east->pos))) // I am on his right
+                {
+                    if (myTile->east) // no wall or border to my right
+                    {
+                        board.oppMoves[JUMP_EAST].isPossible = true; // allow jumping straight over
+                    }
+                    else // wall or border to my right
+                    {
+                        if (myTile->north) // no wall or border above me
+                        {
+                            board.oppMoves[JUMP_NORTH_EAST].isPossible = true;
+                        }
+                        if (myTile->south) // no wall or border below me
+                        {
+                            board.oppMoves[JUMP_SOUTH_EAST].isPossible = true;
+                        }
+                    }
+                }
+                else // there is a free tile to his right
+                {
+                    board.oppMoves[MOVE_EAST].isPossible = true;
+                }
+            }
+        }
+    }
+}
+*/
+
+static RelativePlayerPos_t GetPlayersRelativePos(void)
+{
+    if (board.myPos.x == board.oppPos.x)
+    {
+        if (board.myPos.y == board.oppPos.y - 1)
+        {
+            return OPPONENT_TO_MY_RIGHT;
+        }
+        if (board.myPos.y == board.oppPos.y + 1)
+        {
+            return OPPONENT_TO_MY_LEFT;
+        }
+    }
+
+    if (board.myPos.y == board.oppPos.y)
+    {
+        if (board.myPos.x == board.oppPos.x - 1)
+        {
+            return OPPONENT_BELOW_ME;
+        }
+        if (board.myPos.x == board.oppPos.x + 1)
+        {
+            return OPPONENT_ABOVE_ME;
+        }
+    }
+
+    return NOT_FACE_TO_FACE;
 }
 
 static void PlaceHorizWall(Position_t pos)

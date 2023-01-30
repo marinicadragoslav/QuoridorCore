@@ -11,6 +11,7 @@ typedef struct
    uint8_t pathLen;
 }Path_t;
 
-
+uint8_t FindMinPathLen(Player_t player);
+uint16_t debug_GetFlags(void);
 
 #endif // Header_qplugin_marinica_min_path

@@ -11,6 +11,7 @@ add_library(qmarinica-plugin SHARED
    src/board.cpp
    src/debug.cpp
    src/tests.cpp
+   src/min_path.cpp
 )
 
 target_include_directories(qmarinica-plugin PUBLIC include)

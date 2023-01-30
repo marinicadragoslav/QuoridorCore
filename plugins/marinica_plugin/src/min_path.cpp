@@ -20,9 +20,15 @@ static Path_t* QueuePop(void);
 static void InitPathData(void);
 static Path_t savedPathInfo[BOARD_SZ][BOARD_SZ];
 static uint16_t pathFoundFlags;
+static Path_t* debug_destination;
+
+uint16_t debug_GetFlags(void)
+{
+    return pathFoundFlags;
+}
 
 
-uint8_t GetMinPathLen(Player_t player)
+uint8_t FindMinPathLen(Player_t player)
 {
     QueueInit();
     InitPathData();
@@ -32,7 +38,7 @@ uint8_t GetMinPathLen(Player_t player)
 
     // add source tile path info to queue
     Position_t sourcePos = (player == ME ? board->myPos : board->oppPos);
-    Path_t source = { &(board->tiles[sourcePos.x][sourcePos.y]), NULL, INFINITE_LEN };
+    Path_t source = { &(board->tiles[sourcePos.x][sourcePos.y]), NULL, 0 };
     QueuePush(source);
 
     // Breadth-First-Search that stops when either min paths were found for each of the goal tiles or
@@ -43,7 +49,7 @@ uint8_t GetMinPathLen(Player_t player)
         Tile_t* tile = item->tile;        
         Path_t* saved = &(savedPathInfo[tile->pos.x][tile->pos.y]);
 
-        if (saved->pathLen == 0)
+        if (saved->tile == NULL)
         {
             // min path not yet found for this tile => update min path info
             saved->tile = tile;
@@ -61,6 +67,7 @@ uint8_t GetMinPathLen(Player_t player)
                 if (minPathLen > item->pathLen)
                 {
                     minPathLen = item->pathLen;
+                    debug_destination = saved; // debug
                 }
             }
 
@@ -82,12 +89,26 @@ uint8_t GetMinPathLen(Player_t player)
 
             if (tile->south && (savedPathInfo[tile->south->pos.x][tile->south->pos.y].pathLen == 0))
             {
-                QueuePush({ tile->east, tile, (uint8_t)(item->pathLen + 1U) });
+                QueuePush({ tile->south, tile, (uint8_t)(item->pathLen + 1U) });
             }
         }
     }
     
+    // ---------------------------------------------------------------------------------
+    // debug - delete prev tiles marked as being on the min path
+    memset(board->debug_isOnMyMinPath, 0, sizeof(board->debug_isOnMyMinPath));
+    // debug - backtrack from destination tile to mark all tiles that are part of min path
+    Tile_t* stopAt = (player == ME ? &(board->tiles[board->myPos.x][board->myPos.y]) : &(board->tiles[board->oppPos.x][board->oppPos.y]));
+    Tile_t* current = debug_destination->tile;
+    while (current != stopAt)
+    {
+        board->debug_isOnMyMinPath[current->pos.x][current->pos.y] = true;
+        current = savedPathInfo[current->pos.x][current->pos.y].prevTile;
+    }
+    // end debug ---------------------------------------------------------------------------
+
     return minPathLen;
+
 }
 
 

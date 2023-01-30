@@ -3,6 +3,7 @@
 #include "board.h"
 #include "debug.h"
 #include "tests.h"
+#include "min_path.h"
 #include <thread>
 
 using namespace qcore::literals;
@@ -53,6 +54,8 @@ namespace qplugin
       if (turnCount == 0)
       {
          InitBoard();
+         // debug
+         // PlaceHorizWallByMe({0, 0});
       }
 
       // get game info 
@@ -73,16 +76,31 @@ namespace qplugin
       // print game info
       LOG_INFO(DOM) << "-----------------------------------------------------";
       LOG_INFO(DOM) << "  Turn #: " << turnCount;
-      LOG_INFO(DOM) << "      Me: id = " << (int)myID       << ", pos = [" << (int)myPos.x       << ", " << (int)myPos.y       << "], walls left = " << (int)myWallsLeft;
-      LOG_INFO(DOM) << "Opponent: id = " << (int)opponentID << ", pos = [" << (int)opponentPos.x << ", " << (int)opponentPos.y << "], walls left = " << (int)opponentWallsLeft;
-      LOG_INFO(DOM) << "Last act: " << (lastActType == qcore::ActionType::Invalid ? "Invalid" : (lastActType == qcore::ActionType::Move ? "Move" : "Wall"));
+      LOG_INFO(DOM) << "";
+      LOG_INFO(DOM) << "  Me:         id = " << (int)myID       << ", pos = [" << (int)myPos.x       << ", " << (int)myPos.y       << "], walls left = " << (int)myWallsLeft;
+      LOG_INFO(DOM) << "  Opponent:   id = " << (int)opponentID << ", pos = [" << (int)opponentPos.x << ", " << (int)opponentPos.y << "], walls left = " << (int)opponentWallsLeft;
+      LOG_INFO(DOM) << "";
+      LOG_INFO(DOM) << "  Last act:   " << (lastActType == qcore::ActionType::Invalid ? "Invalid" : (lastActType == qcore::ActionType::Move ? "Move" : "Wall"));
       if (lastActType == qcore::ActionType::Wall)
       {
-         LOG_INFO(DOM) << "Wall pos: [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "], orientation: " << (lastActWallOrient == qcore::Orientation::Horizontal ? "H" : " V");
+         if (lastActWallOrient == qcore::Orientation::Horizontal)
+         {
+            LOG_INFO(DOM) << "  H wall:     game pos [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "], plugin pos [" << (lastActWallPos.x - 1) << ", " << (int)lastActWallPos.y << "]";
+            PlaceHorizWallByOpponent({(int8_t)(lastActWallPos.x - 1), lastActWallPos.y});
+         }
+         else
+         {
+            LOG_INFO(DOM) << "  V wall:     game pos [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "], plugin pos [" << (int)lastActWallPos.x << ", " << (lastActWallPos.y - 1) << "]";
+            PlaceVertWallByOpponent({(lastActWallPos.x), (int8_t)(lastActWallPos.y - 1)});
+         }
       }
-
+      LOG_INFO(DOM) << "";
       UpdateMyPos({myPos.x, myPos.y});
-      UpdateOpponentPos({opponentPos.x, opponentPos.y});
+      UpdateOpponentsPos({opponentPos.x, opponentPos.y});
+
+      UpdateMyPossibleMoves();
+      debug_PrintMyPossibleMoves(GetBoard());
+
 
 #if (RUN_TESTS)
       test_1_CheckInitialBoardStructure(GetBoard());
@@ -94,8 +112,13 @@ namespace qplugin
       test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(GetBoard());
       test_8_PlaceAndUndoGroupsOf3Walls(GetBoard());
 #endif
-
-
+      LOG_INFO(DOM) << "";
+      LOG_INFO(DOM) << "  My minpath: " << (int)FindMinPathLen(ME)       << ",      (dbg_flgs: " << (int)debug_GetFlags() << ")";
+      LOG_INFO(DOM) << "";
+      debug_PrintBoard(GetBoard());
+      LOG_INFO(DOM) << "  Op minpath: " << (int)FindMinPathLen(OPPONENT) << ",      (dbg_flgs: " << (int)debug_GetFlags() << ")";
+      LOG_INFO(DOM) << "";
+      debug_PrintPossibleHWallsList(GetBoard());
       LOG_INFO(DOM) << "-----------------------------------------------------";
 
       turnCount++;
