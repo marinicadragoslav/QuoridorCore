@@ -120,7 +120,7 @@ void debug_PrintTestErrorMsg(const char* errMsg)
 void debug_PrintMyPossibleMoves(Board_t* board)
 {    
     ClearBuff();
-    sprintf(buff + strlen(buff), "  My psb mvs: ");
+    sprintf(buff + strlen(buff), "  My possible moves: ");
     
     for (int i = MOVE_FIRST; i <= MOVE_LAST; i++)
     {

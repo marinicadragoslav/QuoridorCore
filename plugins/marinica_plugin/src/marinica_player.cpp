@@ -54,53 +54,53 @@ namespace qplugin
       if (turnCount == 0)
       {
          InitBoard();
-         // debug
-         // PlaceHorizWallByMe({0, 0});
       }
 
       // get game info 
-      uint8_t              myID              = getId(); // = 0 if I am the first player to move or 1 otherwise.
-      uint8_t              opponentID        = (myID ? 0 : 1);
-      qcore::Position      myPos             = getPosition();
-      qcore::BoardStatePtr boardState        = getBoardState();
-      qcore::PlayerState   opponentState     = boardState->getPlayers(opponentID).at(opponentID);
-      qcore::Position      opponentPos       = (opponentState.position).rotate(2); // check Notes 
-      qcore::PlayerAction  lastAct           = boardState->getLastAction();
-      qcore::ActionType    lastActType       = lastAct.actionType;
-      qcore::Orientation   lastActWallOrient = lastAct.wallState.orientation;
-      qcore::Position      lastActWallPos    = (myID == 0 ? lastAct.wallState.position : 
-                                                   AbsToRelWallPos(lastAct.wallState.position, lastActWallOrient)); // check Notes
-      uint8_t              myWallsLeft       = getWallsLeft();
-      uint8_t              opponentWallsLeft = opponentState.wallsLeft;
+      uint8_t              myID           = getId(); // = 0 if I am the first player to move or 1 otherwise.
+      uint8_t              oppID          = (myID ? 0 : 1); // opponent's ID
+      qcore::Position      myPos          = getPosition();
+      qcore::BoardStatePtr boardState     = getBoardState();
+      qcore::PlayerState   oppState       = boardState->getPlayers(oppID).at(oppID);
+      qcore::Position      oppPos         = (oppState.position).rotate(2); // check Notes above
+      qcore::PlayerAction  lastAct        = boardState->getLastAction();
+      qcore::ActionType    lastActType    = lastAct.actionType;
+      qcore::Orientation   lastActWallOr  = lastAct.wallState.orientation;
+      qcore::Position      lastActWallPos = (myID == 0 ? lastAct.wallState.position : 
+                                                   AbsToRelWallPos(lastAct.wallState.position, lastActWallOr)); // check Notes above
+      uint8_t              myWallsLeft    = getWallsLeft();
+      uint8_t              oppWallsLeft   = oppState.wallsLeft;
 
       // print game info
-      LOG_INFO(DOM) << "-----------------------------------------------------";
-      LOG_INFO(DOM) << "  Turn #: " << turnCount;
-      LOG_INFO(DOM) << "";
-      LOG_INFO(DOM) << "  Me:         id = " << (int)myID       << ", pos = [" << (int)myPos.x       << ", " << (int)myPos.y       << "], walls left = " << (int)myWallsLeft;
-      LOG_INFO(DOM) << "  Opponent:   id = " << (int)opponentID << ", pos = [" << (int)opponentPos.x << ", " << (int)opponentPos.y << "], walls left = " << (int)opponentWallsLeft;
-      LOG_INFO(DOM) << "";
-      LOG_INFO(DOM) << "  Last act:   " << (lastActType == qcore::ActionType::Invalid ? "Invalid" : (lastActType == qcore::ActionType::Move ? "Move" : "Wall"));
-      if (lastActType == qcore::ActionType::Wall)
-      {
-         if (lastActWallOrient == qcore::Orientation::Horizontal)
-         {
-            LOG_INFO(DOM) << "  H wall:     game pos [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "], plugin pos [" << (lastActWallPos.x - 1) << ", " << (int)lastActWallPos.y << "]";
-            PlaceHorizWallByOpponent({(int8_t)(lastActWallPos.x - 1), lastActWallPos.y});
-         }
-         else
-         {
-            LOG_INFO(DOM) << "  V wall:     game pos [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "], plugin pos [" << (int)lastActWallPos.x << ", " << (lastActWallPos.y - 1) << "]";
-            PlaceVertWallByOpponent({(lastActWallPos.x), (int8_t)(lastActWallPos.y - 1)});
-         }
-      }
-      LOG_INFO(DOM) << "";
-      UpdateMyPos({myPos.x, myPos.y});
-      UpdateOpponentsPos({opponentPos.x, opponentPos.y});
+      LOG_INFO(DOM) << "---------------------------------------------------------------";
+      LOG_INFO(DOM) << "  Turn count = " << turnCount;
+      LOG_INFO(DOM) << "  Me  (" << (int)myID << ") pos = [" << (int)myPos.x << ", " << (int)myPos.y << "], walls = " << (int)myWallsLeft;
+      LOG_INFO(DOM) << "  Opp (" << (int)oppID << ") pos = [" << (int)oppPos.x << ", " << (int)oppPos.y << "], walls = " << (int)oppWallsLeft;
+      LOG_INFO(DOM) << "  Last act = " << (lastActType == qcore::ActionType::Invalid ? "Invalid" : 
+                                                (lastActType == qcore::ActionType::Move ? "Move" : "Wall"));
 
+      if (lastActType == qcore::ActionType::Wall && lastActWallOr == qcore::Orientation::Horizontal)
+      {
+         LOG_INFO(DOM) << "  Wall dir = H, wall pos (game)   = [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "]";
+         LOG_INFO(DOM) << "                wall pos (plugin) = [" << (lastActWallPos.x - 1) << ", " << (int)lastActWallPos.y << "]";
+         PlaceHorizWallByOpponent({(int8_t)(lastActWallPos.x - 1), lastActWallPos.y});
+      }
+
+      if (lastActType == qcore::ActionType::Wall && lastActWallOr == qcore::Orientation::Vertical)
+      {
+         LOG_INFO(DOM) << "  Wall dir = V, wall pos (game)   = [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "]";
+         LOG_INFO(DOM) << "                wall pos (plugin) = [" << (int)(lastActWallPos.x) << ", " << (lastActWallPos.y - 1) << "]";
+         PlaceVertWallByOpponent({(lastActWallPos.x), (int8_t)(lastActWallPos.y - 1)});
+      }
+
+      UpdateMyPos({myPos.x, myPos.y});
+      UpdateOpponentsPos({oppPos.x, oppPos.y});
       UpdateMyPossibleMoves();
       debug_PrintMyPossibleMoves(GetBoard());
-
+      LOG_INFO(DOM) << "  Opp minpath = " << (int)FindMinPathLen(OPPONENT) << ", (debug_flags = " << (int)debug_GetFlags() << ")";
+      LOG_INFO(DOM) << "  My minpath = " << (int)FindMinPathLen(ME) << ", (debug_flags = " << (int)debug_GetFlags() << ")";
+      LOG_INFO(DOM) << "";
+      debug_PrintBoard(GetBoard());      
 
 #if (RUN_TESTS)
       test_1_CheckInitialBoardStructure(GetBoard());
@@ -112,15 +112,10 @@ namespace qplugin
       test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(GetBoard());
       test_8_PlaceAndUndoGroupsOf3Walls(GetBoard());
 #endif
-      LOG_INFO(DOM) << "";
-      LOG_INFO(DOM) << "  My minpath: " << (int)FindMinPathLen(ME)       << ",      (dbg_flgs: " << (int)debug_GetFlags() << ")";
-      LOG_INFO(DOM) << "";
-      debug_PrintBoard(GetBoard());
-      LOG_INFO(DOM) << "  Op minpath: " << (int)FindMinPathLen(OPPONENT) << ",      (dbg_flgs: " << (int)debug_GetFlags() << ")";
-      LOG_INFO(DOM) << "";
-      LOG_INFO(DOM) << "-----------------------------------------------------";
-
+      LOG_INFO(DOM) << "---------------------------------------------------------------";
       turnCount++;
+
+
 
       // ----------------------------------------------------------------------------
       LOG_INFO(DOM) << "Player " << (int)getId() << " is thinking..";
