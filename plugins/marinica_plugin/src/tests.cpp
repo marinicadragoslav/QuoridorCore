@@ -49,11 +49,11 @@ static void PlaceWalls(TestWall_t* walls, int8_t wallsCount)
         {
             if (walls[i].wallOr == H)
             {
-                PlaceHorizWallByMe({walls[i].x, walls[i].y});
+                PlaceHorizWall(ME, {walls[i].x, walls[i].y});
             }
             else
             {
-                PlaceVertWallByMe({walls[i].x, walls[i].y});
+                PlaceVertWall(ME, {walls[i].x, walls[i].y});
             }
         }
     }
@@ -67,11 +67,11 @@ static void UndoWalls(TestWall_t* walls, int8_t wallsCount)
         {
             if (walls[i].wallOr == H)
             {
-                UndoHorizWallByMe({walls[i].x, walls[i].y});
+                UndoHorizWall(ME, {walls[i].x, walls[i].y});
             }
             else
             {
-                UndoVertWallByMe({walls[i].x, walls[i].y});
+                UndoVertWall(ME, {walls[i].x, walls[i].y});
             }
         }
     }

@@ -9,7 +9,8 @@
 typedef enum
 {
    ME,
-   OPPONENT
+   OPPONENT,
+   NONE
 }Player_t;
 
 typedef struct
@@ -25,8 +26,7 @@ typedef struct Tile_t
    struct Tile_t* south;
    struct Tile_t* east;
    struct Tile_t* west;
-   bool isGoalForMe;
-   bool isGoalForOpp;
+   Player_t isGoalFor;
 }Tile_t;
 
 typedef enum
@@ -78,47 +78,35 @@ typedef struct VWall_t
    Tile_t* southeast;
 }VWall_t;
 
-
 typedef struct
 {
-   Position_t myPos;
-   Position_t oppPos;
-   uint8_t myWallsLeft;
-   uint8_t oppWallsLeft;
+   Position_t playerPos[2]; // playerPos[ME], playerPos[OPPONENT]
+   Player_t otherPlayer[2]; // otherPlayer[ME] == OPPONENT, otherPlayer[OPPONENT] == ME
+   uint8_t wallsLeft[2]; // wallsLeft[ME], wallsLeft[OPPONENT]
    Tile_t tiles[BOARD_SZ][BOARD_SZ];
-   HWall_t hWalls[BOARD_SZ - 1][BOARD_SZ - 1];
-   VWall_t vWalls[BOARD_SZ - 1][BOARD_SZ - 1];
-   Move_t myMoves[MOVE_COUNT];
-   Move_t oppMoves[MOVE_COUNT];
-   bool debug_isOnMyMinPath[BOARD_SZ][BOARD_SZ];
+   HWall_t hWalls[BOARD_SZ - 1][BOARD_SZ - 1]; // Horizontal walls
+   VWall_t vWalls[BOARD_SZ - 1][BOARD_SZ - 1]; // Vertical walls
+   Move_t moves[2][MOVE_COUNT]; // e.g. moves[ME][JUMP_NORTH], moves[OPPONENT][MOVE_WEST]
+   bool debug_isOnMinPath[BOARD_SZ][BOARD_SZ];
 }Board_t;
 
 typedef enum RelativePlayerPos_t
 {
-   NOT_FACE_TO_FACE,
-   OPPONENT_ABOVE_ME,
-   OPPONENT_BELOW_ME,
-   OPPONENT_TO_MY_LEFT,
-   OPPONENT_TO_MY_RIGHT
+   NOT_SIDE_BY_SIDE,
+   PLAYER_ABOVE,
+   PLAYER_BELOW,
+   PLAYER_ON_THE_LEFT,
+   PLAYER_ON_THE_RIGHT,
 }RelativePlayerPos_t;
 
 Board_t* GetBoard(void);
 void InitBoard(void);
-void UpdateMyPos(Position_t pos);
-void UpdateOpponentsPos(Position_t pos);
-void UpdateMyWallsLeft(uint8_t n);
-void UpdateOpponentWallsLeft(uint8_t n);
-void PlaceHorizWallByMe(Position_t pos);
-void PlaceHorizWallByOpponent(Position_t pos);
-void PlaceVertWallByMe(Position_t pos);
-void PlaceVertWallByOpponent(Position_t pos);
-void UndoHorizWallByMe(Position_t pos);
-void UndoHorizWallByOpponent(Position_t pos);
-void UndoVertWallByMe(Position_t pos);
-void UndoVertWallByOpponent(Position_t pos);
-void UpdateMyPossibleMoves(void);
-//void UpdateOpponentsPossibleMoves(void);
-bool IsMyPos(Position_t pos);
-bool IsOpponentsPos(Position_t pos);
+void UpdatePos(Player_t player, Position_t pos);
+void UpdateWallsLeft(Player_t player, uint8_t wallsLeft);
+void PlaceHorizWall(Player_t player, Position_t pos);
+void PlaceVertWall(Player_t player, Position_t pos);
+void UndoHorizWall(Player_t player, Position_t pos);
+void UndoVertWall(Player_t player, Position_t pos);
+void UpdatePossibleMoves(Player_t player);
 
 #endif // Header_qplugin_marinica_board

@@ -29,8 +29,8 @@ void debug_PrintTileStructure(Board_t* board)
             if (tile.east) sprintf(buff + strlen(buff), ".E = [%u, %u], ", (tile.east)->pos.x, (tile.east)->pos.y); else sprintf(buff + strlen(buff), ".E = [NULL], ");
             if (tile.south) sprintf(buff + strlen(buff), ".S = [%u, %u], ", (tile.south)->pos.x, (tile.south)->pos.y); else sprintf(buff + strlen(buff), ".S = [NULL], ");
             
-            if (tile.isGoalForMe) sprintf(buff + strlen(buff), "GfM");
-            if (tile.isGoalForOpp) sprintf(buff + strlen(buff), "GfO");
+            if (tile.isGoalFor == ME) sprintf(buff + strlen(buff), "GfM");
+            if (tile.isGoalFor == OPPONENT) sprintf(buff + strlen(buff), "GfO");
 
             LOG_WARN(DOM) << buff;
         }
@@ -124,7 +124,7 @@ void debug_PrintMyPossibleMoves(Board_t* board)
     
     for (int i = MOVE_FIRST; i <= MOVE_LAST; i++)
     {
-        if (board->myMoves[i].isPossible)
+        if (board->moves[ME][i].isPossible)
         {
             sprintf(buff + strlen(buff), "[%s],", debug_ConvertMoveIDToString((MoveID_t)i));
         }
@@ -206,9 +206,21 @@ void debug_PrintBoard(Board_t* board)
             }
 
             // populate tiles array
-            if (i == board->myPos.x && j == board->myPos.y)   { tiles[ti++] = 'M'; continue; } // 'M' for my postion
-            if (i == board->oppPos.x && j == board->oppPos.y) { tiles[ti++] = 'O'; continue; } // 'O' for opponent's position
-            if (board->debug_isOnMyMinPath[i][j])             { tiles[ti++] = '*'; continue; } // '*' if tile is part of my min path
+            if (i == board->playerPos[ME].x && j == board->playerPos[ME].y) 
+            { 
+                tiles[ti++] = 'M'; // 'M' for my postion
+                continue;
+            }
+            if (i == board->playerPos[OPPONENT].x && j == board->playerPos[OPPONENT].y) 
+            { 
+                tiles[ti++] = 'O'; // 'O' for opponent's position
+                continue;  
+            }
+            if (board->debug_isOnMinPath[i][j])
+            { 
+                tiles[ti++] = '*'; // '*' if tile is part of my min path
+                continue; 
+            }
             tiles[ti++] = ' ';
         }
     }

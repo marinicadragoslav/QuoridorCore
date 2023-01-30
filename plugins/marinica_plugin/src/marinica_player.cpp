@@ -83,20 +83,22 @@ namespace qplugin
       {
          LOG_INFO(DOM) << "  Wall dir = H, wall pos (game)   = [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "]";
          LOG_INFO(DOM) << "                wall pos (plugin) = [" << (lastActWallPos.x - 1) << ", " << (int)lastActWallPos.y << "]";
-         PlaceHorizWallByOpponent({(int8_t)(lastActWallPos.x - 1), lastActWallPos.y});
+         PlaceHorizWall(OPPONENT, {(int8_t)(lastActWallPos.x - 1), lastActWallPos.y});
       }
 
       if (lastActType == qcore::ActionType::Wall && lastActWallOr == qcore::Orientation::Vertical)
       {
          LOG_INFO(DOM) << "  Wall dir = V, wall pos (game)   = [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "]";
          LOG_INFO(DOM) << "                wall pos (plugin) = [" << (int)(lastActWallPos.x) << ", " << (lastActWallPos.y - 1) << "]";
-         PlaceVertWallByOpponent({(lastActWallPos.x), (int8_t)(lastActWallPos.y - 1)});
+         PlaceVertWall(OPPONENT, {(lastActWallPos.x), (int8_t)(lastActWallPos.y - 1)});
       }
 
-      UpdateMyPos({myPos.x, myPos.y});
-      UpdateOpponentsPos({oppPos.x, oppPos.y});
-      UpdateMyPossibleMoves();
+      UpdatePos(ME, {myPos.x, myPos.y});
+      UpdatePos(OPPONENT, {oppPos.x, oppPos.y});
+      
+      UpdatePossibleMoves(ME);
       debug_PrintMyPossibleMoves(GetBoard());
+
       LOG_INFO(DOM) << "  Opp minpath = " << (int)FindMinPathLen(OPPONENT) << ", (debug_flags = " << (int)debug_GetFlags() << ")";
       LOG_INFO(DOM) << "  My minpath = " << (int)FindMinPathLen(ME) << ", (debug_flags = " << (int)debug_GetFlags() << ")";
       LOG_INFO(DOM) << "";

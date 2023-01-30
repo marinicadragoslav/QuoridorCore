@@ -37,7 +37,7 @@ uint8_t FindMinPathLen(Player_t player)
     uint8_t minPathLen = INFINITE_LEN;
 
     // add source tile path info to queue
-    Position_t sourcePos = (player == ME ? board->myPos : board->oppPos);
+    Position_t sourcePos = board->playerPos[player];
     Path_t source = { &(board->tiles[sourcePos.x][sourcePos.y]), NULL, 0 };
     QueuePush(source);
 
@@ -57,8 +57,7 @@ uint8_t FindMinPathLen(Player_t player)
             saved->pathLen = item->pathLen;
 
             // if the tile reached is a goal-tile for the current player, flag it as done
-            if (((player == ME) && (tile->isGoalForMe)) || 
-                ((player == OPPONENT) && (tile->isGoalForOpp)))
+            if (tile->isGoalFor == player)
             {
                 // set path-found-flag for this tile
                 pathFoundFlags |= (1U << tile->pos.y);
@@ -96,13 +95,13 @@ uint8_t FindMinPathLen(Player_t player)
     
     // ---------------------------------------------------------------------------------
     // debug - delete prev tiles marked as being on the min path
-    memset(board->debug_isOnMyMinPath, 0, sizeof(board->debug_isOnMyMinPath));
+    memset(board->debug_isOnMinPath, 0, sizeof(board->debug_isOnMinPath));
     // debug - backtrack from destination tile to mark all tiles that are part of min path
-    Tile_t* stopAt = (player == ME ? &(board->tiles[board->myPos.x][board->myPos.y]) : &(board->tiles[board->oppPos.x][board->oppPos.y]));
+    Tile_t* stopAt = &(board->tiles[board->playerPos[player].x][board->playerPos[player].y]);
     Tile_t* current = debug_destination->tile;
     while (current != stopAt)
     {
-        board->debug_isOnMyMinPath[current->pos.x][current->pos.y] = true;
+        board->debug_isOnMinPath[current->pos.x][current->pos.y] = true;
         current = savedPathInfo[current->pos.x][current->pos.y].prevTile;
     }
     // end debug ---------------------------------------------------------------------------
