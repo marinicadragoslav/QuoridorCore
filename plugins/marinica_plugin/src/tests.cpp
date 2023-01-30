@@ -2,7 +2,7 @@
 #include "tests.h"
 #include "debug.h"
 
-#define COUNT(A)                (A == NULL ? 0 : (sizeof(A) / sizeof(A[0])))
+#define COUNT(A) (A == NULL ? 0 : (sizeof(A) / sizeof(A[0])))
 
 #define DEFAULT_NULL_TILE_LINKS { 0, 0, N }, \
                                 { 0, 0, W }, \
@@ -78,8 +78,7 @@ static void UndoWalls(TestWall_t* walls, int8_t wallsCount)
 }
 
 static void CheckBoardStructure(Board_t* board, TestTileLink_t* tileLinksToTest, int8_t tileLinksCount,
-                       TestPossibilityFlag_t* possibilityFlagsToCheck, int8_t possibilityFlagsCount,
-                       TestWall_t* wallsMissingFromListToCheck, int8_t wallsMissingCount)
+                       TestPossibilityFlag_t* possibilityFlagsToCheck, int8_t possibilityFlagsCount)
 { 
     const char* errMsg;    
 
@@ -245,145 +244,6 @@ static void CheckBoardStructure(Board_t* board, TestTileLink_t* tileLinksToTest,
         }
     }
 
-    // check that walls given in the missing checklist are indeed missing from the possible walls list
-    if (wallsMissingFromListToCheck)
-    {
-        for (int c = 0; c < wallsMissingCount; c++)
-        {
-            bool found = false;
-            TestWall_t wall = wallsMissingFromListToCheck[c];
-
-            if (wall.wallOr == H)
-            {
-                // sarch in the possible H walls list
-                HorizWallsListItem_t* item = board->headPHWL;
-                while (item)
-                {
-                    if (item->wall->pos.x == wall.x && item->wall->pos.y == wall.y)
-                    {
-                        found = true;
-                    }
-                    item = item->next;
-                }
-                
-                if (found)
-                {
-                    err = true; // found a wall in the list that's not supposed to be there
-                    errMsg = "Found a wall in the possible H walls list that is supposed to be missing!";
-                    debug_PrintTestErrorMsg(errMsg);
-                }
-            }
-            else
-            {
-                // sarch in the possible V walls list
-                VertWallsListItem_t* item = board->headPVWL;
-                while (item)
-                {
-                    if (item->wall->pos.x == wall.x && item->wall->pos.y == wall.y)
-                    {
-                        found = true;
-                    }
-                    item = item->next;
-                }
-                
-                if (found)
-                {
-                    err = true; // found a wall in the list that's not supposed to be there
-                    errMsg = "Found a wall in the possible V walls list that is supposed to be missing!";
-                    debug_PrintTestErrorMsg(errMsg);
-                }
-            }
-        }
-    }
-
-    // check that all walls that are missing from the list are also given here in the checklist
-    for (int i = 0; i < BOARD_SZ - 1; i++)
-    {
-        for (int j = 0; j < BOARD_SZ - 1; j++)
-        {
-            bool found;
-
-            { // H walls -----------------------------------------------------------------------------------------------------------
-                found = false;
-                TestWall_t boardWall = { H, board->hWalls[i][j].pos.x, board->hWalls[i][j].pos.y };
-
-                // try to find it in the possible H walls list
-                HorizWallsListItem_t* item = board->headPHWL;
-                while (item)
-                {
-                    if (item->wall->pos.x == boardWall.x && item->wall->pos.y == boardWall.y)
-                    {
-                        found = true;
-                    }
-                    item = item->next;
-                }
-                
-                if (!found)
-                {
-                    if (wallsMissingFromListToCheck)
-                    {
-                        // a wall that is missing from the possible H walls list must be present in the given missing walls checklist
-                        for (int c = 0; c < wallsMissingCount; c++)
-                        {
-                            TestWall_t wall = wallsMissingFromListToCheck[c];
-                            if (wall.wallOr == boardWall.wallOr && wall.x == boardWall.x && wall.y == boardWall.y)
-                            {
-                                found = true;
-                            }                        
-                        }
-                    }
-
-                    if (!found) // wall is missing from the possible H walls list but it is not given in this checklist
-                    {
-                        err = true;
-                        errMsg = "Found a wall missing from the possible H walls list that is supposed to be there!";
-                        debug_PrintTestErrorMsg(errMsg);
-                    }
-                }
-            }
-
-            { // V walls -----------------------------------------------------------------------------------------------------------
-                found = false;
-                TestWall_t boardWall = { V, board->vWalls[i][j].pos.x, board->vWalls[i][j].pos.y };
-
-                // try to find it in the possible V walls list
-                VertWallsListItem_t* item = board->headPVWL;
-                while (item)
-                {
-                    if (item->wall->pos.x == boardWall.x && item->wall->pos.y == boardWall.y)
-                    {
-                        found = true;
-                    }
-                    item = item->next;
-                }
-                
-                if (!found)
-                {
-                    if (wallsMissingFromListToCheck)
-                    {
-                        // a wall that is missing from the possible V walls list must be present in the given missing walls checklist
-                        for (int c = 0; c < wallsMissingCount; c++)
-                        {
-                            TestWall_t wall = wallsMissingFromListToCheck[c];
-                            if (wall.wallOr == boardWall.wallOr && wall.x == boardWall.x && wall.y == boardWall.y)
-                            {
-                                found = true;
-                            }                        
-                        }
-                    }
-
-                    if (!found) // wall is missing from the possible V walls list but it is not given in this checklist
-                    {
-                        err = true;
-                        errMsg = "Found a wall missing from the possible V walls list that is supposed to be there!";
-                        debug_PrintTestErrorMsg(errMsg);
-                    }
-                }
-            }
-        }
-    }         
-
-
     if (err)
     {
         debug_PrintTestFailed();
@@ -392,8 +252,6 @@ static void CheckBoardStructure(Board_t* board, TestTileLink_t* tileLinksToTest,
     {
         debug_PrintTestPassed();
     }
-
-
 }
 
 void test_1_CheckInitialBoardStructure(Board_t* board)
@@ -411,13 +269,10 @@ void test_1_CheckInitialBoardStructure(Board_t* board)
 
     // define some walls that should have the possibility flag NOT equal to POSSIBLE
     TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
-
-    // define walls that should be missing from the list of possible walls
-    TestWall_t* wallsMissingFromListToCheck = NULL; // no wall should be missing as there were no walls placed
     
     PlaceWalls(wallsToPlace, 0);
     
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0, wallsMissingFromListToCheck, 0);        
+    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);        
 }
 
 
@@ -449,20 +304,10 @@ void test_2_PlaceOneHorizWallThatIsNotOnTheBorder(Board_t* board)
         { H, 1, 3, FORBIDDEN_1X },
         { V, 1, 2, FORBIDDEN_1X }
     };
-
-    // define walls that should be missing from the list of possible walls
-    TestWall_t wallsMissingFromListToCheck[] =
-    {
-        { H, 1, 2 },
-        { H, 1, 1 },
-        { H, 1, 3 },
-        { V, 1, 2 }
-    };
     
     PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
 
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-            wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck)); 
+    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck)); 
 }
 
 void test_3_UndoLastWall(Board_t* board)
@@ -483,13 +328,10 @@ void test_3_UndoLastWall(Board_t* board)
 
     // define some walls that should have the possibility flag NOT equal to POSSIBLE
     TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
-
-    // define walls that should be missing from the list of possible walls
-    TestWall_t* wallsMissingFromListToCheck = NULL; // no wall should be missing as there were no walls placed
     
     UndoWalls(wallsToUndo, COUNT(wallsToUndo));
 
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0, wallsMissingFromListToCheck, 0);   
+    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);   
 }
 
 void test_4_PlaceTwoConsecutiveHorizWalls(Board_t* board)
@@ -529,22 +371,9 @@ void test_4_PlaceTwoConsecutiveHorizWalls(Board_t* board)
         { V, 1, 4, FORBIDDEN_1X },
     };
 
-    // define walls that should be missing from the list of possible walls
-    TestWall_t wallsMissingFromListToCheck[] =
-    {
-        { H, 1, 2 },
-        { H, 1, 1 },
-        { H, 1, 3 },
-        { V, 1, 2 },
-        { H, 1, 4 },
-        { H, 1, 5 },
-        { V, 1, 4 }
-    };
-
     PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
     
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-            wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
 }
 
 
@@ -577,20 +406,10 @@ void test_5_UndoLastTwoWallsOneByOne(Board_t* board)
             { H, 1, 3, FORBIDDEN_1X },
             { V, 1, 2, FORBIDDEN_1X }
         };
-
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { H, 1, 2 },
-            { H, 1, 1 },
-            { H, 1, 3 },
-            { V, 1, 2 }
-        };
         
         UndoWalls(wallsToUndo, COUNT(wallsToUndo));
 
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck)); 
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck)); 
     }
 
     {
@@ -610,13 +429,10 @@ void test_5_UndoLastTwoWallsOneByOne(Board_t* board)
 
         // define some walls that should have the possibility flag NOT equal to POSSIBLE
         TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
-
-        // define walls that should be missing from the list of possible walls
-        TestWall_t* wallsMissingFromListToCheck = NULL; // no wall should be missing as there were no walls placed
         
         UndoWalls(wallsToUndo, COUNT(wallsToUndo));
 
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0, wallsMissingFromListToCheck, 0);
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);
     }
 }
 
@@ -667,25 +483,9 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
             { V, 2, 3, FORBIDDEN_1X }
         };
 
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { H, 1, 2 },
-            { H, 1, 1 },
-            { H, 1, 3 },
-            { V, 1, 2 },
-            { H, 1, 4 },
-            { H, 1, 5 },
-            { V, 1, 4 },
-            { V, 1, 3 },
-            { V, 0, 3 },
-            { V, 2, 3 }
-        };
-
         PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
     }
 
     {
@@ -723,22 +523,9 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
             { V, 1, 4, FORBIDDEN_1X },
         };
 
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { H, 1, 2 },
-            { H, 1, 1 },
-            { H, 1, 3 },
-            { V, 1, 2 },
-            { H, 1, 4 },
-            { H, 1, 5 },
-            { V, 1, 4 }
-        };
-
         UndoWalls(wallsToUndo, COUNT(wallsToUndo));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
     }
 
     {
@@ -759,13 +546,10 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
 
         // define some walls that should have the possibility flag NOT equal to POSSIBLE
         TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
-
-        // define walls that should be missing from the list of possible walls
-        TestWall_t* wallsMissingFromListToCheck = NULL; // no wall should be missing as there were no walls placed
         
         UndoWalls(wallsToUndo, COUNT(wallsToUndo));
 
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0, wallsMissingFromListToCheck, 0);
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);
     }
 }
 
@@ -799,18 +583,9 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { H, 7, 7, FORBIDDEN_1X }
         };
 
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { V, 7, 7 },
-            { V, 6, 7 },
-            { H, 7, 7 }
-        };
-
         PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
     }
 
     {
@@ -848,22 +623,9 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { V, 5, 6, FORBIDDEN_1X },
         };
 
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { V, 7, 7 },
-            { V, 6, 7 },
-            { H, 7, 7 },
-            { V, 6, 6 },
-            { V, 7, 6 },
-            { H, 6, 6 },
-            { V, 5, 6 },
-        };
-
         PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
     }
 
     {
@@ -907,24 +669,9 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { H, 7, 5, FORBIDDEN_1X },
         };
 
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { V, 7, 7 },
-            { V, 6, 7 },
-            { H, 7, 7 },
-            { V, 6, 6 },
-            { V, 7, 6 },
-            { H, 6, 6 },
-            { V, 5, 6 },
-            { H, 7, 6 },
-            { H, 7, 5 },
-        };
-
         PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
     }
 
     {
@@ -962,22 +709,9 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { V, 5, 6, FORBIDDEN_1X },
         };
 
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { V, 7, 7 },
-            { V, 6, 7 },
-            { H, 7, 7 },
-            { V, 6, 6 },
-            { V, 7, 6 },
-            { H, 6, 6 },
-            { V, 5, 6 },
-        };
-
         UndoWalls(wallsToUndo, COUNT(wallsToUndo));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
     }
 
     {
@@ -1007,18 +741,9 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { H, 7, 7, FORBIDDEN_1X }
         };
 
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { V, 7, 7 },
-            { V, 6, 7 },
-            { H, 7, 7 }
-        };
-
         UndoWalls(wallsToUndo, COUNT(wallsToUndo));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
     }
 
     {
@@ -1038,13 +763,10 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
 
         // define some walls that should have the possibility flag NOT equal to POSSIBLE
         TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
-
-        // define walls that should be missing from the list of possible walls
-        TestWall_t* wallsMissingFromListToCheck = NULL; // no wall should be missing as there were no walls placed
         
         UndoWalls(wallsToUndo, COUNT(wallsToUndo));
 
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0, wallsMissingFromListToCheck, 0);
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);
     }
 }
 
@@ -1094,25 +816,9 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
             { H, 6, 0, FORBIDDEN_1X }
         };
 
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { H, 7, 0 },
-            { H, 7, 1 },
-            { V, 7, 0 },
-            { V, 5, 0 },
-            { V, 6, 0 },
-            { H, 5, 0 },
-            { H, 5, 1 },
-            { H, 5, 2 },
-            { V, 5, 1 },
-            { H, 6, 0 }
-        };
-
         PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
     }
 
     {
@@ -1182,36 +888,9 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
             { V, 6, 2, FORBIDDEN_1X }
         };
 
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { H, 7, 0 },
-            { H, 7, 1 },
-            { V, 7, 0 },
-            { V, 5, 0 },
-            { V, 6, 0 },
-            { H, 5, 0 },
-            { H, 5, 1 },
-            { H, 5, 2 },
-            { V, 5, 1 },
-            { H, 6, 0 },
-            { H, 4, 3 },
-            { V, 4, 3 },
-            { H, 4, 2 },
-            { H, 4, 4 },
-            { H, 5, 3 },
-            { H, 5, 4 },
-            { V, 5, 3 },
-            { V, 7, 2 },
-            { V, 5, 2 },
-            { H, 6, 2 },
-            { V, 6, 2 }
-        };
-
         PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
     }
 
     {
@@ -1258,25 +937,9 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
             { H, 6, 0, FORBIDDEN_1X }
         };
 
-        // define walls that should be missing from the list of possible walls
-        TestWall_t wallsMissingFromListToCheck[] =
-        {
-            { H, 7, 0 },
-            { H, 7, 1 },
-            { V, 7, 0 },
-            { V, 5, 0 },
-            { V, 6, 0 },
-            { H, 5, 0 },
-            { H, 5, 1 },
-            { H, 5, 2 },
-            { V, 5, 1 },
-            { H, 6, 0 }
-        };
-
         UndoWalls(wallsToUndo, COUNT(wallsToUndo));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck), 
-                wallsMissingFromListToCheck, COUNT(wallsMissingFromListToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
 
     }
 
@@ -1299,13 +962,10 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
 
         // define some walls that should have the possibility flag NOT equal to POSSIBLE
         TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
-
-        // define walls that should be missing from the list of possible walls
-        TestWall_t* wallsMissingFromListToCheck = NULL; // no wall should be missing as there were no walls placed
         
         UndoWalls(wallsToUndo, COUNT(wallsToUndo));
 
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0, wallsMissingFromListToCheck, 0);
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);
 
     }
 }

@@ -118,7 +118,6 @@ namespace qplugin
       debug_PrintBoard(GetBoard());
       LOG_INFO(DOM) << "  Op minpath: " << (int)FindMinPathLen(OPPONENT) << ",      (dbg_flgs: " << (int)debug_GetFlags() << ")";
       LOG_INFO(DOM) << "";
-      debug_PrintPossibleHWallsList(GetBoard());
       LOG_INFO(DOM) << "-----------------------------------------------------";
 
       turnCount++;

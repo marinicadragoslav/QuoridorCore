@@ -14,10 +14,6 @@ static void UndoHorizWall(Position_t pos);
 static void UndoVertWall(Position_t pos);
 static void AllowHorizWall(HWall_t* wall);
 static void AllowVertWall(VWall_t* wall);
-static void RemoveFromPossibleHorizWallsList(HWall_t* wall);
-static void RemoveFromPossibleVertWallsList(VWall_t* wall);
-static void AddToPossibleHorizWallsList(HWall_t* wall);
-static void AddToPossibleVertWallsList(VWall_t* wall);
 static RelativePlayerPos_t GetPlayersRelativePos(void);
 
 static Board_t board;
@@ -66,19 +62,6 @@ void InitBoard(void)
             board.hWalls[x][y].northeast = board.tiles[x][y].east;
             board.hWalls[x][y].southwest = board.tiles[x][y].south;
             board.hWalls[x][y].southeast = (board.tiles[x][y].south)->east;
-
-            // add to the linked list of possible vertical walls and set links
-            int8_t i = x * L + y;
-            board.possibleHorizWallsList[i].wall = &(board.hWalls[x][y]);
-            board.possibleHorizWallsList[i].prev = ((x == 0 && y == 0) ?         NULL : &(board.possibleHorizWallsList[i - 1]));
-            board.possibleHorizWallsList[i].next = ((x == L - 1 && y == L - 1) ? NULL : &(board.possibleHorizWallsList[i + 1]));
-
-            // debug
-            board.possibleHorizWallsList[i].debug_isRemoved = false;
-            board.possibleHorizWallsList[i].debug_isPrintedAsRemoved = false;
-            board.possibleHorizWallsList[i].debug_isAdded = false;
-            board.possibleHorizWallsList[i].debug_isPrintedAsAdded = false;
-
         }
     }
 
@@ -99,24 +82,8 @@ void InitBoard(void)
             board.vWalls[x][y].northeast = board.tiles[x][y].east;
             board.vWalls[x][y].southwest = board.tiles[x][y].south;
             board.vWalls[x][y].southeast = (board.tiles[x][y].south)->east;
-
-            // add to the linked list of possible vertical walls and set links
-            int8_t i = x * L + y;
-            board.possibleVertWallsList[i].wall = &(board.vWalls[x][y]);
-            board.possibleVertWallsList[i].prev = ((x == 0 && y == 0) ?         NULL : &(board.possibleVertWallsList[i - 1]));
-            board.possibleVertWallsList[i].next = ((x == L - 1 && y == L - 1) ? NULL : &(board.possibleVertWallsList[i + 1]));
-
-            // debug
-            board.possibleHorizWallsList[i].debug_isRemoved = false;
-            board.possibleHorizWallsList[i].debug_isPrintedAsRemoved = false;
-            board.possibleHorizWallsList[i].debug_isAdded = false;
-            board.possibleHorizWallsList[i].debug_isPrintedAsAdded = false;
         }
     }
-
-    // init linked list heads
-    board.headPHWL = &(board.possibleHorizWallsList[0]);
-    board.headPVWL = &(board.possibleVertWallsList[0]);
 
     // init number of walls left
     board.myWallsLeft = 10;
@@ -333,150 +300,6 @@ void UpdateMyPossibleMoves(void)  // optimize this FFS! maybe
     }
 }
 
-/*
-void UpdateOpponentsPossibleMoves(void)  // optimize this FFS! maybe
-{
-    if (board.PMsNeedUpdate)
-    {
-        // first, set all moves to NOT POSSIBLE
-        memset(board.oppMoves, 0, sizeof(board.oppMoves));
-
-        // get my tile & opponent's tile
-        Tile_t* myTile = &(board.tiles[board.myPos.x][board.myPos.y]);   
-        Tile_t* oppTile = &(board.tiles[board.oppPos.x][board.oppPos.y]);      
-
-        switch (GetPlayersRelativePos())
-        {
-            case NOT_FACE_TO_FACE: // most often                
-                // no jumps possible, so only worry about one-step-moves:               
-                board.oppMoves[MOVE_NORTH].isPossible = (oppTile->north ? true : false);
-                board.oppMoves[MOVE_SOUTH].isPossible = (oppTile->south ? true : false);
-                board.oppMoves[MOVE_EAST].isPossible = (oppTile->east ? true : false);
-                board.oppMoves[MOVE_WEST].isPossible = (oppTile->west ? true : false);
-            break;
-
-            case OPPONENT_ABOVE_ME:
-
-
-        }
-        if (!ArePlayersFaceToFace())
-        {
-            
-        }
-        else // players are face to face so this is more complicated - luckily it won't happen too often
-        {
-            // North
-            if (oppTile->north) // no wall or border above him
-            {
-                if ((IsMyPos(oppTile->north->pos))) // I am above him
-                {
-                    if (myTile->north) // no wall or border above me
-                    {
-                        board.oppMoves[JUMP_NORTH].isPossible = true; // allow jumping straight over
-                    }
-                    else // wall or border above me
-                    {
-                        if (myTile->west) // no wall or border to my left
-                        {
-                            board.oppMoves[JUMP_NORTH_WEST].isPossible = true;
-                        }
-                        if (myTile->east) // no wall or border to my right
-                        {
-                            board.oppMoves[JUMP_NORTH_EAST].isPossible = true;
-                        }
-                    }
-                }
-                else // there is a free tile above him
-                {
-                    board.oppMoves[MOVE_NORTH].isPossible = true;
-                }
-            }
-
-            			// South
-            if (oppTile->south) // no wall or border below him
-            {
-                if ((IsMyPos(oppTile->south->pos))) // I am below him
-                {
-                    if (myTile->south) // no wall or border below me
-                    {
-                        board.oppMoves[JUMP_SOUTH].isPossible = true; // allow jumping straight over
-                    }
-                    else // wall or border below me
-                    {
-                        if (myTile->west) // no wall or border to my left
-                        {
-                            board.oppMoves[JUMP_SOUTH_WEST].isPossible = true;
-                        }
-                        if (myTile->east) // no wall or border to my right
-                        {
-                            board.oppMoves[JUMP_SOUTH_EAST].isPossible = true;
-                        }
-                    }
-                }
-                else // there is a free tile below him
-                {
-                    board.oppMoves[MOVE_SOUTH].isPossible = true;
-                }
-            }
-
-            // West
-            if (oppTile->west) // no wall or border to his left
-            {
-                if ((IsMyPos(oppTile->west->pos))) // I am on his left
-                {
-                    if (myTile->west) // no wall or border to my left
-                    {
-                        board.oppMoves[JUMP_WEST].isPossible = true; // allow jumping straight over
-                    }
-                    else // wall or border to my left
-                    {
-                        if (myTile->north) // no wall or border above me
-                        {
-                            board.oppMoves[JUMP_NORTH_WEST].isPossible = true;
-                        }
-                        if (myTile->south) // no wall or border below me
-                        {
-                            board.oppMoves[JUMP_SOUTH_WEST].isPossible = true;
-                        }
-                    }
-                }
-                else // there is a free tile to his left
-                {
-                    board.oppMoves[MOVE_WEST].isPossible = true;
-                }
-            }
-
-            // East
-            if (oppTile->east) // no wall or border to his right
-            {
-                if ((IsMyPos(oppTile->east->pos))) // I am on his right
-                {
-                    if (myTile->east) // no wall or border to my right
-                    {
-                        board.oppMoves[JUMP_EAST].isPossible = true; // allow jumping straight over
-                    }
-                    else // wall or border to my right
-                    {
-                        if (myTile->north) // no wall or border above me
-                        {
-                            board.oppMoves[JUMP_NORTH_EAST].isPossible = true;
-                        }
-                        if (myTile->south) // no wall or border below me
-                        {
-                            board.oppMoves[JUMP_SOUTH_EAST].isPossible = true;
-                        }
-                    }
-                }
-                else // there is a free tile to his right
-                {
-                    board.oppMoves[MOVE_EAST].isPossible = true;
-                }
-            }
-        }
-    }
-}
-*/
-
 static RelativePlayerPos_t GetPlayersRelativePos(void)
 {
     if (board.myPos.x == board.oppPos.x)
@@ -546,11 +369,6 @@ static void ForbidHorizWall(HWall_t* wall)
 {
     if (wall)
     {
-        if (wall->possibleFlag == WALL_POSSIBLE)
-        {
-            RemoveFromPossibleHorizWallsList(wall);
-        }
-
         wall->possibleFlag <<= 1U;        
     }
 }
@@ -559,11 +377,6 @@ static void ForbidVertWall(VWall_t* wall)
 {
     if (wall)
     {
-        if (wall->possibleFlag == WALL_POSSIBLE)
-        {
-            RemoveFromPossibleVertWallsList(wall);
-        }
-
         wall->possibleFlag <<= 1U;
     }
 }
@@ -609,11 +422,6 @@ static void AllowHorizWall(HWall_t* wall)
     if (wall)
     {
         wall->possibleFlag >>= 1U;
-
-        if (wall->possibleFlag == WALL_POSSIBLE)
-        {
-            AddToPossibleHorizWallsList(wall);
-        }
     }
 }
 
@@ -622,111 +430,5 @@ static void AllowVertWall(VWall_t* wall)
     if (wall)
     {
         wall->possibleFlag >>= 1U;
-
-        if (wall->possibleFlag == WALL_POSSIBLE)
-        {
-            AddToPossibleVertWallsList(wall);
-        }
     }
 }
-
-static void RemoveFromPossibleHorizWallsList(HWall_t* wall)
-{
-    HorizWallsListItem_t* removedItem; // debug 
-
-    if ((board.headPHWL)->wall == wall)
-    {
-        // head to be removed so just update head
-        removedItem = board.headPHWL; // debug
-        board.headPHWL = (board.headPHWL)->next;
-        (board.headPHWL)->prev = NULL;
-    }
-    else
-    {
-        // find item
-        int8_t index = wall->pos.x * L + wall->pos.y;
-        HorizWallsListItem_t* item = &(board.possibleHorizWallsList[index]);
-
-        // bypass item
-        item->prev->next = item->next;
-        if (item->next)
-        {
-            item->next->prev = item->prev;
-        }
-        removedItem = item; // debug
-    }
-
-    // debug - Destroy links and mark as removed
-    removedItem->prev = NULL;
-    removedItem->next = NULL;
-    removedItem->debug_isRemoved = true;
-}
-
-static void RemoveFromPossibleVertWallsList(VWall_t* wall)
-{
-    VertWallsListItem_t* removedItem; // debug 
-
-    if ((board.headPVWL)->wall == wall)
-    {
-        // head to be removed so just update head
-        removedItem = board.headPVWL; // debug
-        board.headPVWL = (board.headPVWL)->next;
-        (board.headPVWL)->prev = NULL;
-    }
-    else
-    {
-        // find item
-        int8_t index = wall->pos.x * L + wall->pos.y;
-        VertWallsListItem_t* item = &(board.possibleVertWallsList[index]);
-        removedItem = item; // debug
-
-        // bypass item
-        item->prev->next = item->next;
-        if (item->next)
-        {
-            item->next->prev = item->prev;
-        }
-    }
-
-    // debug - Destroy links and mark as removed
-    removedItem->prev = NULL;
-    removedItem->next = NULL;
-    removedItem->debug_isRemoved = true;
-}
-
-static void AddToPossibleHorizWallsList(HWall_t* wall)
-{
-    // locate list item to add
-    int8_t index = wall->pos.x * L + wall->pos.y;
-    HorizWallsListItem_t* item = &(board.possibleHorizWallsList[index]);
-
-    // add item in front of the list
-    item->prev = NULL;
-    item->next = board.headPHWL;
-    (board.headPHWL)->prev = item;
-
-    // update head
-    board.headPHWL = item;
-
-    // debug
-    board.headPHWL->debug_isAdded = true;
-}
-
-static void AddToPossibleVertWallsList(VWall_t* wall)
-{
-    // locate list item to add
-    int8_t index = wall->pos.x * L + wall->pos.y;
-    VertWallsListItem_t* item = &(board.possibleVertWallsList[index]);
-
-    // add item in front of the list
-    item->prev = NULL;
-    item->next = board.headPVWL;
-    (board.headPVWL)->prev = item;
-
-    // update head
-    board.headPVWL = item;
-
-    // debug
-    board.headPVWL->debug_isAdded = true;
-}
-

@@ -78,27 +78,6 @@ typedef struct VWall_t
    Tile_t* southeast;
 }VWall_t;
 
-typedef struct HorizWallsListItem_t
-{
-   HWall_t* wall;
-   HorizWallsListItem_t* next;
-   HorizWallsListItem_t* prev;
-   bool debug_isRemoved;
-   bool debug_isPrintedAsRemoved;
-   bool debug_isAdded;
-   bool debug_isPrintedAsAdded;
-}HorizWallsListItem_t;
-
-typedef struct VertWallsListItem_t
-{
-   VWall_t* wall;
-   struct VertWallsListItem_t* next;
-   struct VertWallsListItem_t* prev;
-   bool debug_isRemoved;
-   bool debug_isPrintedAsRemoved;
-   bool debug_isAdded;
-   bool debug_isPrintedAsAdded;
-}VertWallsListItem_t;
 
 typedef struct
 {
@@ -106,20 +85,11 @@ typedef struct
    Position_t oppPos;
    uint8_t myWallsLeft;
    uint8_t oppWallsLeft;
-
    Tile_t tiles[BOARD_SZ][BOARD_SZ];
    HWall_t hWalls[BOARD_SZ - 1][BOARD_SZ - 1];
    VWall_t vWalls[BOARD_SZ - 1][BOARD_SZ - 1];
-
-   HorizWallsListItem_t possibleHorizWallsList[(BOARD_SZ - 1) * (BOARD_SZ - 1)];
-   HorizWallsListItem_t* headPHWL; // head of Possible Horiz Walls List
-
-   VertWallsListItem_t possibleVertWallsList[(BOARD_SZ - 1) * (BOARD_SZ - 1)];
-   VertWallsListItem_t* headPVWL; // head of Possible Vert Walls List
-
    Move_t myMoves[MOVE_COUNT];
    Move_t oppMoves[MOVE_COUNT];
-
    bool debug_isOnMyMinPath[BOARD_SZ][BOARD_SZ];
 }Board_t;
 
