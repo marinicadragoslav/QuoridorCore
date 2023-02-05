@@ -3,98 +3,121 @@
 #include <string.h>
 #include "min_path.h"
 
-#define INFINITE_LEN    0xFFU // some large number that is impossible for a path len
-#define ALL_PATHS_FOUND 0x01FF // binary 111111111 (each bit means that min path was found for that particular goal tile)
-#define QUEUE_MAX_SIZE  1000  // some large value that the number of queued elements will never reach
+#define INFINITE_LEN            0xFFU
+#define ALL_GOAL_TILES_REACHED  0x01FF // 9 LSB bits set
+#define QUEUE_MAX_SIZE          1000
 
-/* Queue related */
-static Path_t queue[QUEUE_MAX_SIZE];
-static uint16_t queueNext, queueFirst;
 
 static void QueueInit(void);
 static bool IsQueueEmpty(void);
-static void QueuePush(Path_t item);
-static Path_t* QueuePop(void);
+static void QueuePush(Subpath_t item);
+static Subpath_t* QueuePop(void);
+static void FoundSubpathsInit(void);
+static bool IsMinPathFoundForTile(Tile_t* tile);
 
-/* Path related */
-static void InitPathData(void);
-static Path_t savedPathInfo[BOARD_SZ][BOARD_SZ];
-static uint16_t pathFoundFlags;
-static Path_t* debug_destination;
-
-uint16_t debug_GetFlags(void)
-{
-    return pathFoundFlags;
-}
+static Subpath_t queue[QUEUE_MAX_SIZE];
+static uint16_t queueNext, queueFirst;
+static Subpath_t foundSubpaths[BOARD_SZ][BOARD_SZ];
+static uint16_t goalTilesReached;
+static Subpath_t* debug_destination;
 
 
 uint8_t FindMinPathLen(Player_t player)
 {
     QueueInit();
-    InitPathData();
+    FoundSubpathsInit();
 
-    Board_t* board = GetBoard();
     uint8_t minPathLen = INFINITE_LEN;
 
-    // add source tile path info to queue
-    Position_t sourcePos = board->playerPos[player];
-    Path_t source = { &(board->tiles[sourcePos.x][sourcePos.y]), NULL, 0 };
+    // start with the player's tile
+    Subpath_t source = 
+    { 
+        GetPlayerTile(player), 
+        NULL, 
+        0 
+    };
+
     QueuePush(source);
 
-    // Breadth-First-Search that stops when either min paths were found for each of the goal tiles or
-    // when queue is empty (meaning some goal tiles are unreachable)
-    while((pathFoundFlags != ALL_PATHS_FOUND) && !IsQueueEmpty())
+    // Breadth-First-Search. 
+    // Stops when min paths were found for each goal tile or when queue empty (meaning some goal tiles are unreachable).
+    while((goalTilesReached != ALL_GOAL_TILES_REACHED) && !IsQueueEmpty())
     {
-        Path_t* item = QueuePop();
-        Tile_t* tile = item->tile;        
-        Path_t* saved = &(savedPathInfo[tile->pos.x][tile->pos.y]);
+        Subpath_t* item = QueuePop();
 
-        if (saved->tile == NULL)
+        int8_t x = item->tile->pos.x;
+        int8_t y = item->tile->pos.y;
+
+        // if min path was not yet found for the current tile
+        if (foundSubpaths[x][y].tile == NULL)
         {
-            // min path not yet found for this tile => update min path info
-            saved->tile = tile;
-            saved->prevTile = item->prevTile;
-            saved->pathLen = item->pathLen;
+            // save path info
+            memcpy(&(foundSubpaths[x][y]), item, sizeof(Subpath_t));
 
-            // if the tile reached is a goal-tile for the current player, flag it as done
-            if (tile->isGoalFor == player)
+            // if the tile reached is a goal-tile for the current player
+            if (item->tile->isGoalFor == player)
             {
-                // set path-found-flag for this tile
-                pathFoundFlags |= (1U << tile->pos.y);
+                // flag it as reached
+                goalTilesReached |= (1U << y);
 
                 // update min path length
                 if (minPathLen > item->pathLen)
                 {
                     minPathLen = item->pathLen;
-                    debug_destination = saved; // debug
+                    debug_destination = item; // debug
                 }
             }
 
-            // go through neighbour tiles and add them to the queue if the minimum path to them was not found yet
-            if (tile->north && (savedPathInfo[tile->north->pos.x][tile->north->pos.y].pathLen == 0))
+            // go through neighbour tiles and add them to the queue if min path to them was not found yet
+            if (item->tile->north && !IsMinPathFoundForTile(item->tile->north))
             {
-                QueuePush({ tile->north, tile, (uint8_t)(item->pathLen + 1U) });
+                Subpath_t newItem = 
+                {
+                    item->tile->north, 
+                    item->tile, 
+                    ((uint8_t)(item->pathLen + 1))
+                };
+                QueuePush(newItem);
             }
 
-            if (tile->west && (savedPathInfo[tile->west->pos.x][tile->west->pos.y].pathLen == 0))
+            if (item->tile->west && !IsMinPathFoundForTile(item->tile->west))
             {
-                QueuePush({ tile->west, tile, (uint8_t)(item->pathLen + 1U) });
+                Subpath_t newItem = 
+                {
+                    item->tile->west, 
+                    item->tile, 
+                    ((uint8_t)(item->pathLen + 1))
+                };
+                QueuePush(newItem);
             }
 
-            if (tile->east && (savedPathInfo[tile->east->pos.x][tile->east->pos.y].pathLen == 0))
+            if (item->tile->east && !IsMinPathFoundForTile(item->tile->east))
             {
-                QueuePush({ tile->east, tile, (uint8_t)(item->pathLen + 1U) });
+                Subpath_t newItem = 
+                {
+                    item->tile->east, 
+                    item->tile, 
+                    ((uint8_t)(item->pathLen + 1))
+                };
+                QueuePush(newItem);
             }
 
-            if (tile->south && (savedPathInfo[tile->south->pos.x][tile->south->pos.y].pathLen == 0))
+            if (item->tile->south && !IsMinPathFoundForTile(item->tile->south))
             {
-                QueuePush({ tile->south, tile, (uint8_t)(item->pathLen + 1U) });
+                Subpath_t newItem = 
+                {
+                    item->tile->south, 
+                    item->tile, 
+                    ((uint8_t)(item->pathLen + 1))
+                };
+                QueuePush(newItem);
             }
         }
     }
     
     // ---------------------------------------------------------------------------------
     // debug - delete prev tiles marked as being on the min path
+    Board_t* board = GetBoard();
     memset(board->debug_isOnMinPath, 0, sizeof(board->debug_isOnMinPath));
     // debug - backtrack from destination tile to mark all tiles that are part of min path
     Tile_t* stopAt = &(board->tiles[board->playerPos[player].x][board->playerPos[player].y]);
@@ -102,7 +125,7 @@ uint8_t FindMinPathLen(Player_t player)
     while (current != stopAt)
     {
         board->debug_isOnMinPath[current->pos.x][current->pos.y] = true;
-        current = savedPathInfo[current->pos.x][current->pos.y].prevTile;
+        current = foundSubpaths[current->pos.x][current->pos.y].prevTile;
     }
     // end debug ---------------------------------------------------------------------------
 
@@ -110,6 +133,10 @@ uint8_t FindMinPathLen(Player_t player)
 
 }
 
+uint16_t debug_GetReachedGoalTiles(void)
+{
+    return goalTilesReached;
+}
 
 static void QueueInit(void)
 {
@@ -122,18 +149,23 @@ static bool IsQueueEmpty(void)
     return (queueNext == queueFirst);
 }
 
-static void QueuePush(Path_t item)
+static void QueuePush(Subpath_t item)
 {
-    queue[queueNext++] = item;      
+    queue[queueNext++] = item;
 }
 
-static Path_t* QueuePop(void)
+static Subpath_t* QueuePop(void)
 {
-    return &queue[queueFirst++];
+    return &(queue[queueFirst++]);
 }
 
-static void InitPathData(void)
+static void FoundSubpathsInit(void)
 {
-    memset(savedPathInfo, 0, sizeof(savedPathInfo));
-    pathFoundFlags = 0;
+    memset(foundSubpaths, 0, sizeof(foundSubpaths));
+    goalTilesReached = 0;
+}
+
+static bool IsMinPathFoundForTile(Tile_t* tile)
+{
+    return (foundSubpaths[tile->pos.x][tile->pos.y].pathLen != 0);
 }

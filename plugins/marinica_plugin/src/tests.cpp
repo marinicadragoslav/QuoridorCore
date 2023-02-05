@@ -1,6 +1,9 @@
 #include <stddef.h>
+#include <string.h>
+#include <stdint.h>
 #include "tests.h"
 #include "debug.h"
+#include "min_path.h"
 
 #define COUNT(A) (A == NULL ? 0 : (sizeof(A) / sizeof(A[0])))
 
@@ -41,44 +44,30 @@
                                 { 8, 8, S }, \
                                 { 8, 8, E }
 
-static void PlaceWalls(TestWall_t* walls, int8_t wallsCount)
+static void PlaceWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount)
 {
     if (walls)
     {
         for (int i = 0 ; i < wallsCount; i++)
         {
-            if (walls[i].wallOr == H)
-            {
-                PlaceHorizWall(ME, {walls[i].x, walls[i].y});
-            }
-            else
-            {
-                PlaceVertWall(ME, {walls[i].x, walls[i].y});
-            }
+            PlaceWall(ME, &(board->walls[walls[i].ori][walls[i].x][walls[i].y]));
         }
     }
 }
 
-static void UndoWalls(TestWall_t* walls, int8_t wallsCount)
+static void UndoWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount)
 {
     if (walls)
     {
         for (int i = 0 ; i < wallsCount; i++)
         {
-            if (walls[i].wallOr == H)
-            {
-                UndoHorizWall(ME, {walls[i].x, walls[i].y});
-            }
-            else
-            {
-                UndoVertWall(ME, {walls[i].x, walls[i].y});
-            }
+            UndoWall(ME, &(board->walls[walls[i].ori][walls[i].x][walls[i].y]));
         }
     }
 }
 
 static void CheckBoardStructure(Board_t* board, TestTileLink_t* tileLinksToTest, int8_t tileLinksCount,
-                       TestPossibilityFlag_t* possibilityFlagsToCheck, int8_t possibilityFlagsCount)
+                       TestWallPermission_t* permissionsToCheck, int8_t permissionsToCheckCount)
 { 
     const char* errMsg;    
 
@@ -178,67 +167,67 @@ static void CheckBoardStructure(Board_t* board, TestTileLink_t* tileLinksToTest,
         }
     }
 
-    // possibility flags check
-    for (int i = 0; i < BOARD_SZ - 1; i++)  // go through all H and V walls on the board and check their possibility flag against the given flags
-    {                                       // if there are no given flags, check that all the flags are == POSSIBLE
+    // permissions check
+    for (int i = 0; i < BOARD_SZ - 1; i++)  // go through all H and V walls on the board and check their permission level against the given level
+    {                                       // if there are no given permissions, check that all the levels are WALL_PERMITTED
         for (int j = 0; j < BOARD_SZ - 1; j++)
         {   
-            TestPossibilityFlag_t flag;
+            TestWallPermission_t toCheck;
             bool found;
 
             // H walls -------------------------------------------------------------------------------------------------------------------------------------
-            flag = { H, board->hWalls[i][j].pos.x, board->hWalls[i][j].pos.y, (PossibilityFlag_t)board->hWalls[i][j].possibleFlag};
+            toCheck = { H, board->walls[H][i][j].pos.x, board->walls[H][i][j].pos.y, board->walls[H][i][j].permission};
             found = false;
 
-            if (possibilityFlagsToCheck)
+            if (permissionsToCheck)
             {
-                for (int c = 0; c < possibilityFlagsCount; c++)
+                for (int c = 0; c < permissionsToCheckCount; c++)
                 {
-                    if (flag.wallOr == possibilityFlagsToCheck[c].wallOr && flag.x == possibilityFlagsToCheck[c].x && flag.y == possibilityFlagsToCheck[c].y)  
+                    if (toCheck.ori == permissionsToCheck[c].ori && toCheck.x == permissionsToCheck[c].x && toCheck.y == permissionsToCheck[c].y)  
                     {
                         found = true;
-                        if (flag.possibilityFlag != possibilityFlagsToCheck[c].possibilityFlag) // the possibility flag of the wall on the board is different from the given one
+                        if (toCheck.permission != permissionsToCheck[c].permission) // the permission level of the wall on the board is different from the given one
                         {
                             err = true;
-                            errMsg = "Found a PossibilityFlag that is different on the board than given in the test!";
+                            errMsg = "Found a permission level that is different on the board than given in the test!";
                             debug_PrintTestErrorMsg(errMsg);
                         }
                     }
                 }
             }
 
-            if (!found && flag.possibilityFlag != POSSIBLE) // there are walls on the board with a possibility flag different from POSSIBLE, and there shouldn't be
+            if (!found && toCheck.permission != WALL_PERMITTED) // there are walls on the board with a permission level different from WALL_PERMITTED, and there shouldn't be
             {
                 err = true;
-                errMsg = "Found a NOT POSSIBLE flag on the board that is not given in the test!";
+                errMsg = "Found a FORBIDDEN permission level on the board that is not given in the test!";
                 debug_PrintTestErrorMsg(errMsg);
             }
 
             // V walls -------------------------------------------------------------------------------------------------------------------------------------
-            flag = { V, board->vWalls[i][j].pos.x, board->vWalls[i][j].pos.y, (PossibilityFlag_t)board->vWalls[i][j].possibleFlag};
+            toCheck = { V, board->walls[V][i][j].pos.x, board->walls[V][i][j].pos.y, board->walls[V][i][j].permission};
             found = false;
 
-            if (possibilityFlagsToCheck)
+            if (permissionsToCheck)
             {
-                for (int c = 0; c < possibilityFlagsCount; c++)
+                for (int c = 0; c < permissionsToCheckCount; c++)
                 {
-                    if (flag.wallOr == possibilityFlagsToCheck[c].wallOr && flag.x == possibilityFlagsToCheck[c].x && flag.y == possibilityFlagsToCheck[c].y)  
+                    if (toCheck.ori == permissionsToCheck[c].ori && toCheck.x == permissionsToCheck[c].x && toCheck.y == permissionsToCheck[c].y)  
                     {
                         found = true;
-                        if (flag.possibilityFlag != possibilityFlagsToCheck[c].possibilityFlag) // the possibility flag of the wall on the board is different from the given one
+                        if (toCheck.permission != permissionsToCheck[c].permission) // the permission level of the wall on the board is different from the given one
                         {
                             err = true;
-                            errMsg = "Found a PossibilityFlag that is different on the board than given in the test!";
+                            errMsg = "Found a permission level that is different on the board than given in the test!";
                             debug_PrintTestErrorMsg(errMsg);
                         }
                     }
                 }
             }
 
-            if (!found && flag.possibilityFlag != POSSIBLE) // there are walls on the board with a possibility flag different from POSSIBLE, and there shouldn't be
+            if (!found && toCheck.permission != WALL_PERMITTED) // there are walls on the board with a permission level different from WALL_PERMITTED, and there shouldn't be
             {
                 err = true;
-                errMsg = "Found a NOT POSSIBLE flag on the board that is not given in the test!";
+                errMsg = "Found a FORBIDDEN permission level on the board that is not given in the test!";
                 debug_PrintTestErrorMsg(errMsg);
             }
         }
@@ -261,18 +250,18 @@ void test_1_CheckInitialBoardStructure(Board_t* board)
     // define some walls to place
     TestWall_t* wallsToPlace = NULL; // no walls placed for this test
 
-    // define tile links that should be NULL
+    // define tile links that should be NULL after walls are placed
     TestTileLink_t tileLinksToTest[] =
     {
         DEFAULT_NULL_TILE_LINKS // check default tile links for this test (only links of border tiles should be NULL if no walls were placed)
     };
 
-    // define some walls that should have the possibility flag NOT equal to POSSIBLE
-    TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
+    // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+    TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
     
-    PlaceWalls(wallsToPlace, 0);
+    PlaceWalls(board, wallsToPlace, 0);
     
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);        
+    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);        
 }
 
 
@@ -286,7 +275,7 @@ void test_2_PlaceOneHorizWallThatIsNotOnTheBorder(Board_t* board)
         { H, 1, 2 }
     };
 
-    // define tile links that should be NULL
+    // define tile links that should be NULL after walls are placed
     TestTileLink_t tileLinksToTest[] =
     {
         DEFAULT_NULL_TILE_LINKS,
@@ -296,18 +285,18 @@ void test_2_PlaceOneHorizWallThatIsNotOnTheBorder(Board_t* board)
         { 2, 3, N }
     };
 
-    // define some walls that should be flagged as forbidden
-    TestPossibilityFlag_t possibilityFlagsToCheck[] =
+    // define some walls that should be flagged as forbidden after the placement of walls above
+    TestWallPermission_t permissionsToCheck[] =
     {
-        { H, 1, 2, FORBIDDEN_1X },
-        { H, 1, 1, FORBIDDEN_1X },
-        { H, 1, 3, FORBIDDEN_1X },
-        { V, 1, 2, FORBIDDEN_1X }
+        { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        { H, 1, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
     };
     
-    PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
+    PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
 
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck)); 
+    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck)); 
 }
 
 void test_3_UndoLastWall(Board_t* board)
@@ -320,18 +309,18 @@ void test_3_UndoLastWall(Board_t* board)
         { H, 1, 2 }
     };
 
-    // define tile links that should be NULL
+    // define tile links that should be NULL after walls are placed
     TestTileLink_t tileLinksToTest[] =
     {
         DEFAULT_NULL_TILE_LINKS // check default tile links for this test
     };
 
-    // define some walls that should have the possibility flag NOT equal to POSSIBLE
-    TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
+    // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+    TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
     
-    UndoWalls(wallsToUndo, COUNT(wallsToUndo));
+    UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
 
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);   
+    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);   
 }
 
 void test_4_PlaceTwoConsecutiveHorizWalls(Board_t* board)
@@ -345,7 +334,7 @@ void test_4_PlaceTwoConsecutiveHorizWalls(Board_t* board)
         { H, 1, 4 }
     };
 
-    // define tile links that should be NULL
+    // define tile links that should be NULL after walls are placed
     TestTileLink_t tileLinksToTest[] =
     {
         DEFAULT_NULL_TILE_LINKS,
@@ -359,21 +348,21 @@ void test_4_PlaceTwoConsecutiveHorizWalls(Board_t* board)
         { 2, 5, N }
     };
 
-    // define some walls that should be flagged as forbidden
-    TestPossibilityFlag_t possibilityFlagsToCheck[] =
+    // define some walls that should be flagged as forbidden after the placement of walls above
+    TestWallPermission_t permissionsToCheck[] =
     {
-        { H, 1, 2, FORBIDDEN_1X },
-        { H, 1, 1, FORBIDDEN_1X },
-        { H, 1, 3, FORBIDDEN_2X }, // This is forbidden by both H 1 2 and H 1 4
-        { V, 1, 2, FORBIDDEN_1X },
-        { H, 1, 4, FORBIDDEN_1X },
-        { H, 1, 5, FORBIDDEN_1X },
-        { V, 1, 4, FORBIDDEN_1X },
+        { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        { H, 1, 3, WALL_FORBIDDEN_BY_2_OTHER_WALLS }, // This is forbidden by both H 1 2 and H 1 4
+        { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        { H, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        { H, 1, 5, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        { V, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
     };
 
-    PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
+    PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
     
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
 }
 
 
@@ -388,7 +377,7 @@ void test_5_UndoLastTwoWallsOneByOne(Board_t* board)
             { H, 1, 4 } // Undo last wall from previous test (Undoing is done in the reverse order compared to placing)
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -398,18 +387,18 @@ void test_5_UndoLastTwoWallsOneByOne(Board_t* board)
             { 2, 3, N }
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 1, 2, FORBIDDEN_1X },
-            { H, 1, 1, FORBIDDEN_1X },
-            { H, 1, 3, FORBIDDEN_1X },
-            { V, 1, 2, FORBIDDEN_1X }
+            { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL }
         };
         
-        UndoWalls(wallsToUndo, COUNT(wallsToUndo));
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
 
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck)); 
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck)); 
     }
 
     {
@@ -421,18 +410,18 @@ void test_5_UndoLastTwoWallsOneByOne(Board_t* board)
             { H, 1, 2 } // Undo the first wall from previous test (Undoing is done in the reverse order compared to placing)
         };
         
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS // check default tile links for this test
         };
 
-        // define some walls that should have the possibility flag NOT equal to POSSIBLE
-        TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
+        // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+        TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
         
-        UndoWalls(wallsToUndo, COUNT(wallsToUndo));
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
 
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);
     }
 }
 
@@ -449,7 +438,7 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
             { V, 1, 3 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -468,24 +457,24 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
 
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 1, 2, FORBIDDEN_1X },
-            { H, 1, 1, FORBIDDEN_1X },
-            { H, 1, 3, FORBIDDEN_3X }, // This is forbidden by H 1 2 and H 1 4 and V 1 3
-            { V, 1, 2, FORBIDDEN_1X },
-            { H, 1, 4, FORBIDDEN_1X },
-            { H, 1, 5, FORBIDDEN_1X },
-            { V, 1, 4, FORBIDDEN_1X },
-            { V, 1, 3, FORBIDDEN_1X },
-            { V, 0, 3, FORBIDDEN_1X },
-            { V, 2, 3, FORBIDDEN_1X }
+            { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 3, WALL_FORBIDDEN_BY_3_OTHER_WALLS }, // This is forbidden by H 1 2 and H 1 4 and V 1 3
+            { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 5, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 1, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 0, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 2, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL }
         };
 
-        PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
     }
 
     {
@@ -497,7 +486,7 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
             { V, 1, 3 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -511,21 +500,21 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
             { 2, 5, N }
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 1, 2, FORBIDDEN_1X },
-            { H, 1, 1, FORBIDDEN_1X },
-            { H, 1, 3, FORBIDDEN_2X }, // This is forbidden by both H 1 2 and H 1 4
-            { V, 1, 2, FORBIDDEN_1X },
-            { H, 1, 4, FORBIDDEN_1X },
-            { H, 1, 5, FORBIDDEN_1X },
-            { V, 1, 4, FORBIDDEN_1X },
+            { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 3, WALL_FORBIDDEN_BY_2_OTHER_WALLS }, // This is forbidden by both H 1 2 and H 1 4
+            { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 5, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
         };
 
-        UndoWalls(wallsToUndo, COUNT(wallsToUndo));
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
     }
 
     {
@@ -538,18 +527,18 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
             { H, 1, 4 }
         };
         
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS // check default tile links for this test
         };
 
-        // define some walls that should have the possibility flag NOT equal to POSSIBLE
-        TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
+        // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+        TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
         
-        UndoWalls(wallsToUndo, COUNT(wallsToUndo));
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
 
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);
     }
 }
 
@@ -565,7 +554,7 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { V, 7, 7 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -575,17 +564,17 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { 8, 8, W }
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 7, 7, FORBIDDEN_1X },
-            { V, 6, 7, FORBIDDEN_1X },
-            { H, 7, 7, FORBIDDEN_1X }
+            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL }
         };
 
-        PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
     }
 
     {
@@ -597,7 +586,7 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { V, 6, 6 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -611,21 +600,21 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { 7, 7, W }
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 7, 7, FORBIDDEN_1X },
-            { V, 6, 7, FORBIDDEN_1X },
-            { H, 7, 7, FORBIDDEN_1X },
-            { V, 6, 6, FORBIDDEN_1X },
-            { V, 7, 6, FORBIDDEN_1X },
-            { H, 6, 6, FORBIDDEN_1X },
-            { V, 5, 6, FORBIDDEN_1X },
+            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 5, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
         };
 
-        PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
     }
 
     {
@@ -637,7 +626,7 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { H, 7, 6 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -655,23 +644,23 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { 8, 7, N }
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 7, 7, FORBIDDEN_1X },
-            { V, 6, 7, FORBIDDEN_1X },
-            { H, 7, 7, FORBIDDEN_2X },
-            { V, 6, 6, FORBIDDEN_1X },
-            { V, 7, 6, FORBIDDEN_2X },
-            { H, 6, 6, FORBIDDEN_1X },
-            { V, 5, 6, FORBIDDEN_1X },
-            { H, 7, 6, FORBIDDEN_1X },
-            { H, 7, 5, FORBIDDEN_1X },
+            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 7, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
+            { V, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 6, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
+            { H, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 5, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 5, WALL_FORBIDDEN_BY_1_OTHER_WALL },
         };
 
-        PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
     }
 
     {
@@ -683,7 +672,7 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { H, 7, 6 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -697,21 +686,21 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { 7, 7, W }
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 7, 7, FORBIDDEN_1X },
-            { V, 6, 7, FORBIDDEN_1X },
-            { H, 7, 7, FORBIDDEN_1X },
-            { V, 6, 6, FORBIDDEN_1X },
-            { V, 7, 6, FORBIDDEN_1X },
-            { H, 6, 6, FORBIDDEN_1X },
-            { V, 5, 6, FORBIDDEN_1X },
+            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 5, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
         };
 
-        UndoWalls(wallsToUndo, COUNT(wallsToUndo));
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
     }
 
     {
@@ -723,7 +712,7 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { V, 6, 6 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -733,17 +722,17 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { 8, 8, W }
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 7, 7, FORBIDDEN_1X },
-            { V, 6, 7, FORBIDDEN_1X },
-            { H, 7, 7, FORBIDDEN_1X }
+            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL }
         };
 
-        UndoWalls(wallsToUndo, COUNT(wallsToUndo));
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
     }
 
     {
@@ -755,18 +744,18 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
             { V, 7, 7 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS // check default tile links for this test
         };
 
-        // define some walls that should have the possibility flag NOT equal to POSSIBLE
-        TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
+        // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+        TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
         
-        UndoWalls(wallsToUndo, COUNT(wallsToUndo));
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
 
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);
     }
 }
 
@@ -783,7 +772,7 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
             { H, 5, 1 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -801,24 +790,24 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
             { 6, 2, N }
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 7, 0, FORBIDDEN_1X },
-            { H, 7, 1, FORBIDDEN_1X },
-            { V, 7, 0, FORBIDDEN_2X },
-            { V, 5, 0, FORBIDDEN_1X },
-            { V, 6, 0, FORBIDDEN_1X },
-            { H, 5, 0, FORBIDDEN_1X },
-            { H, 5, 1, FORBIDDEN_1X },
-            { H, 5, 2, FORBIDDEN_1X },
-            { V, 5, 1, FORBIDDEN_1X },
-            { H, 6, 0, FORBIDDEN_1X }
+            { H, 7, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 0, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
+            { V, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL }
         };
 
-        PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
     }
 
     {
@@ -832,7 +821,7 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
             { V, 6, 2 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -862,35 +851,35 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
             { 7, 3, W }
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 7, 0, FORBIDDEN_1X },
-            { H, 7, 1, FORBIDDEN_1X },
-            { V, 7, 0, FORBIDDEN_2X },
-            { V, 5, 0, FORBIDDEN_1X },
-            { V, 6, 0, FORBIDDEN_1X },
-            { H, 5, 0, FORBIDDEN_1X },
-            { H, 5, 1, FORBIDDEN_1X },
-            { H, 5, 2, FORBIDDEN_2X },
-            { V, 5, 1, FORBIDDEN_1X },
-            { H, 6, 0, FORBIDDEN_1X },
-            { H, 4, 3, FORBIDDEN_1X },
-            { V, 4, 3, FORBIDDEN_1X },
-            { H, 4, 2, FORBIDDEN_1X },
-            { H, 4, 4, FORBIDDEN_1X },
-            { H, 5, 3, FORBIDDEN_1X },
-            { H, 5, 4, FORBIDDEN_1X },
-            { V, 5, 3, FORBIDDEN_1X },
-            { V, 7, 2, FORBIDDEN_1X },
-            { V, 5, 2, FORBIDDEN_1X },
-            { H, 6, 2, FORBIDDEN_1X },
-            { V, 6, 2, FORBIDDEN_1X }
+            { H, 7, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 0, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
+            { V, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 2, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
+            { V, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 4, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 4, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 4, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 4, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 5, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 5, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 6, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL }
         };
 
-        PlaceWalls(wallsToPlace, COUNT(wallsToPlace));
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
     }
 
     {
@@ -904,7 +893,7 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
             { H, 4, 3 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS,
@@ -922,24 +911,24 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
             { 6, 2, N }
         };
 
-        // define some walls that should be flagged as forbidden
-        TestPossibilityFlag_t possibilityFlagsToCheck[] =
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 7, 0, FORBIDDEN_1X },
-            { H, 7, 1, FORBIDDEN_1X },
-            { V, 7, 0, FORBIDDEN_2X },
-            { V, 5, 0, FORBIDDEN_1X },
-            { V, 6, 0, FORBIDDEN_1X },
-            { H, 5, 0, FORBIDDEN_1X },
-            { H, 5, 1, FORBIDDEN_1X },
-            { H, 5, 2, FORBIDDEN_1X },
-            { V, 5, 1, FORBIDDEN_1X },
-            { H, 6, 0, FORBIDDEN_1X }
+            { H, 7, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 0, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
+            { V, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 5, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL }
         };
 
-        UndoWalls(wallsToUndo, COUNT(wallsToUndo));
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
         
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, COUNT(possibilityFlagsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
 
     }
 
@@ -954,18 +943,446 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
             { H, 7, 0 }
         };
 
-        // define tile links that should be NULL
+        // define tile links that should be NULL after walls are placed
         TestTileLink_t tileLinksToTest[] =
         {
             DEFAULT_NULL_TILE_LINKS // check default tile links for this test
         };
 
-        // define some walls that should have the possibility flag NOT equal to POSSIBLE
-        TestPossibilityFlag_t* possibilityFlagsToCheck = NULL; // all walls should be possible for this test
+        // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+        TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
         
-        UndoWalls(wallsToUndo, COUNT(wallsToUndo));
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
 
-        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), possibilityFlagsToCheck, 0);
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);
 
     }
 }
+
+static void StringToMap(const char* stringInput, char* mapOutput, int8_t* myPosX, int8_t* myPosY, int8_t* oppPosX, int8_t* oppPosY)
+{
+    int n = 0, i = 0, j = 0;
+
+    // copy const string to char array for tokenizing
+    char mapString[1000];
+    strcpy(mapString, stringInput);
+    mapString[strlen(stringInput) + 1] = 0;
+
+    char* token = strtok(mapString, ",");
+    n++;
+
+    while (token != NULL) 
+    {
+        mapOutput[i * 17 + j] = token[0];
+
+        if (mapOutput[i * 17 + j] == '0') 
+        {
+            *myPosX = i;
+            *myPosY = j;
+        }
+
+        if (mapOutput[i * 17 + j] == '1')
+        {
+            *oppPosX = i;
+            *oppPosY = j;
+        }
+
+        j++;
+
+        if (n % 17 == 0)
+        {
+            i++;
+            j = 0;
+        }
+
+        token = strtok(NULL, ",");
+        n++;
+    }
+}
+
+
+static int TestGetMinPathToTargetTile(char* map, int playerX, int playerY, int targetX, int targetY)
+{
+    int distances[17][17] = { 0 };
+    distances[playerX][playerY] = 1;
+    int scan = 0;
+    bool noPath;
+
+
+    while (1)
+    {
+        int i, j;
+        scan++;
+        noPath = true;
+
+        for (i = 0; i < 17; i += 2)
+        {
+            for (j = 0; j < 17; j += 2)
+            {
+                if (distances[i][j] == 0)
+                {   
+                    if (i - 2 >= 0 && map[(i - 1) * 17 + j] != '=' && distances[i - 2][j] == scan)
+                    {
+                        distances[i][j] = distances[i - 2][j] + 1;
+                        noPath = false;
+                        if (targetX == i && targetY == j)
+                        {
+                            return (distances[i][j] - 1);
+                        }
+                    }
+                    else if (i + 2 <= 16 && map[(i + 1) * 17 + j] != '=' && distances[i + 2][j] == scan)
+                    {
+                        distances[i][j] = distances[i + 2][j] + 1;
+                        noPath = false;
+                        if (targetX == i && targetY == j)
+                        {
+                            return (distances[i][j] - 1);
+                        }
+                    }
+                    else if (j - 2 >= 0 && map[i * 17 + (j - 1)] != '|' && distances[i][j - 2] == scan)
+                    {
+                        distances[i][j] = distances[i][j - 2] + 1;
+                        noPath = false;
+                        if (targetX == i && targetY == j)
+                        {
+                            return (distances[i][j] - 1);
+                        }
+                    }
+                    else if (j + 2 <= 16 && map[i* 17 + (j + 1)] != '|' && distances[i][j + 2] == scan)
+                    {
+                        distances[i][j] = distances[i][j + 2] + 1;
+                        noPath = false;
+                        if (targetX == i && targetY == j)
+                        {
+                            return (distances[i][j] - 1);
+                        }
+                    }          
+                }
+            }
+        }
+
+        if (noPath)
+        {
+            return 0xFFFF;
+        }
+    }
+}
+
+
+static int TestGetMinPathForMe(char* map, int myX, int myY)
+{
+    int min = 0xFFFF;
+
+    for (int j = 0; j < 17; j += 2)
+    {
+        int tempMin = TestGetMinPathToTargetTile(map, myX, myY, 0, j);
+        if (min > tempMin)
+        {
+            min = tempMin;
+        }
+    }
+
+    return min;
+}
+
+static int TestGetMinPathForOpp(char* map, int oppX, int oppY)
+{
+    int min = 0xFFFF;
+
+    for (int j = 0; j < 17; j += 2)
+    {
+        int tempMin = TestGetMinPathToTargetTile(map, oppX, oppY, 16, j);
+        if (min > tempMin)
+        {
+            min = tempMin;
+        }
+    }
+
+    return min;
+}
+
+static void MapToBoard(char* map, Board_t* board, int8_t myMapPosX, int8_t myMapPosY, int8_t oppMapPosX, int8_t oppMapPosY)
+{
+    for (int i = 0; i < 17; i += 2)
+    {
+        for (int j = 0; j < 17; j += 2)
+        {
+            Tile_t* tile = &(board->tiles[i / 2][j / 2]);
+
+            if ((j <= 14) && map[i * 17 + (j + 1)] == '|') // there is a wall to the east of the current tile
+            {
+                // remove horizontal links
+                tile->east->west = NULL;
+                tile->east = NULL;                
+            }
+
+            if ((i <= 14) && map[(i + 1) * 17 + j] == '=') // there is a wall to the south of the current tile
+            {
+                // remove vertical links
+                tile->south->north = NULL;
+                tile->south = NULL;                
+            }
+        }
+    }
+
+    board->playerPos[ME] = { (int8_t)(myMapPosX / 2), (int8_t)(myMapPosY / 2)};
+    board->playerPos[OPPONENT] = { (int8_t)(oppMapPosX / 2), (int8_t)(oppMapPosY / 2)};
+}
+
+static bool IsMinPathAndPossibleMovesTestPassed(const char* stringInput, const char* possibleMovesMeInput, const char* possibleMovesOppInput)
+{
+    int8_t myMapPosX;
+    int8_t myMapPosY;
+    int8_t oppMapPosX;
+    int8_t oppMapPosY;
+    
+    // convert input to a 17 x 17 char map and get player positions
+    char map[17][17] = { 0 };
+    StringToMap(stringInput, (char*)map, &myMapPosX, &myMapPosY, &oppMapPosX, &oppMapPosY);
+
+    // save existing board
+    Board_t boardBkp;
+    memcpy(&boardBkp, GetBoard(), sizeof(Board_t));
+
+    // replace plugin board with a new test board
+    Board_t testBoard;
+    memcpy(GetBoard(), &testBoard, sizeof(Board_t));
+
+    // init new board
+    InitBoard();
+
+    // Update the new board with the given test configuration
+    MapToBoard((char*)map, GetBoard(), myMapPosX, myMapPosY, oppMapPosX, oppMapPosY);
+
+    // Get min path the test way
+    debug_PrintTestMessage("  Min path Test:");
+    int minPathMeTest = TestGetMinPathForMe((char*)map, myMapPosX, myMapPosY);
+    int minPathOppTest = TestGetMinPathForOpp((char*)map, oppMapPosX, oppMapPosY);
+    debug_PrintMinPaths(minPathMeTest, minPathOppTest);
+
+    // Get min path the plugin way
+    debug_PrintTestMessage("  Min path Plugin:");
+    int minPathMePlugin = FindMinPathLen(ME);
+    int minPathOppPlugin = FindMinPathLen(OPPONENT);
+    debug_PrintMinPaths(minPathMePlugin, minPathOppPlugin);
+
+    // Update possible moves for both
+    UpdatePossibleMoves(ME);
+    UpdatePossibleMoves(OPPONENT);
+
+    bool ret = true;
+
+    // Print possible moves from test
+    debug_PrintTestMessage("  Possible Moves Test:");
+    debug_PrintTestMessage(possibleMovesMeInput);
+    debug_PrintTestMessage(possibleMovesOppInput);
+
+    // Print possible moves from plugin
+    debug_PrintTestMessage("  Possible Moves Plugin:");
+
+    if (strcmp(debug_PrintMyPossibleMoves(GetBoard()), possibleMovesMeInput) != 0 ||
+         strcmp(debug_PrintOppPossibleMoves(GetBoard()), possibleMovesOppInput) != 0 ||
+          (minPathMePlugin != minPathMeTest) || 
+            (minPathOppPlugin != minPathOppTest))
+            {
+                ret = false;
+            }
+
+    // restore plugin board
+    memcpy(GetBoard(), &boardBkp, sizeof(Board_t));
+
+    // report
+    if (ret)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+void test_9_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 9: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,=,=,=,.,=,=,=,"
+    ", ,., ,., ,|,0,.,1,., ,., ,., ,., ,"
+    ",.,.,=,=,=,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,|,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,=,=,=,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [J-E],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-E],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+void test_10_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 10: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,., ,., ,., ,.,1,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,.,0,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-N],[M-E],[M-W],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-S],[M-E],[M-W],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+void test_11_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 11: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,.,1,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,.,0,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-N],[M-E],[M-W],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-N],[M-S],[M-E],[M-W],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+
+void test_12_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 12: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,., ,., ,|, ,., ,|, ,., ,., ,., ,"
+    ",.,.,.,.,.,|,.,.,.,|,.,.,.,.,.,.,.,"
+    ", ,., ,., ,|, ,., ,|, ,., ,., ,., ,"
+    ",.,.,.,.,.,.,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",=,=,=,.,=,=,=,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,=,=,=,.,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,.,1,|, ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,|,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,.,0,|, ,., ,., ,., ,"
+    ",.,.,.,.,.,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-W],[J-N-W],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-W],[J-S-W],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+void test_13_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 13: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,|,0,.,1,., ,., ,., ,., ,"
+    ",.,.,=,=,=,.,.,.,.,.,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,|,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,=,=,=,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-N],[M-S],[J-E],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-N],[M-S],[M-E],[J-N-W],[J-S-W],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+

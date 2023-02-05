@@ -12,13 +12,36 @@ using namespace std::chrono_literals;
 namespace qplugin
 {
    /** Notes:
-    *  The current plugin player will be be refered to in first person ("Me") and the other one will be "Opponent".
+    *  Plugin player is called "ME", the other player is "OPPONENT".
     *  The board will always be viewed from my perspective, with me on the bottom (last row).
+    *  Opponent's position (as given by the game) will always need converting to my prespective.
+    *  Last wall position (as given by the game) will only need converting to my perspective when I am the second player.
+    *  The game graph is represented by a matrix of tiles with each tile linked to its neighbours:
+    *                         
+    *                                                                Placing a wall renders
+    *                  NULL                                          the corresponding links NULL:
+    *                   ^                                          
+    *                0  | north     1          2                    0           1          2       
+    *             ------|------------------------              -------------------------------               
+    *             |     |     |           |                    |           |           |
+    *          0  |           |           |                    |           |           |   
+    *            west      east           |                 0  |  NULL     |    NULL   |
+    *    NULL <-------  |  ------->       |                    |    ^      |    ^      |
+    *             |     |     |           |                    |    | |    |    | |    |
+    *             ------|------------------------              -xxxx|x|xxxxxxxxx|x|xxxx--------
+    *             |     v     |           |                    |    | |    |      |    |
+    *             |    south  |           |                    |      v    |      v    |
+    *          1  |           |           |                 1  |     NULL  |     NULL  |
+    *             |           |           |                    |           |           |
+    *             |           |           |
+    *             -------------------------------
+    *             |           |           |
+    *             |           |           |
+    *          2  |           |           |
     * 
-    *  Player positions, as given by the game's API, are always relative (so the opponent's position always
-    *  needs converting to my perspective), but a wall's position as the last action performed by the opponent 
-    *  is absolute - so it needs converting only when I am the second registered player (second player to move).
-    */
+    * 
+    *  TO BE CONTINUED...    
+    */ 
 
    /** Log domain */
    const char * const DOM = "qplugin::MP";
@@ -39,6 +62,56 @@ namespace qplugin
       return relPos;
    }
 
+   // Convert core wall position to plugin wall position (both type and value)
+   static Position_t CoreToPluginWallPos(qcore::Position gameWallPos, qcore::Orientation orientation)
+   {
+      Position_t pluginWallPos;
+
+      if (orientation == qcore::Orientation::Horizontal)
+      {
+         pluginWallPos.x = gameWallPos.x - 1;
+         pluginWallPos.y = gameWallPos.y;
+      }
+      else
+      {           
+         pluginWallPos.x = gameWallPos.x;
+         pluginWallPos.y = gameWallPos.y - 1;
+      }
+
+      return pluginWallPos;
+   }
+
+   // Convert core wall orientation type to plugin wall orientation type
+   static Orientation_t CoreToPluginWallOrientation(qcore::Orientation orientation)
+   {
+      return (orientation == qcore::Orientation::Horizontal ? H : V);
+   }
+
+   static void SpeedTest(Board_t* board, uint8_t level)
+   {
+      if (level == 0)
+      {
+         return;
+      }
+
+      for (int i = 0; i < BOARD_SZ - 1; i++)
+      {
+         for (int j = 0; j < BOARD_SZ - 1; j++)
+         {
+            Wall_t* wall = &(board->walls[H][i][j]);
+
+            if (wall->permission == WALL_PERMITTED)
+            {
+               PlaceWall(ME, wall);
+
+               SpeedTest(board, level - 1);
+
+               UndoWall(ME, wall);
+            }
+         }
+      }
+   }
+
    MarinicaPlayer::MarinicaPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
       qcore::Player(id, name, game)
    {
@@ -50,28 +123,69 @@ namespace qplugin
    void MarinicaPlayer::doNextMove()
    {
       static int turnCount;
+      static Board_t* board;
 
       if (turnCount == 0)
       {
          InitBoard();
+         board = GetBoard(); // debugging only
+         
+#if (RUN_TESTS)
+      test_1_CheckInitialBoardStructure(board);
+      test_2_PlaceOneHorizWallThatIsNotOnTheBorder(board);
+      test_3_UndoLastWall(board);
+      test_4_PlaceTwoConsecutiveHorizWalls(board);
+      test_5_UndoLastTwoWallsOneByOne(board);
+      test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(board);
+      test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(board);
+      test_8_PlaceAndUndoGroupsOf3Walls(board);
+      test_9_MinPathAndPossibleMoves();
+      test_10_MinPathAndPossibleMoves();
+      test_11_MinPathAndPossibleMoves();
+      test_12_MinPathAndPossibleMoves();
+      test_13_MinPathAndPossibleMoves();
+#endif
       }
 
+
       // get game info 
-      uint8_t              myID           = getId(); // = 0 if I am the first player to move or 1 otherwise.
-      uint8_t              oppID          = (myID ? 0 : 1); // opponent's ID
+      uint8_t              myID           = getId(); // 0 (if I am the first player to move) or 1
+      uint8_t              oppID          = (myID ? 0 : 1);
       qcore::Position      myPos          = getPosition();
       qcore::BoardStatePtr boardState     = getBoardState();
       qcore::PlayerState   oppState       = boardState->getPlayers(oppID).at(oppID);
-      qcore::Position      oppPos         = (oppState.position).rotate(2); // check Notes above
+      qcore::Position      oppPos         = (oppState.position).rotate(2); // always rotate, as player positions are relative
       qcore::PlayerAction  lastAct        = boardState->getLastAction();
       qcore::ActionType    lastActType    = lastAct.actionType;
       qcore::Orientation   lastActWallOr  = lastAct.wallState.orientation;
       qcore::Position      lastActWallPos = (myID == 0 ? lastAct.wallState.position : 
-                                                   AbsToRelWallPos(lastAct.wallState.position, lastActWallOr)); // check Notes above
+                                                AbsToRelWallPos(lastAct.wallState.position, lastActWallOr)); // only convert when I am 2nd to move
       uint8_t              myWallsLeft    = getWallsLeft();
       uint8_t              oppWallsLeft   = oppState.wallsLeft;
 
-      // print game info
+
+      // update board structure
+      UpdatePos(ME, {myPos.x, myPos.y});
+      UpdatePos(OPPONENT, {oppPos.x, oppPos.y});
+
+      if (lastActType == qcore::ActionType::Wall)
+      {  
+         Position_t wallPos = CoreToPluginWallPos(lastActWallPos, lastActWallOr);
+         Orientation_t wallOr = CoreToPluginWallOrientation(lastActWallOr);
+
+         PlaceWall(OPPONENT, GetWall(wallPos, wallOr));
+      }
+
+      UpdatePossibleMoves(ME);
+      UpdatePossibleMoves(OPPONENT);
+
+      uint8_t minPathOpp = FindMinPathLen(OPPONENT);
+      uint16_t debugFlagsOpp = debug_GetReachedGoalTiles(); // only for debugging
+      uint8_t minPathMe = FindMinPathLen(ME);
+      uint16_t debugFlagsMe = debug_GetReachedGoalTiles(); // only for debugging
+
+
+      // log info
       LOG_INFO(DOM) << "---------------------------------------------------------------";
       LOG_INFO(DOM) << "  Turn count = " << turnCount;
       LOG_INFO(DOM) << "  Me  (" << (int)myID << ") pos = [" << (int)myPos.x << ", " << (int)myPos.y << "], walls = " << (int)myWallsLeft;
@@ -79,51 +193,41 @@ namespace qplugin
       LOG_INFO(DOM) << "  Last act = " << (lastActType == qcore::ActionType::Invalid ? "Invalid" : 
                                                 (lastActType == qcore::ActionType::Move ? "Move" : "Wall"));
 
-      if (lastActType == qcore::ActionType::Wall && lastActWallOr == qcore::Orientation::Horizontal)
-      {
-         LOG_INFO(DOM) << "  Wall dir = H, wall pos (game)   = [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "]";
-         LOG_INFO(DOM) << "                wall pos (plugin) = [" << (lastActWallPos.x - 1) << ", " << (int)lastActWallPos.y << "]";
-         PlaceHorizWall(OPPONENT, {(int8_t)(lastActWallPos.x - 1), lastActWallPos.y});
-      }
+      if (lastActType == qcore::ActionType::Wall)
+      {         
+         if (lastActWallOr == qcore::Orientation::Horizontal)
+         {
+            LOG_INFO(DOM) << "  Wall dir = H, wall pos (core)   = [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "]";
+            LOG_INFO(DOM) << "                wall pos (plugin) = [" << (lastActWallPos.x - 1) << ", " << (int)lastActWallPos.y << "]";
+         }
+         else
+         {
+            LOG_INFO(DOM) << "  Wall dir = V, wall pos (core)   = [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "]";
+            LOG_INFO(DOM) << "                wall pos (plugin) = [" << (int)(lastActWallPos.x) << ", " << (lastActWallPos.y - 1) << "]";
+         }
+      }     
 
-      if (lastActType == qcore::ActionType::Wall && lastActWallOr == qcore::Orientation::Vertical)
-      {
-         LOG_INFO(DOM) << "  Wall dir = V, wall pos (game)   = [" << (int)lastActWallPos.x << ", " << (int)lastActWallPos.y << "]";
-         LOG_INFO(DOM) << "                wall pos (plugin) = [" << (int)(lastActWallPos.x) << ", " << (lastActWallPos.y - 1) << "]";
-         PlaceVertWall(OPPONENT, {(lastActWallPos.x), (int8_t)(lastActWallPos.y - 1)});
-      }
+      debug_PrintMyPossibleMoves(board);
+      debug_PrintOppPossibleMoves(board);
 
-      UpdatePos(ME, {myPos.x, myPos.y});
-      UpdatePos(OPPONENT, {oppPos.x, oppPos.y});
-      
-      UpdatePossibleMoves(ME);
-      debug_PrintMyPossibleMoves(GetBoard());
-
-      LOG_INFO(DOM) << "  Opp minpath = " << (int)FindMinPathLen(OPPONENT) << ", (debug_flags = " << (int)debug_GetFlags() << ")";
-      LOG_INFO(DOM) << "  My minpath = " << (int)FindMinPathLen(ME) << ", (debug_flags = " << (int)debug_GetFlags() << ")";
+      LOG_INFO(DOM) << "  My minpath =  " << (int)minPathMe << ", (debug_flags = " << (int)debugFlagsMe << ")";
+      LOG_INFO(DOM) << "  Opp minpath = " << (int)minPathOpp << ", (debug_flags = " << (int)debugFlagsOpp << ")";
       LOG_INFO(DOM) << "";
-      debug_PrintBoard(GetBoard());      
 
-#if (RUN_TESTS)
-      test_1_CheckInitialBoardStructure(GetBoard());
-      test_2_PlaceOneHorizWallThatIsNotOnTheBorder(GetBoard());
-      test_3_UndoLastWall(GetBoard());
-      test_4_PlaceTwoConsecutiveHorizWalls(GetBoard());
-      test_5_UndoLastTwoWallsOneByOne(GetBoard());
-      test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(GetBoard());
-      test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(GetBoard());
-      test_8_PlaceAndUndoGroupsOf3Walls(GetBoard());
-#endif
+      debug_PrintBoard(board); // includes the last computed min path
+
+
+      // Test
+      SpeedTest(board, 3);
+
       LOG_INFO(DOM) << "---------------------------------------------------------------";
       turnCount++;
-
-
 
       // ----------------------------------------------------------------------------
       LOG_INFO(DOM) << "Player " << (int)getId() << " is thinking..";
 
       // Simulate more thinking
-      std::this_thread::sleep_for(1000ms);
+      // std::this_thread::sleep_for(1000ms);
 
       myPos = getPosition() * 2;
       qcore::BoardMap map;
