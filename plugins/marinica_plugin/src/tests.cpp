@@ -265,111 +265,388 @@ void test_1_CheckInitialBoardStructure(Board_t* board)
 }
 
 
-void test_2_PlaceOneHorizWallThatIsNotOnTheBorder(Board_t* board)
+void test_2_PlaceThenUndoOneHorizWallThatIsNotOnTheBorder(Board_t* board)
 {
-    debug_PrintTestMessage("Test 2.1:");
-
-    // define some walls to place
-    TestWall_t wallsToPlace[] =
     {
-        { H, 1, 2 }
-    };
+        debug_PrintTestMessage("Test 2.1:");
 
-    // define tile links that should be NULL after walls are placed
-    TestTileLink_t tileLinksToTest[] =
+        // define some walls to place
+        TestWall_t wallsToPlace[] =
+        {
+            { H, 1, 2 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS,
+            { 1, 2, S },
+            { 2, 2, N },
+            { 1, 3, S },
+            { 2, 3, N }
+        };
+
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
+        {
+            { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        };
+        
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
+    }
     {
-        DEFAULT_NULL_TILE_LINKS,
-        { 1, 2, S },
-        { 2, 2, N },
-        { 1, 3, S },
-        { 2, 3, N }
-    };
+        debug_PrintTestMessage("Test 2.2:");
 
-    // define some walls that should be flagged as forbidden after the placement of walls above
-    TestWallPermission_t permissionsToCheck[] =
-    {
-        { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-        { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-        { H, 1, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-        { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-    };
-    
-    PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
+        // define some walls to undo
+        TestWall_t wallsToUndo[] =
+        {
+            { H, 1, 2 }
+        };
 
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck)); 
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS // check default tile links for this test
+        };
+
+        // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+        TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
+        
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);
+    }
 }
 
-void test_3_UndoLastWall(Board_t* board)
+void test_3_PlaceThenUndoOneVertWallThatIsNotOnTheBorder(Board_t* board)
 {
-    debug_PrintTestMessage("Test 3.1:");
-
-    // define some walls to undo
-    TestWall_t wallsToUndo[] =
     {
-        { H, 1, 2 }
-    };
+        debug_PrintTestMessage("Test 3.1:");
 
-    // define tile links that should be NULL after walls are placed
-    TestTileLink_t tileLinksToTest[] =
+        // define some walls to place
+        TestWall_t wallsToPlace[] =
+        {
+            { V, 6, 2 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS,
+            { 6, 2, E },
+            { 6, 3, W },
+            { 7, 2, E },
+            { 7, 3, W }
+        };
+
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
+        {
+            { V, 5, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 6, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 6, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        };
+        
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
+    }
     {
-        DEFAULT_NULL_TILE_LINKS // check default tile links for this test
-    };
+        debug_PrintTestMessage("Test 3.2:");
 
-    // define some walls that should have the permission level NOT equal to WALL_PERMITTED
-    TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
-    
-    UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
+        // define some walls to undo
+        TestWall_t wallsToUndo[] =
+        {
+            { V, 6, 2 }
+        };
 
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);   
-}
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS // check default tile links for this test
+        };
 
-void test_4_PlaceTwoConsecutiveHorizWalls(Board_t* board)
-{
-    debug_PrintTestMessage("Test 4.1:");
+        // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+        TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
+        
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
 
-    // define some walls to place
-    TestWall_t wallsToPlace[] =
-    {
-        { H, 1, 2 },
-        { H, 1, 4 }
-    };
-
-    // define tile links that should be NULL after walls are placed
-    TestTileLink_t tileLinksToTest[] =
-    {
-        DEFAULT_NULL_TILE_LINKS,
-        { 1, 2, S },
-        { 2, 2, N },
-        { 1, 3, S },
-        { 2, 3, N },
-        { 1, 4, S },
-        { 2, 4, N },
-        { 1, 5, S },
-        { 2, 5, N }
-    };
-
-    // define some walls that should be flagged as forbidden after the placement of walls above
-    TestWallPermission_t permissionsToCheck[] =
-    {
-        { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-        { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-        { H, 1, 3, WALL_FORBIDDEN_BY_2_OTHER_WALLS }, // This is forbidden by both H 1 2 and H 1 4
-        { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-        { H, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-        { H, 1, 5, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-        { V, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-    };
-
-    PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
-    
-    CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);
+    }
 }
 
 
-void test_5_UndoLastTwoWallsOneByOne(Board_t* board)
+void test_4_PlaceThenUndoOneHorizWallThatIsOnTheBorder(Board_t* board)
+{
+    {
+        debug_PrintTestMessage("Test 4.1:");
+
+        // define some walls to place
+        TestWall_t wallsToPlace[] =
+        {
+            { H, 7, 0 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS,
+            { 7, 0, S },
+            { 8, 0, N },
+            { 7, 1, S },
+            { 8, 1, N }
+        };
+
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
+        {            
+            { H, 7, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        };
+        
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
+    }
+    {
+        debug_PrintTestMessage("Test 4.2:");
+
+        // define some walls to undo
+        TestWall_t wallsToUndo[] =
+        {
+            { H, 7, 0 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS // check default tile links for this test
+        };
+
+        // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+        TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
+        
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);
+    }
+    {
+        debug_PrintTestMessage("Test 4.3:");
+
+        // define some walls to place
+        TestWall_t wallsToPlace[] =
+        {
+            { H, 7, 7 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS,
+            { 7, 7, S },
+            { 8, 7, N },
+            { 7, 8, S },
+            { 8, 8, N }
+        };
+
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
+        {            
+            { H, 7, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        };
+        
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
+    }
+    {
+        debug_PrintTestMessage("Test 4.4:");
+
+        // define some walls to undo
+        TestWall_t wallsToUndo[] =
+        {
+            { H, 7, 7 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS // check default tile links for this test
+        };
+
+        // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+        TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
+        
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);
+    }
+}
+
+void test_5_PlaceThenUndoOneVertWallThatIsOnTheBorder(Board_t* board)
 {
     {
         debug_PrintTestMessage("Test 5.1:");
+
+        // define some walls to place
+        TestWall_t wallsToPlace[] =
+        {
+            { V, 0, 7 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS,
+            { 0, 7, E },
+            { 0, 8, W },
+            { 1, 7, E },
+            { 1, 8, W }
+        };
+
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
+        {
+            { V, 1, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 0, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 0, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        };
+        
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
+    }
+    {
+        debug_PrintTestMessage("Test 5.2:");
+
+        // define some walls to undo
+        TestWall_t wallsToUndo[] =
+        {
+            { V, 0, 7 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS // check default tile links for this test
+        };
+
+        // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+        TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
+        
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);
+    }
+    {
+        debug_PrintTestMessage("Test 5.3:");
+
+        // define some walls to place
+        TestWall_t wallsToPlace[] =
+        {
+            { V, 0, 0 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS,
+            { 0, 0, E },
+            { 0, 1, W },
+            { 1, 0, E },
+            { 1, 1, W }
+        };
+
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
+        {
+            { V, 1, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 0, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 0, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        };
+        
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
+    }
+    {
+        debug_PrintTestMessage("Test 5.4:");
+
+        // define some walls to undo
+        TestWall_t wallsToUndo[] =
+        {
+            { V, 0, 0 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS // check default tile links for this test
+        };
+
+        // define some walls that should have the permission level NOT equal to WALL_PERMITTED
+        TestWallPermission_t* permissionsToCheck = NULL; // all walls should be permitted for this test
+        
+        UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
+
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, 0);
+    }
+}
+
+
+void test_6_PlaceTwoConsecutiveHorizWallsAndUndoThem(Board_t* board)
+{
+    {
+        debug_PrintTestMessage("Test 6.1:");
+
+        // define some walls to place
+        TestWall_t wallsToPlace[] =
+        {
+            { H, 1, 2 },
+            { H, 1, 4 }
+        };
+
+        // define tile links that should be NULL after walls are placed
+        TestTileLink_t tileLinksToTest[] =
+        {
+            DEFAULT_NULL_TILE_LINKS,
+            { 1, 2, S },
+            { 2, 2, N },
+            { 1, 3, S },
+            { 2, 3, N },
+            { 1, 4, S },
+            { 2, 4, N },
+            { 1, 5, S },
+            { 2, 5, N }
+        };
+
+        // define some walls that should be flagged as forbidden after the placement of walls above
+        TestWallPermission_t permissionsToCheck[] =
+        {
+            { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 3, WALL_FORBIDDEN_BY_2_OTHER_WALLS }, // This is forbidden by both H 1 2 and H 1 4
+            { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 5, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+        };
+
+        PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
+        
+        CheckBoardStructure(board, tileLinksToTest, COUNT(tileLinksToTest), permissionsToCheck, COUNT(permissionsToCheck));
+    }
+    {
+        debug_PrintTestMessage("Test 6.2:");
 
         // define some walls to undo
         TestWall_t wallsToUndo[] =
@@ -402,7 +679,7 @@ void test_5_UndoLastTwoWallsOneByOne(Board_t* board)
     }
 
     {
-        debug_PrintTestMessage("Test 5.2:");
+        debug_PrintTestMessage("Test 6.3:");
         
         // define some walls to undo
         TestWall_t wallsToUndo[] =
@@ -425,10 +702,11 @@ void test_5_UndoLastTwoWallsOneByOne(Board_t* board)
     }
 }
 
-void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* board)
+
+void test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* board)
 {
     {
-        debug_PrintTestMessage("Test 6.1:");
+        debug_PrintTestMessage("Test 7.1:");
 
         // define some walls to place
         TestWall_t wallsToPlace[] =
@@ -478,9 +756,9 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
     }
 
     {
-        debug_PrintTestMessage("Test 6.2:");
+        debug_PrintTestMessage("Test 7.2:");
 
-        // undo last wall from 6.1
+        // undo last wall
         TestWall_t wallsToUndo[] =
         {
             { V, 1, 3 }
@@ -518,7 +796,7 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
     }
 
     {
-        debug_PrintTestMessage("Test 6.3:");
+        debug_PrintTestMessage("Test 7.3:");
         
         // undo remaining walls
         TestWall_t wallsToUndo[] =
@@ -543,10 +821,10 @@ void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
 }
 
 
-void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
+void test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
 {
     {
-        debug_PrintTestMessage("Test 7.1:");
+        debug_PrintTestMessage("Test 8.1:");
 
         // define some walls to place
         TestWall_t wallsToPlace[] =
@@ -578,7 +856,7 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
     }
 
     {
-        debug_PrintTestMessage("Test 7.2:");
+        debug_PrintTestMessage("Test 8.2:");
 
         // define some walls to place
         TestWall_t wallsToPlace[] =
@@ -618,7 +896,7 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
     }
 
     {
-        debug_PrintTestMessage("Test 7.3:");
+        debug_PrintTestMessage("Test 8.3:");
 
         // define some walls to place
         TestWall_t wallsToPlace[] =
@@ -664,9 +942,9 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
     }
 
     {
-        debug_PrintTestMessage("Test 7.4:");
+        debug_PrintTestMessage("Test 8.4:");
 
-        // Undo wall from 7.3
+        // Undo last wall
         TestWall_t wallsToUndo[] =
         {
             { H, 7, 6 }
@@ -704,9 +982,9 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
     }
 
     {
-        debug_PrintTestMessage("Test 7.5:");
+        debug_PrintTestMessage("Test 8.5:");
 
-        // Undo wall from 7.2
+        // Undo wall that was placed second
         TestWall_t wallsToUndo[] =
         {
             { V, 6, 6 }
@@ -736,9 +1014,9 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
     }
 
     {
-        debug_PrintTestMessage("Test 7.6:");
+        debug_PrintTestMessage("Test 8.6:");
 
-        // undo wall from 7.1
+        // undo first wall
         TestWall_t wallsToUndo[] =
         {
             { V, 7, 7 }
@@ -759,10 +1037,10 @@ void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
     }
 }
 
-void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
+void test_9_PlaceAndUndoGroupsOf3Walls(Board_t* board)
 {
     {
-        debug_PrintTestMessage("Test 8.1:");
+        debug_PrintTestMessage("Test 9.1:");
 
         // define some walls to place
         TestWall_t wallsToPlace[] =
@@ -811,7 +1089,7 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
     }
 
     {
-        debug_PrintTestMessage("Test 8.2:");
+        debug_PrintTestMessage("Test 9.2:");
 
         // define some walls to place
         TestWall_t wallsToPlace[] =
@@ -883,9 +1161,9 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
     }
 
     {
-        debug_PrintTestMessage("Test 8.3:");
+        debug_PrintTestMessage("Test 9.3:");
 
-        // undo walls from 8.2 in reverse order
+        // undo walls from 9.2 in reverse order
         TestWall_t wallsToUndo[] =
         {
             { V, 6, 2 },
@@ -933,9 +1211,9 @@ void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board)
     }
 
     {
-        debug_PrintTestMessage("Test 8.4:");
+        debug_PrintTestMessage("Test 9.4:");
 
-        // undo walls from 8.1 in reverse order
+        // undo walls from 9.1 in reverse order
         TestWall_t wallsToUndo[] =
         {
             { H, 5, 1 },
@@ -1200,43 +1478,6 @@ static bool IsMinPathAndPossibleMovesTestPassed(const char* stringInput, const c
     return false;
 }
 
-void test_9_MinPathAndPossibleMoves(void)
-{
-    debug_PrintTestMessage("Test 9: Min path and possible moves");
-
-    const char* stringInput = 
-    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
-    ",.,.,.,.,.,|,=,=,=,.,=,=,=,.,=,=,=,"
-    ", ,., ,., ,|,0,.,1,., ,., ,., ,., ,"
-    ",.,.,=,=,=,.,=,=,=,.,=,=,=,.,.,.,.,"
-    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
-    ",.,|,.,.,.,|,.,.,.,.,.,.,.,.,.,.,.,"
-    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
-    ",.,.,.,.,.,.,.,.,=,=,=,.,=,=,=,.,.,"
-    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
-    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
-    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
-    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
-    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
-    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
-    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
-    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
-    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
-
-    const char* possibleMovesMeInput = "  My possible moves: [J-E],";
-    const char* possibleMovesOppInput = "  Opp possible moves: [M-E],";
-    
-
-    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
-    {
-        debug_PrintTestPassed();
-    }
-    else
-    {
-        debug_PrintTestFailed();
-    }
-}
-
 void test_10_MinPathAndPossibleMoves(void)
 {
     debug_PrintTestMessage("Test 10: Min path and possible moves");
@@ -1386,3 +1627,342 @@ void test_13_MinPathAndPossibleMoves(void)
     }
 }
 
+
+void test_14_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 14: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,=,=,=,.,=,=,=,"
+    ", ,., ,., ,|,0,.,1,., ,., ,., ,., ,"
+    ",.,.,=,=,=,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,|,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,=,=,=,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [J-E],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-E],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+
+void test_15_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 15: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",=,=,=,.,=,=,=,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,.,0,.,1,|, ,., ,., ,., ,"
+    ",.,.,=,=,=,.,.,.,.,|,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,|, ,., ,., ,., ,"
+    ",.,|,.,.,.,|,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,=,=,=,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-S],[M-W],[J-N-E],[J-S-E],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-N],[M-S],[J-W],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+
+void test_16_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 16: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,|,=,=,=,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,.,0,., ,|, ,., ,., ,., ,"
+    ",.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,.,1,., ,|, ,|, ,., ,., ,"
+    ",.,|,.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,|, ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,=,=,=,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-E],[M-W],[J-S-E],[J-S-W],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-E],[M-W],[J-N-E],[J-N-W],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+void test_17_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 17: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,|,=,=,=,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,., ,., ,., ,"
+    ",.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,.,0,|, ,|, ,., ,., ,"
+    ",.,|,.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,"
+    ", ,|, ,., ,., ,.,1,., ,|, ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-N],[M-W],[J-S],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-S],[M-E],[M-W],[J-N],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+void test_18_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 18: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,|,=,=,=,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,., ,., ,., ,"
+    ",.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,|, ,., ,., ,"
+    ",.,|,.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,|, ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,.,0,.,1,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-N],[M-S],[M-W],[J-N-E],[J-S-E],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-N],[M-S],[J-W],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+
+void test_19_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 19: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,|,=,=,=,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,., ,., ,., ,"
+    ",.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,|, ,., ,., ,"
+    ",.,|,.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,|, ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ",1,.,0,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-N],[M-S],[M-E],[J-N-W],[J-S-W],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-N],[M-S],[J-E],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+
+void test_20_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 20: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,|,=,=,=,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,., ,., ,., ,"
+    ",.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,|, ,., ,., ,"
+    ",.,|,.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,"
+    ", ,|, ,., ,.,1,.,0,., ,|, ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-N],[M-S],[M-E],[J-W],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-S],[M-W],[J-E],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+
+void test_21_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 21: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,|,=,=,=,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,., ,., ,., ,"
+    ",.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,|, ,., ,., ,"
+    ",.,|,.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,|, ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,.,1,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,.,0,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-E],[M-W],[J-N],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-N],[M-E],[M-W],[J-S-E],[J-S-W],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+
+void test_22_MinPathAndPossibleMoves(void)
+{
+    debug_PrintTestMessage("Test 22: Min path and possible moves");
+
+    const char* stringInput = 
+    ", ,|, ,., ,., ,., ,., ,., ,.,1,., ,"
+    ",.,|,=,=,=,.,=,=,=,.,=,=,=,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,., ,.,0,., ,"
+    ",.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,|, ,|, ,., ,., ,"
+    ",.,|,.,.,=,=,=,.,.,.,.,|,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,|, ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,=,=,=,.,.,"
+    ", ,., ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,|,=,=,=,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,|, ,., ,., ,., ,., ,., ,"
+    ",.,|,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,|, ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,"
+    ",.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,"
+    ", ,., ,., ,., ,., ,., ,., ,., ,., ,";
+
+    const char* possibleMovesMeInput = "  My possible moves: [M-S],[M-E],[M-W],[J-N-E],[J-N-W],";
+    const char* possibleMovesOppInput = "  Opp possible moves: [M-E],[M-W],[J-S],";
+    
+
+    if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}

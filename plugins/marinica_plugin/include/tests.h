@@ -31,18 +31,27 @@ typedef struct
 }TestWallPermission_t;
 
 void test_1_CheckInitialBoardStructure(Board_t* board);
-void test_2_PlaceOneHorizWallThatIsNotOnTheBorder(Board_t* board);
-void test_3_UndoLastWall(Board_t* board);
-void test_4_PlaceTwoConsecutiveHorizWalls(Board_t* board);
-void test_5_UndoLastTwoWallsOneByOne(Board_t* board);
-void test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* board);
-void test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board);
-void test_8_PlaceAndUndoGroupsOf3Walls(Board_t* board);
-void test_9_MinPathAndPossibleMoves(void);
+void test_2_PlaceThenUndoOneHorizWallThatIsNotOnTheBorder(Board_t* board);
+void test_3_PlaceThenUndoOneVertWallThatIsNotOnTheBorder(Board_t* board);
+void test_4_PlaceThenUndoOneHorizWallThatIsOnTheBorder(Board_t* board);
+void test_5_PlaceThenUndoOneVertWallThatIsOnTheBorder(Board_t* board);
+void test_6_PlaceTwoConsecutiveHorizWallsAndUndoThem(Board_t* board);
+void test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* board);
+void test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board);
+void test_9_PlaceAndUndoGroupsOf3Walls(Board_t* board);
 void test_10_MinPathAndPossibleMoves(void);
 void test_11_MinPathAndPossibleMoves(void);
 void test_12_MinPathAndPossibleMoves(void);
 void test_13_MinPathAndPossibleMoves(void);
+void test_14_MinPathAndPossibleMoves(void);
+void test_15_MinPathAndPossibleMoves(void);
+void test_16_MinPathAndPossibleMoves(void);
+void test_17_MinPathAndPossibleMoves(void);
+void test_18_MinPathAndPossibleMoves(void);
+void test_19_MinPathAndPossibleMoves(void);
+void test_20_MinPathAndPossibleMoves(void);
+void test_21_MinPathAndPossibleMoves(void);
+void test_22_MinPathAndPossibleMoves(void);
 
 
 #endif // Header_qplugin_marinica_debug

@@ -132,18 +132,27 @@ namespace qplugin
          
 #if (RUN_TESTS)
       test_1_CheckInitialBoardStructure(board);
-      test_2_PlaceOneHorizWallThatIsNotOnTheBorder(board);
-      test_3_UndoLastWall(board);
-      test_4_PlaceTwoConsecutiveHorizWalls(board);
-      test_5_UndoLastTwoWallsOneByOne(board);
-      test_6_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(board);
-      test_7_Place2VertWallsAndOneHorizWallAndThenUndoAll(board);
-      test_8_PlaceAndUndoGroupsOf3Walls(board);
-      test_9_MinPathAndPossibleMoves();
+      test_2_PlaceThenUndoOneHorizWallThatIsNotOnTheBorder(board);
+      test_3_PlaceThenUndoOneVertWallThatIsNotOnTheBorder(board);
+      test_4_PlaceThenUndoOneHorizWallThatIsOnTheBorder(board);
+      test_5_PlaceThenUndoOneVertWallThatIsOnTheBorder(board);
+      test_6_PlaceTwoConsecutiveHorizWallsAndUndoThem(board);
+      test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(board);
+      test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(board);
+      test_9_PlaceAndUndoGroupsOf3Walls(board);
       test_10_MinPathAndPossibleMoves();
       test_11_MinPathAndPossibleMoves();
       test_12_MinPathAndPossibleMoves();
       test_13_MinPathAndPossibleMoves();
+      test_14_MinPathAndPossibleMoves();
+      test_15_MinPathAndPossibleMoves();
+      test_16_MinPathAndPossibleMoves();
+      test_17_MinPathAndPossibleMoves();
+      test_18_MinPathAndPossibleMoves();
+      test_19_MinPathAndPossibleMoves();
+      test_20_MinPathAndPossibleMoves();
+      test_21_MinPathAndPossibleMoves();
+      test_22_MinPathAndPossibleMoves();
 #endif
       }
 
