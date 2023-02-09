@@ -5,6 +5,8 @@
 
 static void DecreaseWallPermission(Wall_t* wall);
 static void IncreaseWallPermission(Wall_t* wall);
+static void RemoveFromPossibleWalls(Wall_t* wall);
+static void AddToPossibleWalls(Wall_t* wall);
 
 static Board_t board;
 
@@ -63,10 +65,25 @@ void InitBoard(void)
                     board.walls[o][x][y].forbidsPrev  = ((x == 0) ?     NULL : &(board.walls[V][x - 1][y]));
                     board.walls[o][x][y].forbidsNext  = ((x == (BOARD_SZ - 2)) ? NULL : &(board.walls[V][x + 1][y]));
                     board.walls[o][x][y].forbidsCompl = &(board.walls[H][x][y]);
-                }                
+                }
+
+                // link to the next and prev possible walls (initially all walls are possible)
+                board.walls[o][x][y].possiblePrev = ((x == 0 && y == 0) ? NULL // the first wall doesn't have a prev
+                                                    : ((y == 0) ? &(board.walls[o][x - 1][BOARD_SZ - 2]) // first in col links to last in prev row
+                                                    : &(board.walls[o][x][y - 1]))); // all others link to the prev in col
+
+                board.walls[o][x][y].possibleNext = ((x == (BOARD_SZ - 2) && y == (BOARD_SZ - 2)) ? NULL // the last wall doesn't have a next
+                                                    : (y == (BOARD_SZ - 2) ? &(board.walls[o][x + 1][0]) // last in col links to first in next row
+                                                    : &(board.walls[o][x][y + 1]))); // all others link to the next in col
             }
         }
     }
+
+    // link the last horiz wall to the first vert wall
+    board.walls[H][BOARD_SZ - 2][BOARD_SZ - 2].possibleNext = &(board.walls[V][0][0]);
+
+    // set the first horiz wall as possible walls list head
+    board.firstPossibleWall =&(board.walls[H][0][0]);
 
     // init number of walls left
     board.wallsLeft[ME] = 10;
@@ -120,7 +137,14 @@ void PlaceWall(Player_t player, Wall_t* wall)
         wall->southeast->west = NULL;
     }
 
-    // 2. Forbidding the given wall, along with the walls it displaces, from future use.
+    // 2. Remove the wall, along with the walls it displaces, from the possible walls list.
+    // Only walls that are permitted will be removed (to avoid double removal).
+    RemoveFromPossibleWalls(wall);
+    RemoveFromPossibleWalls(wall->forbidsPrev);
+    RemoveFromPossibleWalls(wall->forbidsNext);
+    RemoveFromPossibleWalls(wall->forbidsCompl);
+
+    // 3. Forbidding the given wall, along with the walls it displaces, from future use.
     // Any decrease in the permission level of a wall renders that wall forbidden.
     // Multiple levels of permission are needed because a wall can be forbidden by 1 or more walls.
     DecreaseWallPermission(wall);
@@ -128,7 +152,7 @@ void PlaceWall(Player_t player, Wall_t* wall)
     DecreaseWallPermission(wall->forbidsNext);
     DecreaseWallPermission(wall->forbidsCompl);
 
-    // 3. Adjusting number of walls left for given player
+    // 4. Adjusting number of walls left for given player
     board.wallsLeft[player]--;
 }
 
@@ -159,7 +183,14 @@ void UndoWall(Player_t player, Wall_t* wall)
     IncreaseWallPermission(wall->forbidsPrev);
     IncreaseWallPermission(wall);
 
-    // 3. Adjusting number of walls left for given player
+    // 3. Adding the wall back to the possible walls list (only if the wall just became permitted).
+    // Walls will be added back in the reverse order of the removal.
+    AddToPossibleWalls(wall->forbidsCompl);
+    AddToPossibleWalls(wall->forbidsNext);
+    AddToPossibleWalls(wall->forbidsPrev);
+    AddToPossibleWalls(wall);
+
+    // 4. Adjusting number of walls left for given player
     board.wallsLeft[player]++;
 }
 
@@ -198,6 +229,54 @@ static void DecreaseWallPermission(Wall_t* wall)
     if (wall)
     {
         wall->permission = (WallPermission_t)(wall->permission - 1);        
+    }
+}
+
+static void RemoveFromPossibleWalls(Wall_t* wall)
+{
+    if (wall && (wall->permission == WALL_PERMITTED)) // only remove if it hasn't been removed before
+    {
+        if (board.firstPossibleWall == wall)
+        {
+            // head to be removed so just update head
+            board.firstPossibleWall = (board.firstPossibleWall)->possibleNext;
+            (board.firstPossibleWall)->possiblePrev = NULL;
+        }
+        else
+        {
+            // bypass forward and backwards
+            wall->possiblePrev->possibleNext = wall->possibleNext;
+            if (wall->possibleNext)
+            {
+                wall->possibleNext->possiblePrev = wall->possiblePrev;
+            }
+        }
+    }
+}
+
+static void AddToPossibleWalls(Wall_t* wall)
+{
+    if (wall && (wall->permission == WALL_PERMITTED)) // only add if wall is possible again
+    {
+        // if the item was head before removal, it points to the current head
+        if (wall->possibleNext == board.firstPossibleWall)
+        {
+            // undo head moving
+            board.firstPossibleWall->possiblePrev = wall;
+            board.firstPossibleWall = wall;
+        }
+        else
+        {
+            // relink wall
+            if (wall->possibleNext)
+            {
+                wall->possibleNext->possiblePrev = wall;
+            }
+            if (wall->possiblePrev)
+            {
+                wall->possiblePrev->possibleNext = wall;
+            }
+        }
     }
 }
 

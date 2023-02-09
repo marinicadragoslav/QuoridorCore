@@ -45,6 +45,9 @@ namespace qplugin
 
    /** Log domain */
    const char * const DOM = "qplugin::MP";
+
+   int debug_counter = 0;
+   int debug_list_counter = 0;
    
    // Convert absolute wall position to relative position
    static qcore::Position AbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation)   
@@ -94,22 +97,49 @@ namespace qplugin
          return;
       }
 
-      for (int i = 0; i < BOARD_SZ - 1; i++)
+      for (int o = H; o <= V; o++)
       {
-         for (int j = 0; j < BOARD_SZ - 1; j++)
+         for (int i = 0; i < BOARD_SZ - 1; i++)
          {
-            Wall_t* wall = &(board->walls[H][i][j]);
-
-            if (wall->permission == WALL_PERMITTED)
+            for (int j = 0; j < BOARD_SZ - 1; j++)
             {
-               PlaceWall(ME, wall);
+               Wall_t* wall = &(board->walls[o][i][j]);
 
-               SpeedTest(board, level - 1);
+               if (wall->permission == WALL_PERMITTED)
+               {
+                  PlaceWall(ME, wall);
+                  qplugin::debug_counter++;
+                  // LOG_INFO(DOM) << "Placing [" << (int)wall->pos.x << ", " << (int)wall->pos.y << "]";
 
-               UndoWall(ME, wall);
+                  SpeedTest(board, level - 1);
+
+                  UndoWall(ME, wall);
+               }
             }
          }
       }
+   }
+
+   static void SpeedTestList(Board_t* board, uint8_t level)
+   {
+      if (level == 0)
+      {
+         return;
+      }
+
+      Wall_t* wall = board->firstPossibleWall;
+      while(wall)
+      {
+         PlaceWall(ME, wall);
+         qplugin::debug_list_counter++;
+         // LOG_INFO(DOM) << "Placing [" << (int)wall->pos.x << ", " << (int)wall->pos.y << "]";
+
+         SpeedTestList(board, level - 1);
+
+         UndoWall(ME, wall);
+
+         wall = wall->possibleNext;
+      }      
    }
 
    MarinicaPlayer::MarinicaPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
@@ -227,7 +257,19 @@ namespace qplugin
 
 
       // Test
-      SpeedTest(board, 3);
+      if (turnCount % 2 == 0)
+      {
+         SpeedTest(board, 4);
+         LOG_INFO(DOM) << "debug_counter = " << debug_counter;
+      }
+      else
+      {
+         SpeedTestList(board, 4);
+         LOG_INFO(DOM) << "debug_list_counter = " << debug_list_counter;
+      }
+
+
+
 
       LOG_INFO(DOM) << "---------------------------------------------------------------";
       turnCount++;

@@ -88,6 +88,8 @@ typedef struct Wall_t
    struct Wall_t* forbidsNext;
    struct Wall_t* forbidsCompl;
    WallPermission_t permission;
+   struct Wall_t* possibleNext;
+   struct Wall_t* possiblePrev;
 }Wall_t;
 
 
@@ -100,6 +102,7 @@ typedef struct
    Wall_t walls[2][BOARD_SZ - 1][BOARD_SZ - 1];
    Move_t moves[2][MOVE_COUNT];
    bool debug_isOnMinPath[BOARD_SZ][BOARD_SZ];
+   Wall_t* firstPossibleWall;
 }Board_t;
 
 
