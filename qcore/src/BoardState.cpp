@@ -224,6 +224,13 @@ namespace qcore
       }
    }
 
+   /** Force game termination */
+   void BoardState::endGame()
+   {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mFinished = true;
+   }
+
    /**
     * Creates a map representing the elements on the board. Between 'pawn' rows / columns are
     * inserted 'wall' rows / columns, therefore the map size will be BOARD_SIZE * 2 - 1.

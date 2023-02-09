@@ -7,13 +7,20 @@
 #include "RemoteGame.h"
 #include "RemotePlayer.h"
 
+using namespace std::chrono_literals;
+
 namespace qcore
 {
    /** Log domain */
    const char * const DOM = "qcore::GC";
 
+   /** Constants */
+   const auto PLAYER_MIN_TIME_MS = 1000ms;
+   const auto PLAYER_MOVE_TIMEOUT_MS = 5000ms;
+
    /** Construction */
    GameController::GameController(const std::string&) :
+      mMoveInProgress(false),
       mIsRemoteGame(false)
    {
       LOG_INIT("quoridor.log");
@@ -155,22 +162,34 @@ namespace qcore
          throw util::Exception("Not all players joined the game");
       }
 
-      if (mThread.joinable())
+      if (mPlayerThread.joinable())
       {
          // TODO: Stop thread
-         mThread.join();
+         mPlayerThread.join();
       }
 
-      mThread = std::thread([&, oneStep]()
+      if (mWatchThread.joinable())
+      {
+         mWatchThread.join();
+      }
+
+      mPlayerThread = std::thread([&, oneStep]()
       {
          while(not getBoardState()->isFinished())
          {
-            PlayerId currentPlayer = mGame->getCurrentPlayer();
+            PlayerPtr currentPlayer = getCurrentPlayer();
+
+            {
+               // Mark action start
+               std::lock_guard<std::mutex> lock(mMutex);
+               mActionTs = std::chrono::steady_clock::now();
+               mMoveInProgress = true;
+            }
 
             // Notify the player to make his next move
             try
             {
-               mPlayers.at(currentPlayer)->notifyMove();
+               currentPlayer->notifyMove();
             }
             catch (std::exception& e)
             {
@@ -178,13 +197,67 @@ namespace qcore
             }
 
             // Wait for the player to decide
-            mGame->waitPlayerMove(currentPlayer);
+            mGame->waitPlayerMove(currentPlayer->getId());
+
+            {
+               // Mark action start
+               std::lock_guard<std::mutex> lock(mMutex);
+               mMoveInProgress = false;
+               auto duration = std::chrono::steady_clock::now() - mActionTs;
+               auto moveDutationMs = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+
+               LOG_INFO(DOM) << "Move duration [" << moveDutationMs / 1000.0 << " sec]";
+               currentPlayer->setLastMoveDuration(moveDutationMs);
+
+               // Wait a bit to make the game watchable (during quick moves)
+               if (duration < PLAYER_MIN_TIME_MS)
+               {
+                  std::this_thread::sleep_for(PLAYER_MIN_TIME_MS - duration);
+               }
+            }
+
             getBoardState()->notifyStateChange();
 
             if (oneStep)
                break;
          }
       });
+
+      // Enable watchdog
+      const char *wdEnv = std::getenv("QUORIDOR_PLAYER_TIMEOUT_DISABLE");
+      bool wdDisabled = wdEnv ? std::stoi(wdEnv) : false;
+
+      if (!oneStep && !wdDisabled)
+      {
+         mWatchThread = std::thread([&]()
+         {
+            while(not getBoardState()->isFinished())
+            {
+               std::unique_lock<std::mutex> lock(mMutex);
+               if (mMoveInProgress)
+               {
+                  auto timelimit = mActionTs + PLAYER_MOVE_TIMEOUT_MS;
+
+                  if (std::chrono::steady_clock::now() > timelimit)
+                  {
+                     LOG_ERROR(DOM) << "Time limit exceeded by player " << (int) mGame->getCurrentPlayer() << "! Game must end.";
+                     mGame->end();
+                     break;
+                  }
+                  else
+                  {
+                     lock.unlock();
+                     mGame->waitPlayerMoveUntil(mGame->getCurrentPlayer(), timelimit);
+                  }
+               }
+               else
+               {
+                  lock.unlock();
+                  std::this_thread::sleep_for(1ms);
+               }
+            }
+         });
+      }
    }
 
    /** Returns the current's game state */

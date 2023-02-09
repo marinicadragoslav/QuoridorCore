@@ -29,6 +29,9 @@ namespace qcore
       /** Last move duration, in milliseconds */
       std::atomic_int mLastMoveDurationMs;
 
+      /** Number of illegal moves attempted by the player */
+      std::atomic_int mIllegalMoves;
+
       // Methods
    public:
 
@@ -53,6 +56,11 @@ namespace qcore
 
       /** Returns the duration of the last move */
       uint32_t getLastMoveDuration() const { return mLastMoveDurationMs; }
+
+       /** Sets last move duration - stats purposes only */
+      void setLastMoveDuration(int ms) { mLastMoveDurationMs = ms; }
+
+      uint32_t getIllegalMoves() const { return mIllegalMoves; }
 
       /** Returns the BoardState object */
       BoardStatePtr getBoardState() const;

@@ -12,8 +12,6 @@ namespace qcore
    /** Log domain */
    const char * const DOM = "qcore::PL";
 
-   const auto PLAYER_MIN_TIME_MS = 1000ms;
-
    /** Construction */
    Player::Player(PlayerId id, const std::string& name, GamePtr game) :
       mId(id),
@@ -29,37 +27,25 @@ namespace qcore
       LOG_INFO(DOM) << "Player " << (int)getId() << "'s turn [" << (int) getWallsLeft()
          << " wall" << (getWallsLeft() == 1 ? "" : "s") << " left]";
 
-      auto timeref = std::chrono::steady_clock::now();
-
       doNextMove();
-
-      auto duration = std::chrono::steady_clock::now() - timeref;
-      mLastMoveDurationMs = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-
-      LOG_INFO(DOM) << "Move duration [" << mLastMoveDurationMs / 1000.0 << " sec]";
-
-      if (duration < PLAYER_MIN_TIME_MS)
-      {
-         std::this_thread::sleep_for(PLAYER_MIN_TIME_MS - duration);
-      }
    }
 
    /** Returns the GameState object */
    BoardStatePtr Player::getBoardState() const
    {
-      return mGame->getBoardState();
+      return std::make_shared<BoardState>(*mGame->getBoardState());
    }
 
    /** Returns player's position on the board */
    Position Player::getPosition() const
    {
-      return getBoardState()->getPlayers(mId).at(mId).position;
+      return mGame->getBoardState()->getPlayers(mId).at(mId).position;
    }
 
    /** Returns number of walls left for the current player */
    uint8_t Player::getWallsLeft() const
    {
-      return getBoardState()->getPlayers(mId).at(mId).wallsLeft;
+      return mGame->getBoardState()->getPlayers(mId).at(mId).wallsLeft;
    }
 
    /**
@@ -100,7 +86,15 @@ namespace qcore
       action.playerId = mId;
       action.playerPosition = position;
 
-      return mGame->processPlayerAction(action, error);
+      bool ok = mGame->processPlayerAction(action, error);
+
+      if (not ok)
+      {
+         ++mIllegalMoves;
+         mGame->getBoardState()->notifyStateChange();
+      }
+
+      return ok;
    }
 
    /**
@@ -120,7 +114,15 @@ namespace qcore
       action.playerId = mId;
       action.wallState = wall;
 
-      return mGame->processPlayerAction(action, error);
+      bool ok = mGame->processPlayerAction(action, error);
+
+      if (not ok)
+      {
+         ++mIllegalMoves;
+         mGame->getBoardState()->notifyStateChange();
+      }
+
+      return ok;
    }
 
    /**
