@@ -141,6 +141,9 @@ namespace qcore
       /** Sets the specified action on the board, after it has been validated */
       void applyAction(const PlayerAction& action);
 
+      /** Force game termination */
+      void endGame();
+
       /** Notifies all listeners that the board state has changed */
       void notifyStateChange() const;
    };

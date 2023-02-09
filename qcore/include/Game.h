@@ -7,6 +7,7 @@
 
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
 
 namespace qcore
 {
@@ -61,6 +62,7 @@ namespace qcore
 
       /** Waits until the specified player has picked his move */
       void waitPlayerMove(PlayerId playerId);
+      void waitPlayerMoveUntil(PlayerId playerId, std::chrono::steady_clock::time_point until);
 
       /** Validates and sets the next user action */
       virtual bool processPlayerAction(const PlayerAction& action, std::string& reason);
@@ -69,6 +71,8 @@ namespace qcore
       bool isActionValid(const PlayerAction& action, std::string& reason) const;
 
       void restore();
+
+      void end();
 
    private:
 

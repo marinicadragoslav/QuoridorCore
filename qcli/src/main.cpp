@@ -52,11 +52,69 @@ void PrintPlayerInfo(const std::string info, bool highlight)
    std::cout << (highlight ? TEXT_ASCII_COLOR::RED : TEXT_ASCII_COLOR::OFF) << std::setw(25) << info << TEXT_ASCII_COLOR::OFF;
 }
 
+void PrintPlayerInfo(const std::string info, TEXT_ASCII_COLOR color)
+{
+   std::cout << color << std::setw(25) << info << TEXT_ASCII_COLOR::OFF;
+}
+
 std::string DurationToString(uint32_t ms)
 {
    std::stringstream ss;
    ss << std::setprecision(4) << ms / 1000.0 << " sec";
    return ss.str();
+}
+
+uint32_t ComputePath(qcore::PlayerId pId, qcore::BoardStatePtr bs)
+{
+   uint32_t ret = 0;
+   qcore::Position mp = bs->getPlayers(pId).at(pId).position * 2;
+   qcore::BoardMap map;
+   std::list<std::pair<qcore::Position, uint32_t>> pl;
+   bs->createBoardMap(map, pId);
+
+   if (!mp.x)
+   {
+      return 0;
+   }
+
+   for (uint8_t i = 0; i < qcore::BOARD_MAP_SIZE; i += 2)
+   {
+      map(0, i) = qcore::BoardMap::Invalid;
+      pl.emplace_back(qcore::Position(0, i), 0);
+   }
+
+   auto checkPos = [&](const qcore::Position& p, uint32_t l) -> bool
+   {
+      if (mp == p)
+      {
+         ret = l + 1;
+         return true;
+      }
+
+      if(map(p) < qcore::BoardMap::HorizontalWall)
+      {
+         map(p) = qcore::BoardMap::Invalid;
+         pl.emplace_back(p, l + 1);
+      }
+
+      return false;
+   };
+
+   while (not pl.empty())
+   {
+      auto p = pl.front();
+      pl.pop_front();
+
+      if ((map(p.first + 1_x) == 0 and checkPos(p.first + 2_x, p.second)) or
+         (map(p.first - 1_x) == 0 and checkPos(p.first - 2_x, p.second)) or
+         (map(p.first + 1_y) == 0 and checkPos(p.first + 2_y, p.second)) or
+         (map(p.first - 1_y) == 0 and checkPos(p.first - 2_y, p.second)))
+      {
+         break;
+      }
+   }
+
+   return ret;
 }
 
 void PrintAsciiGameBoard()
@@ -215,13 +273,35 @@ void PrintAsciiGameBoard()
    std::cout << "\n Move duration:     ";
    PrintPlayerInfo(DurationToString(GC.getPlayer(0)->getLastMoveDuration()), pId == 0);
    PrintPlayerInfo(DurationToString(GC.getPlayer(1)->getLastMoveDuration()), pId == 1);
+
+   std::cout << "\n Illegal moves:     ";
+   PrintPlayerInfo(std::to_string(GC.getPlayer(0)->getIllegalMoves()), pId == 0);
+   PrintPlayerInfo(std::to_string(GC.getPlayer(1)->getIllegalMoves()), pId == 1);
+
+   std::cout << "\n Moves to finish:   ";
+   uint32_t path0 = ComputePath(0, GC.getBoardState());
+   uint32_t path1 = ComputePath(1, GC.getBoardState());
+   PrintPlayerInfo(std::to_string(path0), path0 < path1 ? TEXT_ASCII_COLOR::GREEN : TEXT_ASCII_COLOR::OFF);
+   PrintPlayerInfo(std::to_string(path1), path0 > path1 ? TEXT_ASCII_COLOR::GREEN : TEXT_ASCII_COLOR::OFF);
+
    std::cout << "\n\n";
 
    if (GC.getBoardState()->isFinished())
    {
-      std::cout << TEXT_ASCII_COLOR::GREEN << "                        "
-         << GC.getPlayer(GC.getBoardState()->getWinner())->getName() << " won!"
-         << TEXT_ASCII_COLOR::OFF << "\n";
+      qcore::PlayerId winner = GC.getBoardState()->getWinner();
+
+      if (winner != 0xFF)
+      {
+         std::cout << TEXT_ASCII_COLOR::GREEN << "                        "
+            << GC.getPlayer(GC.getBoardState()->getWinner())->getName() << " won!"
+            << TEXT_ASCII_COLOR::OFF << "\n";
+      }
+      else
+      {
+         std::cout << TEXT_ASCII_COLOR::RED << "                        "
+            << "Game terminated!"
+            << TEXT_ASCII_COLOR::OFF << "\n";
+      }
    }
 }
 

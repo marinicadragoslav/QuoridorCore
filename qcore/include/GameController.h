@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <thread>
+#include <chrono>
 
 namespace qcore
 {
@@ -35,10 +36,22 @@ namespace qcore
       std::map<PlayerId, std::shared_ptr<Player>> mPlayers;
 
       /** Thread handling player operations */
-      std::thread mThread;
+      std::thread mPlayerThread;
+
+      /** Watchdog */
+      std::thread mWatchThread;
 
       /** Handles remote operations */
       std::shared_ptr<GameServer> mGameServer;
+
+      /** Timestamp of the last action start */
+      std::chrono::steady_clock::time_point mActionTs;
+
+      /** Waiting for a player to make a decision */
+      bool mMoveInProgress;
+
+      /** Protection against concurrent access */
+      std::mutex mMutex;
 
       /** Specifies if the game is running on a remote server */
       bool mIsRemoteGame;

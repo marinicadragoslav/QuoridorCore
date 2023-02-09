@@ -58,11 +58,16 @@ namespace qcore
    {
       std::unique_lock<std::mutex> lock(mMutex);
 
-      while (mCurrentPlayer == playerId)
+      while (!mBoardState->isFinished() && mCurrentPlayer == playerId)
       {
-         // TODO Set a timeout
          mCv.wait(lock);
       }
+   }
+
+   void Game::waitPlayerMoveUntil(PlayerId playerId, std::chrono::steady_clock::time_point until)
+   {
+      std::unique_lock<std::mutex> lock(mMutex);
+      mCv.wait_until(lock, until, [&]{ return mBoardState->isFinished() || mCurrentPlayer != playerId; });
    }
 
    /** Validates and sets the next user action */
@@ -367,6 +372,12 @@ namespace qcore
        // The last move is done by the current player.
        // Go to the next player
        nextPlayer();
+   }
+
+   void Game::end()
+   {
+      mBoardState->endGame();
+      mCv.notify_all();
    }
 
 } // namespace qcore
