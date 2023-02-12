@@ -94,19 +94,22 @@ namespace qplugin
          return;
       }
 
-      for (int i = 0; i < BOARD_SZ - 1; i++)
+      for (int o = H; o <= V; o++)
       {
-         for (int j = 0; j < BOARD_SZ - 1; j++)
+         for (int i = 0; i < BOARD_SZ - 1; i++)
          {
-            Wall_t* wall = &(board->walls[H][i][j]);
-
-            if (wall->permission == WALL_PERMITTED)
+            for (int j = 0; j < BOARD_SZ - 1; j++)
             {
-               PlaceWall(ME, wall);
+               Wall_t* wall = &(board->walls[o][i][j]);
 
-               SpeedTest(board, level - 1);
+               if (wall->permission == WALL_PERMITTED)
+               {
+                  PlaceWall(ME, wall);
 
-               UndoWall(ME, wall);
+                  SpeedTest(board, level - 1);
+
+                  UndoWall(ME, wall);
+               }
             }
          }
       }
@@ -227,7 +230,7 @@ namespace qplugin
 
 
       // Test
-      SpeedTest(board, 3);
+      SpeedTest(board, 4);
 
       LOG_INFO(DOM) << "---------------------------------------------------------------";
       turnCount++;
