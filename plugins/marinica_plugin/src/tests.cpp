@@ -71,7 +71,7 @@ static void CheckBoardStructure(Board_t* board, TestTileLink_t* tileLinksToTest,
 { 
     const char* errMsg;    
 
-    // then, check tile links
+    // check tile links
     bool err = false;
     for (int i = 0; i < BOARD_SZ; i++)  // go through all tiles from the board and check their links against the given links
     {
@@ -798,11 +798,11 @@ void test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
     {
         debug_PrintTestMessage("Test 7.3:");
         
-        // undo remaining walls
+        // undo remaining walls in reverse order
         TestWall_t wallsToUndo[] =
         {
-            { H, 1, 2 },
-            { H, 1, 4 }
+            { H, 1, 4 },
+            { H, 1, 2 }
         };
         
         // define tile links that should be NULL after walls are placed
@@ -1960,6 +1960,111 @@ void test_22_MinPathAndPossibleMoves(void)
     if (IsMinPathAndPossibleMovesTestPassed(stringInput, possibleMovesMeInput, possibleMovesOppInput))
     {
         debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+}
+
+// Checks if the linked list for possible walls is exactly the same
+// as just iterating through the walls matrix and checking for wall permitted
+static bool CheckPossibleWallsList(Board_t* board)
+{
+    bool ret = true;
+    Wall_t* listWall= board->firstPossibleWall;
+
+    for (int o = H; o <= V; o++)
+    {
+        for (int i = 0; i < BOARD_SZ - 1; i++)
+        {
+            for (int j = 0; j < BOARD_SZ - 1; j++)
+            {
+                Wall_t* wall = &(board->walls[o][i][j]);
+
+                if (wall->permission == WALL_PERMITTED)
+                {                    
+                    if (wall != listWall)
+                    {
+                        ret = false;
+                    }
+
+                    listWall = (listWall ? listWall->possibleNext : NULL);
+                }
+            }
+        }
+    }
+
+    // at the end of permitted walls, the list should not contain other elements
+    if (listWall != NULL)
+    {
+        ret = false;
+    }
+
+    return ret;
+}
+
+static bool isWallPlacingAndRemovingCorrect(Board_t *board, uint8_t level);
+
+// Test recursively that the possible walls list is always correct, after each placing and undoing operation
+// Comparison is done between the content of the possible walls list vs iterating through the wall matrix and checking for "permitted" walls
+static bool isWallPlacingAndRemovingCorrect(Board_t* board, uint8_t level)
+{
+    if (level == 0)
+    {
+        return true;
+    }
+
+    Wall_t* wall = board->firstPossibleWall;
+    while(wall)
+    {
+        if (!CheckPossibleWallsList(board))
+        {
+            debug_PrintTestFailed();
+            return false;
+        }
+
+        PlaceWall(ME, wall);
+
+        if (!CheckPossibleWallsList(board))
+        {
+            debug_PrintTestFailed();
+            return false;
+        }
+
+        if (!isWallPlacingAndRemovingCorrect(board, level - 1))
+        {
+            return false;
+        }
+
+        if (!CheckPossibleWallsList(board))
+        {
+            debug_PrintTestFailed();
+            return false;
+        }
+
+        UndoWall(ME, wall);
+
+        if (!CheckPossibleWallsList(board))
+        {
+            debug_PrintTestFailed();
+            return false;
+        }
+
+        wall = wall->possibleNext;
+    }
+
+    return true;
+}
+
+void test_23_PlacingAndRemovingWallsWithList(Board_t* board, uint8_t level)
+{
+    debug_PrintTestMessage("Test 23: Test correctness of each wall placing and removing recursively");
+
+    // Comparison is done between the content of the possible walls list vs iterating through the wall matrix and checking for "permitted" walls
+    if (isWallPlacingAndRemovingCorrect(board, level))
+    {
+         debug_PrintTestPassed();
     }
     else
     {

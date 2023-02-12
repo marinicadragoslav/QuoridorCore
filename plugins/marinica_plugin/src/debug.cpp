@@ -16,6 +16,11 @@ void debug_PrintTestMessage(const char* msg)
     LOG_WARN(DOM) << msg;
 }
 
+void debug_printPos(int8_t x, int8_t y)
+{
+    LOG_WARN(DOM) << "[" << (int)x << ", " << (int)y << "]";
+}
+
 void debug_PrintTestPassed(void)
 {
     LOG_WARN(DOM) << "TEST PASSED!";

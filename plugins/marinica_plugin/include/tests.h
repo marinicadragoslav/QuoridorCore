@@ -52,6 +52,6 @@ void test_19_MinPathAndPossibleMoves(void);
 void test_20_MinPathAndPossibleMoves(void);
 void test_21_MinPathAndPossibleMoves(void);
 void test_22_MinPathAndPossibleMoves(void);
-
+void test_23_PlacingAndRemovingWallsWithList(Board_t *board, uint8_t level);
 
 #endif // Header_qplugin_marinica_debug

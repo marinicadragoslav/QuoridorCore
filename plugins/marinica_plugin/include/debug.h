@@ -14,5 +14,6 @@ char* debug_PrintOppPossibleMoves(Board_t* board);
 void debug_PrintBoard(Board_t* board);
 void debug_PrintTile(const char* name, int8_t x, int8_t y);
 void debug_PrintMinPaths(int minPathMe, int minPathOpp);
+void debug_printPos(int8_t x, int8_t y);
 
 #endif // Header_qplugin_marinica_debug

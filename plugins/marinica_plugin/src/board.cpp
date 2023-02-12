@@ -5,8 +5,11 @@
 
 static void DecreaseWallPermission(Wall_t* wall);
 static void IncreaseWallPermission(Wall_t* wall);
+
+#if (USE_POSSIBLE_WALLS_LIST)
 static void RemoveFromPossibleWalls(Wall_t* wall);
 static void AddToPossibleWalls(Wall_t* wall);
+#endif
 
 static Board_t board;
 
@@ -81,6 +84,7 @@ void InitBoard(void)
 
     // link the last horiz wall to the first vert wall
     board.walls[H][BOARD_SZ - 2][BOARD_SZ - 2].possibleNext = &(board.walls[V][0][0]);
+    board.walls[V][0][0].possiblePrev = &(board.walls[H][BOARD_SZ - 2][BOARD_SZ - 2]);
 
     // set the first horiz wall as possible walls list head
     board.firstPossibleWall =&(board.walls[H][0][0]);
@@ -139,10 +143,12 @@ void PlaceWall(Player_t player, Wall_t* wall)
 
     // 2. Remove the wall, along with the walls it displaces, from the possible walls list.
     // Only walls that are permitted will be removed (to avoid double removal).
+    #if (USE_POSSIBLE_WALLS_LIST)
     RemoveFromPossibleWalls(wall);
     RemoveFromPossibleWalls(wall->forbidsPrev);
     RemoveFromPossibleWalls(wall->forbidsNext);
     RemoveFromPossibleWalls(wall->forbidsCompl);
+    #endif
 
     // 3. Forbidding the given wall, along with the walls it displaces, from future use.
     // Any decrease in the permission level of a wall renders that wall forbidden.
@@ -151,6 +157,7 @@ void PlaceWall(Player_t player, Wall_t* wall)
     DecreaseWallPermission(wall->forbidsPrev);
     DecreaseWallPermission(wall->forbidsNext);
     DecreaseWallPermission(wall->forbidsCompl);
+
 
     // 4. Adjusting number of walls left for given player
     board.wallsLeft[player]--;
@@ -185,17 +192,19 @@ void UndoWall(Player_t player, Wall_t* wall)
 
     // 3. Adding the wall back to the possible walls list (only if the wall just became permitted).
     // Walls will be added back in the reverse order of the removal.
+    #if (USE_POSSIBLE_WALLS_LIST)
     AddToPossibleWalls(wall->forbidsCompl);
     AddToPossibleWalls(wall->forbidsNext);
     AddToPossibleWalls(wall->forbidsPrev);
     AddToPossibleWalls(wall);
+    #endif
 
     // 4. Adjusting number of walls left for given player
     board.wallsLeft[player]++;
 }
 
 
-void UpdatePossibleMoves(Player_t player)  // maybe TODOM
+void UpdatePossibleMoves(Player_t player)
 {
     Tile_t* pT = GetPlayerTile(player);
     Tile_t* oT = GetPlayerTile(board.otherPlayer[player]);
@@ -224,14 +233,7 @@ void UpdatePossibleMoves(Player_t player)  // maybe TODOM
                                                         (((pT->west) && (pT->west == oT) && (!oT->west) && (oT->south)) ? true : false)); // jump W -> S
 }
 
-static void DecreaseWallPermission(Wall_t* wall)
-{
-    if (wall)
-    {
-        wall->permission = (WallPermission_t)(wall->permission - 1);        
-    }
-}
-
+#if (USE_POSSIBLE_WALLS_LIST)
 static void RemoveFromPossibleWalls(Wall_t* wall)
 {
     if (wall && (wall->permission == WALL_PERMITTED)) // only remove if it hasn't been removed before
@@ -279,12 +281,21 @@ static void AddToPossibleWalls(Wall_t* wall)
         }
     }
 }
+#endif
 
 static void IncreaseWallPermission(Wall_t* wall)
 {
     if (wall)
     {
         wall->permission = (WallPermission_t)(wall->permission + 1);   
+    }
+}
+
+static void DecreaseWallPermission(Wall_t* wall)
+{
+    if (wall)
+    {
+        wall->permission = (WallPermission_t)(wall->permission - 1);        
     }
 }
 

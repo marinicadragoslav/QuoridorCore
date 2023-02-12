@@ -47,8 +47,8 @@ namespace qplugin
    const char * const DOM = "qplugin::MP";
 
    int debug_counter = 0;
-   int debug_list_counter = 0;
    
+
    // Convert absolute wall position to relative position
    static qcore::Position AbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation)   
    {
@@ -64,6 +64,7 @@ namespace qplugin
 
       return relPos;
    }
+
 
    // Convert core wall position to plugin wall position (both type and value)
    static Position_t CoreToPluginWallPos(qcore::Position gameWallPos, qcore::Orientation orientation)
@@ -84,11 +85,13 @@ namespace qplugin
       return pluginWallPos;
    }
 
+
    // Convert core wall orientation type to plugin wall orientation type
    static Orientation_t CoreToPluginWallOrientation(qcore::Orientation orientation)
    {
       return (orientation == qcore::Orientation::Horizontal ? H : V);
    }
+
 
    static void SpeedTest(Board_t* board, uint8_t level)
    {
@@ -97,6 +100,20 @@ namespace qplugin
          return;
       }
 
+   #if (USE_POSSIBLE_WALLS_LIST)
+      Wall_t* wall = board->firstPossibleWall;
+      while(wall)
+      {
+         PlaceWall(ME, wall);
+         debug_counter++;
+
+         SpeedTest(board, level - 1);
+
+         UndoWall(ME, wall);
+
+         wall = wall->possibleNext;
+      }
+   #else
       for (int o = H; o <= V; o++)
       {
          for (int i = 0; i < BOARD_SZ - 1; i++)
@@ -108,8 +125,7 @@ namespace qplugin
                if (wall->permission == WALL_PERMITTED)
                {
                   PlaceWall(ME, wall);
-                  qplugin::debug_counter++;
-                  // LOG_INFO(DOM) << "Placing [" << (int)wall->pos.x << ", " << (int)wall->pos.y << "]";
+                  debug_counter++;
 
                   SpeedTest(board, level - 1);
 
@@ -118,28 +134,7 @@ namespace qplugin
             }
          }
       }
-   }
-
-   static void SpeedTestList(Board_t* board, uint8_t level)
-   {
-      if (level == 0)
-      {
-         return;
-      }
-
-      Wall_t* wall = board->firstPossibleWall;
-      while(wall)
-      {
-         PlaceWall(ME, wall);
-         qplugin::debug_list_counter++;
-         // LOG_INFO(DOM) << "Placing [" << (int)wall->pos.x << ", " << (int)wall->pos.y << "]";
-
-         SpeedTestList(board, level - 1);
-
-         UndoWall(ME, wall);
-
-         wall = wall->possibleNext;
-      }      
+   #endif
    }
 
    MarinicaPlayer::MarinicaPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
@@ -183,6 +178,9 @@ namespace qplugin
       test_20_MinPathAndPossibleMoves();
       test_21_MinPathAndPossibleMoves();
       test_22_MinPathAndPossibleMoves();
+      #if (USE_POSSIBLE_WALLS_LIST)
+      test_23_PlacingAndRemovingWallsWithList(board, 3);
+      #endif
 #endif
       }
 
@@ -257,18 +255,10 @@ namespace qplugin
 
 
       // Test
-      if (turnCount % 2 == 0)
-      {
-         SpeedTest(board, 4);
-         LOG_INFO(DOM) << "debug_counter = " << debug_counter;
-      }
-      else
-      {
-         SpeedTestList(board, 4);
-         LOG_INFO(DOM) << "debug_list_counter = " << debug_list_counter;
-      }
+      SpeedTest(board, 4);
 
-
+      LOG_INFO(DOM) << "debug_counter = " << debug_counter;
+      debug_counter = 0;
 
 
       LOG_INFO(DOM) << "---------------------------------------------------------------";

@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #define BOARD_SZ 9
+#define USE_POSSIBLE_WALLS_LIST 1
 
 
 typedef enum
