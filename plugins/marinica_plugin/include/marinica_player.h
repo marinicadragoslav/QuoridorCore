@@ -2,8 +2,22 @@
 #define Header_qplugin_marinica_player
 
 #include "Player.h"
+#include "board.h"
 
 #define RUN_TESTS 1
+
+typedef enum
+{
+   MOVE,
+   WALL
+}Action_t;
+
+typedef struct
+{
+   Action_t action;
+   MoveID_t moveID;
+   Wall_t* wall;
+}BestPlay_t;
 
 namespace qplugin
 {

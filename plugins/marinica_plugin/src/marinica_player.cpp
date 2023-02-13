@@ -6,6 +6,11 @@
 #include "min_path.h"
 #include <thread>
 
+#define POS_INFINITY 0xFFFFFF
+#define NEG_INFINITY (-0xFFFFFF)
+#define I_WIN 0x0FFFFF
+#define OPP_WINS (-0x0FFFFF)
+
 using namespace qcore::literals;
 using namespace std::chrono_literals;
 
@@ -87,13 +92,122 @@ namespace qplugin
       return (orientation == qcore::Orientation::Horizontal ? H : V);
    }
 
-   static void SpeedTest(Board_t* board, uint8_t level)
+   static int minimax(Board_t* board, Player_t player, uint8_t level)
    {
-      if (level == 0)
+      if (HasWon(ME))
       {
-         return;
+         return I_WIN;
       }
+      else if (HasWon(OPPONENT))
+      {
+         return OPP_WINS;
+      }
+      else if (level == 0)
+      {
+         uint8_t oppMinPath = FindMinPathLen(OPPONENT);
+         uint16_t oppFlags = debug_GetReachedGoalTiles();
+         uint8_t myMinPath = FindMinPathLen(ME);
+         uint16_t myFlags = debug_GetReachedGoalTiles();
 
+         if (myFlags == 0 || oppFlags == 0)
+         {
+            return NEG_INFINITY; // this will be checked and discarded if too large/small
+         }
+
+         return (oppMinPath - myMinPath);
+      }
+      else
+      {
+         int score = (player == ME ? NEG_INFINITY : POS_INFINITY);
+         int eval;
+         
+         // go through walls
+         for (int o = H; o <= V; o++)
+         {
+            for (int i = 0; i < BOARD_SZ - 1; i++)
+            {
+               for (int j = 0; j < BOARD_SZ - 1; j++)
+               {
+                  Wall_t* wall = &(board->walls[o][i][j]);
+
+                  if (wall->permission == WALL_PERMITTED)
+                  {
+                     PlaceWall(player, wall);
+
+                     if (player == ME)
+                     {
+                        debug_PrintTestMessage("Minimax: ME placed wall:");
+                     }
+                     else
+                     {
+                        debug_PrintTestMessage("Minimax: OPP placed wall:");
+                     }                     
+                     debug_PrintWall(wall);
+
+                     eval = minimax(board, board->otherPlayer[player], level - 1);
+                     if (eval > I_WIN || eval < OPP_WINS)
+                     {
+                        debug_PrintTestMessage("Eval too large, discard");
+                     }
+                     else
+                     {
+                        debug_PrintMinimaxScore(eval);
+                        score = (player == ME ? (eval > score ? eval : score) : (eval < score ? eval : score));
+                     }
+
+                     UndoWall(player, wall);
+                  }
+               }
+            }
+         }
+
+         UpdatePossibleMoves(player);
+
+         // go through moves
+         for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
+         {
+            if (board->moves[player][moveID].isPossible)
+            {
+               MakeMove(player, (MoveID_t)moveID);
+               if (player == ME)
+               {
+                  debug_PrintTestMessage("Minimax: ME moved:");
+               }
+               else
+               {
+                  debug_PrintTestMessage("Minimax: OPP moved:");
+               }
+               debug_PrintMove((MoveID_t)moveID);
+
+               eval = minimax(board, board->otherPlayer[player], level - 1);
+
+               if (eval > I_WIN || eval < OPP_WINS)
+               {
+                  debug_PrintTestMessage("Eval too large, discard");
+               }
+               else
+               {
+                  debug_PrintMinimaxScore(eval);
+                  score = (player == ME ? (eval > score ? eval : score) : (eval < score ? eval : score));
+               }              
+
+               UndoMove(player, (MoveID_t)moveID);
+
+               UpdatePossibleMoves(player);
+            }
+         }
+
+         return score;
+      }
+   }
+
+   static BestPlay_t FindBestPlay(Board_t* board, uint8_t level)
+   {
+      BestPlay_t bp = {WALL, MOVE_SOUTH, &(board->walls[V][BOARD_SZ - 2][BOARD_SZ - 2])}; // init with some values
+      int max = NEG_INFINITY;
+      int score;
+
+      // go through walls
       for (int o = H; o <= V; o++)
       {
          for (int i = 0; i < BOARD_SZ - 1; i++)
@@ -105,14 +219,70 @@ namespace qplugin
                if (wall->permission == WALL_PERMITTED)
                {
                   PlaceWall(ME, wall);
+                  debug_PrintTestMessage("FBP: Placed wall:");
+                  debug_PrintWall(wall);
 
-                  SpeedTest(board, level - 1);
+                  score = minimax(board, OPPONENT, level - 1);
+
+                  if (score > I_WIN || score < OPP_WINS)
+                  {
+                     debug_PrintTestMessage("Eval too large, discard");
+                  }
+                  else
+                  {
+                     debug_PrintMinimaxScore(score);
+                     if (score > max)
+                     {
+                        max = score;
+                        bp.action = WALL;
+                        bp.wall = wall;
+                        debug_PrintTestMessage("New BP: ");
+                        debug_PrintBestPlay(bp);
+                     }
+                  }                 
 
                   UndoWall(ME, wall);
                }
             }
          }
       }
+
+      UpdatePossibleMoves(ME);
+
+      // go through moves
+      for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
+      {
+         if (board->moves[ME][moveID].isPossible)
+         {
+            MakeMove(ME, (MoveID_t)moveID);
+            debug_PrintTestMessage("FBP: Made move:");
+            debug_PrintMove((MoveID_t)moveID);
+
+            score = minimax(board, OPPONENT, level - 1);
+            if (score > I_WIN || score < OPP_WINS)
+            {
+               debug_PrintTestMessage("Eval too large, discard");
+            }
+            else
+            {
+               debug_PrintMinimaxScore(score);
+               if (score > max)
+               {
+                  max = score;
+                  bp.action = MOVE;
+                  bp.moveID = (MoveID_t)moveID;
+                  debug_PrintTestMessage("New BP: ");
+                  debug_PrintBestPlay(bp);
+               }
+            }
+
+            UndoMove(ME, (MoveID_t)moveID);
+
+            UpdatePossibleMoves(ME);
+         }
+      }
+
+      return bp;
    }
 
    MarinicaPlayer::MarinicaPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
@@ -230,9 +400,33 @@ namespace qplugin
 
 
       // Test
-      SpeedTest(board, 4);
-
+      BestPlay_t bp = FindBestPlay(board, 3);
+      debug_PrintBestPlay(bp);
       LOG_INFO(DOM) << "---------------------------------------------------------------";
+
+      if (bp.action == WALL && bp.wall->orientation == H)
+      {
+         int8_t coreWallPosX = bp.wall->pos.x + 1;
+         int8_t coreWallPosY = bp.wall->pos.y;
+         PlaceWall(ME, GetWall(bp.wall->pos, H));
+         placeWall(coreWallPosX, coreWallPosY, qcore::Orientation::Horizontal);
+      }
+      else if (bp.action == WALL && bp.wall->orientation == V)
+      {
+         int8_t coreWallPosX = bp.wall->pos.x;
+         int8_t coreWallPosY = bp.wall->pos.y + 1;
+         PlaceWall(ME, GetWall(bp.wall->pos, V));
+         placeWall(coreWallPosX, coreWallPosY, qcore::Orientation::Vertical);
+      }
+      else if (bp.action == MOVE)
+      {
+         MakeMove(ME, bp.moveID);
+         move(myPos.x + board->moves[ME][bp.moveID].xDiff, myPos.y + board->moves[ME][bp.moveID].yDiff);
+      }
+      turnCount++;
+      return;
+
+      /*
       turnCount++;
 
       // ----------------------------------------------------------------------------
@@ -287,6 +481,7 @@ namespace qplugin
 
       LOG_WARN(DOM) << "Something went wrong. Making a random move.";
       move(qcore::Direction::Down) or move(qcore::Direction::Left) or move(qcore::Direction::Right) or move(qcore::Direction::Up);
+      */
    }
 
 } // namespace qplugin

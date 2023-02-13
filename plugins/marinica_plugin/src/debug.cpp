@@ -2,6 +2,7 @@
 #include <string.h>
 #include "QcoreUtil.h"
 #include "debug.h"
+#include "min_path.h"
 
 #define LOGLEN 120
 
@@ -29,6 +30,50 @@ void debug_PrintTestFailed(void)
 void debug_PrintTestErrorMsg(const char* errMsg)
 {
     LOG_ERROR(DOM) << errMsg;
+}
+
+void debug_PrintMove(MoveID_t moveID)
+{
+    ClearBuff();
+    sprintf(buff + strlen(buff), "[%s],", debug_ConvertMoveIDToString(moveID));
+    LOG_INFO(DOM) << buff;
+}
+
+void debug_PrintBestPlay(BestPlay_t bp)
+{
+    LOG_INFO(DOM) << "BestPlay: ";
+    if (bp.action == MOVE)
+    {
+        ClearBuff();
+        sprintf(buff + strlen(buff), "[%s],", debug_ConvertMoveIDToString(bp.moveID));
+        LOG_INFO(DOM) << buff;
+    }
+    else
+    {
+        debug_PrintWall(bp.wall);
+    }
+}
+
+
+void debug_PrintWall(Wall_t* wall)
+{
+    ClearBuff();
+    if (wall->orientation == H)
+    {
+        sprintf(buff + strlen(buff), "H[%d, %d],", wall->pos.x, wall->pos.y);
+    }
+    else
+    {
+        sprintf(buff + strlen(buff), "V[%d, %d],", wall->pos.x, wall->pos.y);
+    }
+    LOG_INFO(DOM) << buff;
+}
+
+void debug_PrintMinimaxScore(int score)
+{
+    ClearBuff();
+    sprintf(buff + strlen(buff), "score: %d", score);
+    LOG_INFO(DOM) << buff;
 }
 
 char* debug_PrintMyPossibleMoves(Board_t* board)
@@ -147,11 +192,13 @@ void debug_PrintBoard(Board_t* board)
                 tiles[ti++] = 'O'; // 'O' for opponent's position
                 continue;  
             }
-            if (board->debug_isOnMinPath[i][j])
-            { 
-                tiles[ti++] = '*'; // '*' if tile is part of my min path
-                continue; 
-            }
+            #if (SHOW_MIN_PATH_ON_LOGGED_BOARD)
+                if (board->debug_isOnMinPath[i][j])
+                { 
+                    tiles[ti++] = '*'; // '*' if tile is part of my min path
+                    continue; 
+                }
+            #endif
             tiles[ti++] = ' ';
         }
     }

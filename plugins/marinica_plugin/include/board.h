@@ -63,7 +63,9 @@ typedef enum
 
 typedef struct Move_t
 {
-   bool isPossible; 
+   bool isPossible;
+   int8_t xDiff;
+   int8_t yDiff;
 }Move_t;
 
 
@@ -114,6 +116,9 @@ void UpdateWallsLeft(Player_t player, uint8_t wallsLeft);
 void PlaceWall(Player_t player, Wall_t* wall);
 void UndoWall(Player_t player, Wall_t* wall);
 void UpdatePossibleMoves(Player_t player);
+bool HasWon(Player_t player);
+void MakeMove(Player_t player, MoveID_t moveID);
+void UndoMove(Player_t player, MoveID_t moveID);
 
 
 #endif // Header_qplugin_marinica_board

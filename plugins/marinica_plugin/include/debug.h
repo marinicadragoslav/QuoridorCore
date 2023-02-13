@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "board.h"
+#include "marinica_player.h"
 
 void debug_PrintTestFailed(void);
 void debug_PrintTestPassed(void);
@@ -14,5 +15,9 @@ char* debug_PrintOppPossibleMoves(Board_t* board);
 void debug_PrintBoard(Board_t* board);
 void debug_PrintTile(const char* name, int8_t x, int8_t y);
 void debug_PrintMinPaths(int minPathMe, int minPathOpp);
+void debug_PrintMove(MoveID_t moveID);
+void debug_PrintWall(Wall_t* wall);
+void debug_PrintBestPlay(BestPlay_t bp);
+void debug_PrintMinimaxScore(int score);
 
 #endif // Header_qplugin_marinica_debug
