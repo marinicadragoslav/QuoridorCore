@@ -111,6 +111,27 @@ void debug_PrintTile(const char* name, int8_t x, int8_t y)
     LOG_INFO(DOM) << buff;
 }
 
+void debug_PrintMove(MoveID_t moveID)
+{
+    ClearBuff();
+    sprintf(buff + strlen(buff), "[%s],", debug_ConvertMoveIDToString(moveID));
+    LOG_INFO(DOM) << buff;
+}
+
+void debug_PrintWall(Wall_t* wall)
+{
+    ClearBuff();
+    if (wall->orientation == H)
+    {
+        sprintf(buff + strlen(buff), "H[%d, %d],", wall->pos.x, wall->pos.y);
+    }
+    else
+    {
+        sprintf(buff + strlen(buff), "V[%d, %d],", wall->pos.x, wall->pos.y);
+    }
+    LOG_INFO(DOM) << buff;
+}
+
 void debug_PrintBoard(Board_t* board)
 {
     char tiles[BOARD_SZ * BOARD_SZ] = { 0 };

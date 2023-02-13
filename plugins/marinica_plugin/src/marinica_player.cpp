@@ -94,6 +94,7 @@ namespace qplugin
          return;
       }
 
+      // go through walls
       for (int o = H; o <= V; o++)
       {
          for (int i = 0; i < BOARD_SZ - 1; i++)
@@ -105,12 +106,30 @@ namespace qplugin
                if (wall->permission == WALL_PERMITTED)
                {
                   PlaceWall(ME, wall);
+                  // debug_PrintWall(wall);
 
                   SpeedTest(board, level - 1);
 
                   UndoWall(ME, wall);
                }
             }
+         }
+      }
+
+      UpdatePossibleMoves(ME);
+
+      // go through moves
+      for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
+      {
+         if (board->moves[ME][moveID].isPossible)
+         {
+            MakeMove(ME, (MoveID_t)moveID);
+            // debug_PrintMove((MoveID_t)moveID);
+
+            SpeedTest(board, level - 1);
+
+            UndoMove(ME, (MoveID_t)moveID);
+            UpdatePossibleMoves(ME);
          }
       }
    }
@@ -230,7 +249,7 @@ namespace qplugin
 
 
       // Test
-      SpeedTest(board, 4);
+      SpeedTest(board, 3);
 
       LOG_INFO(DOM) << "---------------------------------------------------------------";
       turnCount++;
