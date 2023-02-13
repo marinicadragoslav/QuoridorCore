@@ -71,7 +71,7 @@ static void CheckBoardStructure(Board_t* board, TestTileLink_t* tileLinksToTest,
 { 
     const char* errMsg;    
 
-    // then, check tile links
+    // check tile links
     bool err = false;
     for (int i = 0; i < BOARD_SZ; i++)  // go through all tiles from the board and check their links against the given links
     {
@@ -801,8 +801,8 @@ void test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
         // undo remaining walls
         TestWall_t wallsToUndo[] =
         {
-            { H, 1, 2 },
-            { H, 1, 4 }
+            { H, 1, 4 },
+            { H, 1, 2 }
         };
         
         // define tile links that should be NULL after walls are placed
