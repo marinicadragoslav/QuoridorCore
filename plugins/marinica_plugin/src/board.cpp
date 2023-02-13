@@ -55,7 +55,6 @@ void InitBoard(void)
                     board.walls[o][x][y].forbidsPrev  = ((y == 0) ?  NULL : &(board.walls[H][x][y - 1]));
                     board.walls[o][x][y].forbidsNext  = ((y == (BOARD_SZ - 2)) ? NULL : &(board.walls[H][x][y + 1]));
                     board.walls[o][x][y].forbidsCompl = &(board.walls[V][x][y]);
-
                 }
                 else
                 {
@@ -79,6 +78,65 @@ void InitBoard(void)
     // set other player for each player :)
     board.otherPlayer[ME] = OPPONENT;
     board.otherPlayer[OPPONENT] = ME;
+
+    // set the difference on x and y axes that each move implies
+    for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
+    {
+        switch (moveID)
+        {
+            case MOVE_NORTH:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = -1;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff =  0;
+            break;
+            case MOVE_SOUTH:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = +1;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff =  0;
+            break;
+            case MOVE_WEST:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff =  0;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = -1;
+            break;
+            case MOVE_EAST:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff =  0;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = +1;
+            break;
+            case JUMP_NORTH:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = -2;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff =  0;
+            break;
+            case JUMP_SOUTH:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = +2;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff =  0;
+            break;
+            case JUMP_WEST:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff =  0;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = -2;
+            break;
+            case JUMP_EAST:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff =  0;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = +2;
+            break;
+            case JUMP_NORTH_WEST:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = -1;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = -1;
+            break;
+            case JUMP_NORTH_EAST:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = -1;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = +1;
+            break;
+            case JUMP_SOUTH_WEST:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = +1;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = -1;
+            break;
+            case JUMP_SOUTH_EAST:
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = +1;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = +1;
+            break;
+            default: // this should never happen
+                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = 0;
+                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = 0;
+        }
+    }
 }
 
 Board_t* GetBoard(void)
@@ -164,15 +222,11 @@ void UndoWall(Player_t player, Wall_t* wall)
 }
 
 
-void UpdatePossibleMoves(Player_t player)  // maybe TODOM
+void UpdatePossibleMoves(Player_t player)
 {
     Tile_t* pT = GetPlayerTile(player);
     Tile_t* oT = GetPlayerTile(board.otherPlayer[player]);
 
-    // set all moves to NOT POSSIBLE
-    memset(board.moves[player], 0, sizeof(board.moves[player]));
-
-    // set possible moves
     board.moves[player][MOVE_NORTH].isPossible = ((pT->north) && (pT->north != oT) ? true : false);
     board.moves[player][MOVE_SOUTH].isPossible = ((pT->south) && (pT->south != oT) ? true : false);
     board.moves[player][MOVE_EAST].isPossible = ((pT->east) && (pT->east != oT) ? true : false);
@@ -193,6 +247,22 @@ void UpdatePossibleMoves(Player_t player)  // maybe TODOM
                                                         (((pT->west) && (pT->west == oT) && (!oT->west) && (oT->south)) ? true : false)); // jump W -> S
 }
 
+
+// Check that move is possible BEFORE calling this!
+void MakeMove(Player_t player, MoveID_t moveID)
+{
+    board.playerPos[player].x += board.moves[player][moveID].xDiff;
+    board.playerPos[player].y += board.moves[player][moveID].yDiff;
+}
+
+// Only call this in pair with MakeMove() for the same player and the same moveID
+void UndoMove(Player_t player, MoveID_t moveID)
+{
+    board.playerPos[player].x -= board.moves[player][moveID].xDiff;
+    board.playerPos[player].y -= board.moves[player][moveID].yDiff;
+}
+
+
 static void DecreaseWallPermission(Wall_t* wall)
 {
     if (wall)
@@ -212,4 +282,9 @@ static void IncreaseWallPermission(Wall_t* wall)
 Tile_t* GetPlayerTile(Player_t player)
 {
     return (&(board.tiles[board.playerPos[player].x][board.playerPos[player].y]));
+}
+
+bool HasWon(Player_t player)
+{
+    return (GetPlayerTile(player)->isGoalFor == player ? true : false);
 }
