@@ -2,6 +2,7 @@
 #include <string.h>
 #include "QcoreUtil.h"
 #include "debug.h"
+#include "min_path.h"
 
 #define LOGLEN 120
 
@@ -147,11 +148,13 @@ void debug_PrintBoard(Board_t* board)
                 tiles[ti++] = 'O'; // 'O' for opponent's position
                 continue;  
             }
-            if (board->debug_isOnMinPath[i][j])
-            { 
-                tiles[ti++] = '*'; // '*' if tile is part of my min path
-                continue; 
-            }
+            #if (SHOW_MIN_PATH_ON_LOGGED_BOARD)
+                if (board->debug_isOnMinPath[i][j])
+                { 
+                    tiles[ti++] = '*'; // '*' if tile is part of my min path
+                    continue; 
+                }
+            #endif
             tiles[ti++] = ' ';
         }
     }

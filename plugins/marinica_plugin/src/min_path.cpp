@@ -115,19 +115,21 @@ uint8_t FindMinPathLen(Player_t player)
         }
     }
     
-    // ---------------------------------------------------------------------------------
-    // debug - delete prev tiles marked as being on the min path
-    Board_t* board = GetBoard();
-    memset(board->debug_isOnMinPath, 0, sizeof(board->debug_isOnMinPath));
-    // debug - backtrack from destination tile to mark all tiles that are part of min path
-    Tile_t* stopAt = &(board->tiles[board->playerPos[player].x][board->playerPos[player].y]);
-    Tile_t* current = debug_destination->tile;
-    while (current != stopAt)
-    {
-        board->debug_isOnMinPath[current->pos.x][current->pos.y] = true;
-        current = foundSubpaths[current->pos.x][current->pos.y].prevTile;
-    }
-    // end debug ---------------------------------------------------------------------------
+    #if (SHOW_MIN_PATH_ON_LOGGED_BOARD)
+        // ---------------------------------------------------------------------------------
+        // debug - delete prev tiles marked as being on the min path
+        Board_t* board = GetBoard();
+        memset(board->debug_isOnMinPath, 0, sizeof(board->debug_isOnMinPath));
+        // debug - backtrack from destination tile to mark all tiles that are part of min path
+        Tile_t* stopAt = &(board->tiles[board->playerPos[player].x][board->playerPos[player].y]);
+        Tile_t* current = debug_destination->tile;
+        while (current != stopAt)
+        {
+            board->debug_isOnMinPath[current->pos.x][current->pos.y] = true;
+            current = foundSubpaths[current->pos.x][current->pos.y].prevTile;
+        }
+        // end debug ---------------------------------------------------------------------------
+    #endif
 
     return minPathLen;
 

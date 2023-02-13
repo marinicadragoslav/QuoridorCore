@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "board.h"
 
+#define SHOW_MIN_PATH_ON_LOGGED_BOARD 0
+
 typedef struct
 {
    Tile_t* tile;
