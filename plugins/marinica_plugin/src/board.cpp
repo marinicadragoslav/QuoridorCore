@@ -1,32 +1,33 @@
 
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include "board.h"
 
 static void DecreaseWallPermission(Wall_t* wall);
 static void IncreaseWallPermission(Wall_t* wall);
 
-static Board_t board;
 
-
-void InitBoard(void)
+Board_t* NewDefaultBoard(void)
 {
+    Board_t* board = (Board_t*)calloc(1, sizeof(Board_t));
+
     // init tiles
     for (int8_t x = 0; x < BOARD_SZ; x++)
     {
         for (int8_t y = 0; y < BOARD_SZ; y++)
         {
             // set current tile's position
-            board.tiles[x][y].pos = {x, y};
+            board->tiles[x][y].pos = {x, y};
 
             // link tile to its neighbours. Link to NULL if the tile is on the border.
-            board.tiles[x][y].north = ((x > 0)              ?   &(board.tiles[x - 1][y]) : NULL);
-            board.tiles[x][y].south = ((x < (BOARD_SZ - 1)) ?   &(board.tiles[x + 1][y]) : NULL);
-            board.tiles[x][y].west  = ((y > 0)              ?   &(board.tiles[x][y - 1]) : NULL);
-            board.tiles[x][y].east  = ((y < (BOARD_SZ - 1)) ?   &(board.tiles[x][y + 1]) : NULL);
+            board->tiles[x][y].north = ((x > 0)              ?   &(board->tiles[x - 1][y]) : NULL);
+            board->tiles[x][y].south = ((x < (BOARD_SZ - 1)) ?   &(board->tiles[x + 1][y]) : NULL);
+            board->tiles[x][y].west  = ((y > 0)              ?   &(board->tiles[x][y - 1]) : NULL);
+            board->tiles[x][y].east  = ((y < (BOARD_SZ - 1)) ?   &(board->tiles[x][y + 1]) : NULL);
 
             // mark first row tiles as goal tiles for me, and last row tiles as goal tiles for opponent
-            board.tiles[x][y].isGoalFor = ((x == 0) ? ME : ((x == (BOARD_SZ - 1)) ? OPPONENT : NONE));           
+            board->tiles[x][y].isGoalFor = ((x == 0) ? ME : ((x == (BOARD_SZ - 1)) ? OPPONENT : NONE));           
         }
     }
 
@@ -37,47 +38,47 @@ void InitBoard(void)
         {
             for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
             {
-                board.walls[o][x][y].pos = {x, y};
-                board.walls[o][x][y].orientation = (Orientation_t)o;
-                board.walls[o][x][y].permission = WALL_PERMITTED;
+                board->walls[o][x][y].pos = {x, y};
+                board->walls[o][x][y].orientation = (Orientation_t)o;
+                board->walls[o][x][y].permission = WALL_PERMITTED;
 
                 // set tiles that this wall separates when placed
-                Tile_t* referenceTile = &(board.tiles[x][y]);
-                board.walls[o][x][y].northwest = referenceTile;
-                board.walls[o][x][y].northeast = referenceTile->east;
-                board.walls[o][x][y].southwest = referenceTile->south;
-                board.walls[o][x][y].southeast = referenceTile->south->east;
+                Tile_t* referenceTile = &(board->tiles[x][y]);
+                board->walls[o][x][y].northwest = referenceTile;
+                board->walls[o][x][y].northeast = referenceTile->east;
+                board->walls[o][x][y].southwest = referenceTile->south;
+                board->walls[o][x][y].southeast = referenceTile->south->east;
 
                 // link to walls that this wall forbids when placed
                 if (o == H)
                 {
                     // each horizontal wall forbids 2 other horizontal walls and a vertical wall
-                    board.walls[o][x][y].forbidsPrev  = ((y == 0) ?  NULL : &(board.walls[H][x][y - 1]));
-                    board.walls[o][x][y].forbidsNext  = ((y == (BOARD_SZ - 2)) ? NULL : &(board.walls[H][x][y + 1]));
-                    board.walls[o][x][y].forbidsCompl = &(board.walls[V][x][y]);
+                    board->walls[o][x][y].forbidsPrev  = ((y == 0) ?  NULL : &(board->walls[H][x][y - 1]));
+                    board->walls[o][x][y].forbidsNext  = ((y == (BOARD_SZ - 2)) ? NULL : &(board->walls[H][x][y + 1]));
+                    board->walls[o][x][y].forbidsCompl = &(board->walls[V][x][y]);
                 }
                 else
                 {
                     // each vertical wall forbids 2 other vertical walls and a horizontal wall
-                    board.walls[o][x][y].forbidsPrev  = ((x == 0) ?     NULL : &(board.walls[V][x - 1][y]));
-                    board.walls[o][x][y].forbidsNext  = ((x == (BOARD_SZ - 2)) ? NULL : &(board.walls[V][x + 1][y]));
-                    board.walls[o][x][y].forbidsCompl = &(board.walls[H][x][y]);
+                    board->walls[o][x][y].forbidsPrev  = ((x == 0) ?     NULL : &(board->walls[V][x - 1][y]));
+                    board->walls[o][x][y].forbidsNext  = ((x == (BOARD_SZ - 2)) ? NULL : &(board->walls[V][x + 1][y]));
+                    board->walls[o][x][y].forbidsCompl = &(board->walls[H][x][y]);
                 }                
             }
         }
     }
 
     // init number of walls left
-    board.wallsLeft[ME] = 10;
-    board.wallsLeft[OPPONENT] = 10;
+    board->wallsLeft[ME] = 10;
+    board->wallsLeft[OPPONENT] = 10;
 
     // set initial player positions
-    board.playerPos[ME] = {(BOARD_SZ - 1), BOARD_SZ / 2};
-    board.playerPos[OPPONENT] = {0, BOARD_SZ / 2};
+    board->playerPos[ME] = {(BOARD_SZ - 1), BOARD_SZ / 2};
+    board->playerPos[OPPONENT] = {0, BOARD_SZ / 2};
 
     // set other player for each player :)
-    board.otherPlayer[ME] = OPPONENT;
-    board.otherPlayer[OPPONENT] = ME;
+    board->otherPlayer[ME] = OPPONENT;
+    board->otherPlayer[OPPONENT] = ME;
 
     // set the difference on x and y axes that each move implies
     for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
@@ -85,81 +86,78 @@ void InitBoard(void)
         switch (moveID)
         {
             case MOVE_NORTH:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = -1;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff =  0;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -1;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
             break;
             case MOVE_SOUTH:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = +1;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff =  0;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +1;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
             break;
             case MOVE_WEST:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff =  0;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = -1;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -1;
             break;
             case MOVE_EAST:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff =  0;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = +1;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +1;
             break;
             case JUMP_NORTH:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = -2;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff =  0;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -2;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
             break;
             case JUMP_SOUTH:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = +2;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff =  0;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +2;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
             break;
             case JUMP_WEST:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff =  0;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = -2;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -2;
             break;
             case JUMP_EAST:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff =  0;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = +2;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +2;
             break;
             case JUMP_NORTH_WEST:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = -1;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = -1;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -1;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -1;
             break;
             case JUMP_NORTH_EAST:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = -1;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = +1;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -1;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +1;
             break;
             case JUMP_SOUTH_WEST:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = +1;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = -1;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +1;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -1;
             break;
             case JUMP_SOUTH_EAST:
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = +1;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = +1;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +1;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +1;
             break;
             default: // this should never happen
-                board.moves[ME][moveID].xDiff = board.moves[OPPONENT][moveID].xDiff = 0;
-                board.moves[ME][moveID].yDiff = board.moves[OPPONENT][moveID].yDiff = 0;
+                board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = 0;
+                board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = 0;
         }
     }
+
+    return board;
 }
 
-Board_t* GetBoard(void)
+Wall_t* GetWallByPosAndOrientation(Board_t* board, Position_t wallPos, Orientation_t wallOr)
 {
-    return &board;
+    return &(board->walls[wallOr][wallPos.x][wallPos.y]);
 }
 
-Wall_t* GetWall(Position_t wallPos, Orientation_t wallOr)
+void UpdatePos(Board_t* board, Player_t player, Position_t pos)
 {
-    return &(board.walls[wallOr][wallPos.x][wallPos.y]);
+    board->playerPos[player] = pos;
 }
 
-void UpdatePos(Player_t player, Position_t pos)
+void UpdateWallsLeft(Board_t* board, Player_t player, uint8_t wallsLeft)
 {
-    board.playerPos[player] = pos;
+    board->wallsLeft[player] = wallsLeft;
 }
 
-void UpdateWallsLeft(Player_t player, uint8_t wallsLeft)
-{
-    board.wallsLeft[player] = wallsLeft;
-}
-
-void PlaceWall(Player_t player, Wall_t* wall)
+void PlaceWall(Board_t* board, Player_t player, Wall_t* wall)
 {
     // Placing a wall means:
     // 1. removing links (graph edges) between tiles separated by the wall
@@ -187,10 +185,10 @@ void PlaceWall(Player_t player, Wall_t* wall)
     DecreaseWallPermission(wall->forbidsCompl);
 
     // 3. Adjusting number of walls left for given player
-    board.wallsLeft[player]--;
+    board->wallsLeft[player]--;
 }
 
-void UndoWall(Player_t player, Wall_t* wall)
+void UndoWall(Board_t* board, Player_t player, Wall_t* wall)
 {
     // Undoing a wall means:
     // 1. Restoring links (graph edges) between tiles separated by the wall
@@ -218,48 +216,48 @@ void UndoWall(Player_t player, Wall_t* wall)
     IncreaseWallPermission(wall);
 
     // 3. Adjusting number of walls left for given player
-    board.wallsLeft[player]++;
+    board->wallsLeft[player]++;
 }
 
 
-void UpdatePossibleMoves(Player_t player)
+void UpdatePossibleMoves(Board_t* board, Player_t player)
 {
-    Tile_t* pT = GetPlayerTile(player);
-    Tile_t* oT = GetPlayerTile(board.otherPlayer[player]);
+    Tile_t* pT = GetPlayerTile(board, player);
+    Tile_t* oT = GetPlayerTile(board, board->otherPlayer[player]);
 
-    board.moves[player][MOVE_NORTH].isPossible = ((pT->north) && (pT->north != oT) ? true : false);
-    board.moves[player][MOVE_SOUTH].isPossible = ((pT->south) && (pT->south != oT) ? true : false);
-    board.moves[player][MOVE_EAST].isPossible = ((pT->east) && (pT->east != oT) ? true : false);
-    board.moves[player][MOVE_WEST].isPossible = ((pT->west) && (pT->west != oT) ? true : false);
+    board->moves[player][MOVE_NORTH].isPossible = ((pT->north) && (pT->north != oT) ? true : false);
+    board->moves[player][MOVE_SOUTH].isPossible = ((pT->south) && (pT->south != oT) ? true : false);
+    board->moves[player][MOVE_EAST].isPossible = ((pT->east) && (pT->east != oT) ? true : false);
+    board->moves[player][MOVE_WEST].isPossible = ((pT->west) && (pT->west != oT) ? true : false);
 
-    board.moves[player][JUMP_NORTH].isPossible = ((pT->north) && (pT->north == oT) && (oT->north) ? true : false);
-    board.moves[player][JUMP_SOUTH].isPossible = ((pT->south) && (pT->south == oT) && (oT->south) ? true : false);
-    board.moves[player][JUMP_EAST].isPossible = ((pT->east) && (pT->east == oT) && (oT->east) ? true : false);
-    board.moves[player][JUMP_WEST].isPossible = ((pT->west) && (pT->west == oT) && (oT->west) ? true : false);
+    board->moves[player][JUMP_NORTH].isPossible = ((pT->north) && (pT->north == oT) && (oT->north) ? true : false);
+    board->moves[player][JUMP_SOUTH].isPossible = ((pT->south) && (pT->south == oT) && (oT->south) ? true : false);
+    board->moves[player][JUMP_EAST].isPossible = ((pT->east) && (pT->east == oT) && (oT->east) ? true : false);
+    board->moves[player][JUMP_WEST].isPossible = ((pT->west) && (pT->west == oT) && (oT->west) ? true : false);
 
-    board.moves[player][JUMP_NORTH_EAST].isPossible = (((pT->north) && (pT->north == oT) && (!oT->north) && (oT->east)) ? true :          // jump N -> E
+    board->moves[player][JUMP_NORTH_EAST].isPossible = (((pT->north) && (pT->north == oT) && (!oT->north) && (oT->east)) ? true :          // jump N -> E
                                                         (((pT->east) && (pT->east == oT) && (!oT->east) && (oT->north)) ? true : false)); // jump E -> N
-    board.moves[player][JUMP_NORTH_WEST].isPossible = (((pT->north) && (pT->north == oT) && (!oT->north) && (oT->west)) ? true :          // jump N -> W
+    board->moves[player][JUMP_NORTH_WEST].isPossible = (((pT->north) && (pT->north == oT) && (!oT->north) && (oT->west)) ? true :          // jump N -> W
                                                         (((pT->west) && (pT->west == oT) && (!oT->west) && (oT->north)) ? true : false)); // jump W -> N                          
-    board.moves[player][JUMP_SOUTH_EAST].isPossible = (((pT->south) && (pT->south == oT) && (!oT->south) && (oT->east)) ? true :          // jump S -> E
+    board->moves[player][JUMP_SOUTH_EAST].isPossible = (((pT->south) && (pT->south == oT) && (!oT->south) && (oT->east)) ? true :          // jump S -> E
                                                         (((pT->east) && (pT->east == oT) && (!oT->east) && (oT->south)) ? true : false)); // jump E -> S
-    board.moves[player][JUMP_SOUTH_WEST].isPossible = (((pT->south) && (pT->south == oT) && (!oT->south) && (oT->west)) ? true :          // jump S -> W
+    board->moves[player][JUMP_SOUTH_WEST].isPossible = (((pT->south) && (pT->south == oT) && (!oT->south) && (oT->west)) ? true :          // jump S -> W
                                                         (((pT->west) && (pT->west == oT) && (!oT->west) && (oT->south)) ? true : false)); // jump W -> S
 }
 
 
 // Check that move is possible BEFORE calling this!
-void MakeMove(Player_t player, MoveID_t moveID)
+void MakeMove(Board_t* board, Player_t player, MoveID_t moveID)
 {
-    board.playerPos[player].x += board.moves[player][moveID].xDiff;
-    board.playerPos[player].y += board.moves[player][moveID].yDiff;
+    board->playerPos[player].x += board->moves[player][moveID].xDiff;
+    board->playerPos[player].y += board->moves[player][moveID].yDiff;
 }
 
-// Only call this in pair with MakeMove() for the same player and the same moveID
-void UndoMove(Player_t player, MoveID_t moveID)
+// Only call this in pair with MakeMove()
+void UndoMove(Board_t* board, Player_t player, MoveID_t moveID)
 {
-    board.playerPos[player].x -= board.moves[player][moveID].xDiff;
-    board.playerPos[player].y -= board.moves[player][moveID].yDiff;
+    board->playerPos[player].x -= board->moves[player][moveID].xDiff;
+    board->playerPos[player].y -= board->moves[player][moveID].yDiff;
 }
 
 
@@ -279,12 +277,12 @@ static void IncreaseWallPermission(Wall_t* wall)
     }
 }
 
-Tile_t* GetPlayerTile(Player_t player)
+Tile_t* GetPlayerTile(Board_t* board, Player_t player)
 {
-    return (&(board.tiles[board.playerPos[player].x][board.playerPos[player].y]));
+    return (&(board->tiles[board->playerPos[player].x][board->playerPos[player].y]));
 }
 
-bool HasWon(Player_t player)
+bool HasPlayerWon(Board_t* board, Player_t player)
 {
-    return (GetPlayerTile(player)->isGoalFor == player ? true : false);
+    return (GetPlayerTile(board, player)->isGoalFor == player ? true : false);
 }

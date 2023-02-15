@@ -107,18 +107,17 @@ typedef struct
 
 
 
-void InitBoard(void);
-Board_t* GetBoard(void);
-Wall_t* GetWall(Position_t wallPos, Orientation_t wallOr);
-Tile_t* GetPlayerTile(Player_t player);
-void UpdatePos(Player_t player, Position_t pos);
-void UpdateWallsLeft(Player_t player, uint8_t wallsLeft);
-void PlaceWall(Player_t player, Wall_t* wall);
-void UndoWall(Player_t player, Wall_t* wall);
-void UpdatePossibleMoves(Player_t player);
-bool HasWon(Player_t player);
-void MakeMove(Player_t player, MoveID_t moveID);
-void UndoMove(Player_t player, MoveID_t moveID);
+Board_t* NewDefaultBoard(void);
+Wall_t* GetWallByPosAndOrientation(Board_t* board, Position_t wallPos, Orientation_t wallOr);
+Tile_t* GetPlayerTile(Board_t* board, Player_t player);
+void UpdatePos(Board_t* board, Player_t player, Position_t pos);
+void UpdateWallsLeft(Board_t* board, Player_t player, uint8_t wallsLeft);
+void PlaceWall(Board_t* board, Player_t player, Wall_t* wall);
+void UndoWall(Board_t* board, Player_t player, Wall_t* wall);
+void UpdatePossibleMoves(Board_t* board, Player_t player);
+bool HasPlayerWon(Board_t* board, Player_t player);
+void MakeMove(Board_t* board, Player_t player, MoveID_t moveID);
+void UndoMove(Board_t* board, Player_t player, MoveID_t moveID);
 
 
 #endif // Header_qplugin_marinica_board

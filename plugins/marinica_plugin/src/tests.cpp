@@ -50,7 +50,7 @@ static void PlaceWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount)
     {
         for (int i = 0 ; i < wallsCount; i++)
         {
-            PlaceWall(ME, &(board->walls[walls[i].ori][walls[i].x][walls[i].y]));
+            PlaceWall(board, ME, &(board->walls[walls[i].ori][walls[i].x][walls[i].y]));
         }
     }
 }
@@ -61,7 +61,7 @@ static void UndoWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount)
     {
         for (int i = 0 ; i < wallsCount; i++)
         {
-            UndoWall(ME, &(board->walls[walls[i].ori][walls[i].x][walls[i].y]));
+            UndoWall(board, ME, &(board->walls[walls[i].ori][walls[i].x][walls[i].y]));
         }
     }
 }
@@ -1418,19 +1418,11 @@ static bool IsMinPathAndPossibleMovesTestPassed(const char* stringInput, const c
     char map[17][17] = { 0 };
     StringToMap(stringInput, (char*)map, &myMapPosX, &myMapPosY, &oppMapPosX, &oppMapPosY);
 
-    // save existing board
-    Board_t boardBkp;
-    memcpy(&boardBkp, GetBoard(), sizeof(Board_t));
-
-    // replace plugin board with a new test board
-    Board_t testBoard;
-    memcpy(GetBoard(), &testBoard, sizeof(Board_t));
-
-    // init new board
-    InitBoard();
+    // create a new board
+    Board_t* testBoard = NewDefaultBoard();
 
     // Update the new board with the given test configuration
-    MapToBoard((char*)map, GetBoard(), myMapPosX, myMapPosY, oppMapPosX, oppMapPosY);
+    MapToBoard((char*)map, testBoard, myMapPosX, myMapPosY, oppMapPosX, oppMapPosY);
 
     // Get min path the test way
     debug_PrintTestMessage("  Min path Test:");
@@ -1440,13 +1432,13 @@ static bool IsMinPathAndPossibleMovesTestPassed(const char* stringInput, const c
 
     // Get min path the plugin way
     debug_PrintTestMessage("  Min path Plugin:");
-    int minPathMePlugin = FindMinPathLen(ME);
-    int minPathOppPlugin = FindMinPathLen(OPPONENT);
+    int minPathMePlugin = FindMinPathLen(testBoard, ME);
+    int minPathOppPlugin = FindMinPathLen(testBoard, OPPONENT);
     debug_PrintMinPaths(minPathMePlugin, minPathOppPlugin);
 
     // Update possible moves for both
-    UpdatePossibleMoves(ME);
-    UpdatePossibleMoves(OPPONENT);
+    UpdatePossibleMoves(testBoard, ME);
+    UpdatePossibleMoves(testBoard, OPPONENT);
 
     bool ret = true;
 
@@ -1458,16 +1450,13 @@ static bool IsMinPathAndPossibleMovesTestPassed(const char* stringInput, const c
     // Print possible moves from plugin
     debug_PrintTestMessage("  Possible Moves Plugin:");
 
-    if (strcmp(debug_PrintMyPossibleMoves(GetBoard()), possibleMovesMeInput) != 0 ||
-         strcmp(debug_PrintOppPossibleMoves(GetBoard()), possibleMovesOppInput) != 0 ||
+    if (strcmp(debug_PrintMyPossibleMoves(testBoard), possibleMovesMeInput) != 0 ||
+         strcmp(debug_PrintOppPossibleMoves(testBoard), possibleMovesOppInput) != 0 ||
           (minPathMePlugin != minPathMeTest) || 
             (minPathOppPlugin != minPathOppTest))
             {
                 ret = false;
             }
-
-    // restore plugin board
-    memcpy(GetBoard(), &boardBkp, sizeof(Board_t));
 
     // report
     if (ret)

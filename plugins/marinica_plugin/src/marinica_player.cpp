@@ -105,31 +105,31 @@ namespace qplugin
 
                if (wall->permission == WALL_PERMITTED)
                {
-                  PlaceWall(ME, wall);
+                  PlaceWall(board, ME, wall);
                   // debug_PrintWall(wall);
 
                   SpeedTest(board, level - 1);
 
-                  UndoWall(ME, wall);
+                  UndoWall(board, ME, wall);
                }
             }
          }
       }
 
-      UpdatePossibleMoves(ME);
+      UpdatePossibleMoves(board, ME);
 
       // go through moves
       for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
       {
          if (board->moves[ME][moveID].isPossible)
          {
-            MakeMove(ME, (MoveID_t)moveID);
+            MakeMove(board, ME, (MoveID_t)moveID);
             // debug_PrintMove((MoveID_t)moveID);
 
             SpeedTest(board, level - 1);
 
-            UndoMove(ME, (MoveID_t)moveID);
-            UpdatePossibleMoves(ME);
+            UndoMove(board, ME, (MoveID_t)moveID);
+            UpdatePossibleMoves(board, ME);
          }
       }
    }
@@ -149,8 +149,7 @@ namespace qplugin
 
       if (turnCount == 0)
       {
-         InitBoard();
-         board = GetBoard(); // debugging only
+         board = NewDefaultBoard();
          
 #if (RUN_TESTS)
       test_1_CheckInitialBoardStructure(board);
@@ -196,23 +195,23 @@ namespace qplugin
 
 
       // update board structure
-      UpdatePos(ME, {myPos.x, myPos.y});
-      UpdatePos(OPPONENT, {oppPos.x, oppPos.y});
+      UpdatePos(board, ME, {myPos.x, myPos.y});
+      UpdatePos(board, OPPONENT, {oppPos.x, oppPos.y});
 
       if (lastActType == qcore::ActionType::Wall)
       {  
          Position_t wallPos = CoreToPluginWallPos(lastActWallPos, lastActWallOr);
          Orientation_t wallOr = CoreToPluginWallOrientation(lastActWallOr);
 
-         PlaceWall(OPPONENT, GetWall(wallPos, wallOr));
+         PlaceWall(board, OPPONENT, GetWallByPosAndOrientation(board, wallPos, wallOr));
       }
 
-      UpdatePossibleMoves(ME);
-      UpdatePossibleMoves(OPPONENT);
+      UpdatePossibleMoves(board, ME);
+      UpdatePossibleMoves(board, OPPONENT);
 
-      uint8_t minPathOpp = FindMinPathLen(OPPONENT);
+      uint8_t minPathOpp = FindMinPathLen(board, OPPONENT);
       uint16_t debugFlagsOpp = debug_GetReachedGoalTiles(); // only for debugging
-      uint8_t minPathMe = FindMinPathLen(ME);
+      uint8_t minPathMe = FindMinPathLen(board, ME);
       uint16_t debugFlagsMe = debug_GetReachedGoalTiles(); // only for debugging
 
 

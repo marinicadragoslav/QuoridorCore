@@ -13,7 +13,7 @@ typedef struct
    uint8_t pathLen;
 }Subpath_t;
 
-uint8_t FindMinPathLen(Player_t player);
+uint8_t FindMinPathLen(Board_t* board, Player_t player);
 uint16_t debug_GetReachedGoalTiles(void);
 
 #endif // Header_qplugin_marinica_min_path

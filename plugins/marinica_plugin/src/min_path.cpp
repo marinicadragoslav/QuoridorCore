@@ -22,7 +22,7 @@ static uint16_t goalTilesReached;
 static Subpath_t* debug_destination;
 
 
-uint8_t FindMinPathLen(Player_t player)
+uint8_t FindMinPathLen(Board_t* board, Player_t player)
 {
     QueueInit();
     FoundSubpathsInit();
@@ -32,7 +32,7 @@ uint8_t FindMinPathLen(Player_t player)
     // start with the player's tile
     Subpath_t source = 
     { 
-        GetPlayerTile(player), 
+        GetPlayerTile(board, player), 
         NULL, 
         0 
     };
@@ -118,7 +118,6 @@ uint8_t FindMinPathLen(Player_t player)
     #if (SHOW_MIN_PATH_ON_LOGGED_BOARD)
         // ---------------------------------------------------------------------------------
         // debug - delete prev tiles marked as being on the min path
-        Board_t* board = GetBoard();
         memset(board->debug_isOnMinPath, 0, sizeof(board->debug_isOnMinPath));
         // debug - backtrack from destination tile to mark all tiles that are part of min path
         Tile_t* stopAt = &(board->tiles[board->playerPos[player].x][board->playerPos[player].y]);
