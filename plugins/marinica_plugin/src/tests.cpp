@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "tests.h"
 #include "debug.h"
 #include "min_path.h"
@@ -1458,6 +1459,8 @@ static bool IsMinPathAndPossibleMovesTestPassed(const char* stringInput, const c
                 ret = false;
             }
 
+    free(testBoard);
+
     // report
     if (ret)
     {
@@ -1955,3 +1958,329 @@ void test_22_MinPathAndPossibleMoves(void)
         debug_PrintTestFailed();
     }
 }
+
+
+static void DuplicateBoard(Board_t* origBoard, Board_t* copyBoard)
+{
+    // memcopy what doesn't contain pointers (and can change)
+    memcpy(copyBoard->playerPos, origBoard->playerPos, sizeof(origBoard->playerPos));
+    memcpy(copyBoard->wallsLeft, origBoard->wallsLeft, sizeof(origBoard->wallsLeft));
+    memcpy(copyBoard->moves[0], origBoard->moves[0], sizeof(origBoard->moves[0]));
+    memcpy(copyBoard->moves[1], origBoard->moves[1], sizeof(origBoard->moves[1]));
+
+    // go through all tiles and copy the NULL pointers only
+    for (int i = 0; i < BOARD_SZ; i++)
+    {
+        for (int j = 0; j < BOARD_SZ; j++)
+        {
+            Tile_t* tileCopy = &(copyBoard->tiles[i][j]);
+            Tile_t* tileOrig = &(origBoard->tiles[i][j]);
+
+            if (tileOrig->north == NULL)
+            {
+                tileCopy->north = NULL;
+            }
+
+            if (tileOrig->south == NULL)
+            {
+                tileCopy->south = NULL;
+            }
+
+            if (tileOrig->east == NULL)
+            {
+                tileCopy->east = NULL;
+            }
+
+            if (tileOrig->west == NULL)
+            {
+                tileCopy->west = NULL;
+            }
+        }
+    }
+
+    // copy wall permissions
+    for (int o = H; o <= V; o++)
+    {
+        for (int i = 0; i < BOARD_SZ - 1; i++)
+        {
+            for (int j = 0; j < BOARD_SZ - 1; j++)
+            {
+                Wall_t* wallOrig = &(origBoard->walls[o][i][j]);
+                Wall_t* wallCopy = &(copyBoard->walls[o][i][j]);
+
+                wallCopy->permission = wallOrig->permission;
+            }
+        }
+    }
+}
+
+static bool AreBoardsEqual(Board_t* b1, Board_t* b2)
+{
+   bool ret = true;
+
+    if (memcmp(b1->playerPos, b2->playerPos, sizeof(b1->playerPos)) != 0)
+    {
+        ret = false;
+    }
+
+    if (memcmp(b1->wallsLeft, b2->wallsLeft, sizeof(b1->wallsLeft)) != 0)
+    {
+        ret = false;
+    }
+
+    if (memcmp(b1->moves[0], b2->moves[0], sizeof(b1->moves[0])) != 0)
+    {
+        ret = false;
+        debug_PrintTestMessage("moves!");
+    }
+
+    if (memcmp(b1->moves[1], b2->moves[1], sizeof(b1->moves[1])) != 0)
+    {
+        ret = false;
+        debug_PrintTestMessage("moves!");
+    }
+
+    for (int i = 0; i < BOARD_SZ; i++)
+    {
+        for (int j = 0; j < BOARD_SZ; j++)
+        {
+            Tile_t* t1N = b1->tiles[i][j].north;
+            Tile_t* t1S = b1->tiles[i][j].south;
+            Tile_t* t1E = b1->tiles[i][j].east;
+            Tile_t* t1W = b1->tiles[i][j].west;
+
+            Tile_t* t2N = b2->tiles[i][j].north;
+            Tile_t* t2S = b2->tiles[i][j].south;
+            Tile_t* t2E = b2->tiles[i][j].east;
+            Tile_t* t2W = b2->tiles[i][j].west;
+
+            bool oldRet = ret;
+
+            if (t1N == NULL && t2N != NULL) ret = false;
+            if (t2N == NULL && t1N != NULL) ret = false;
+            if (t1E == NULL && t2E != NULL) ret = false;
+            if (t2E == NULL && t1E != NULL) ret = false;
+            if (t1W == NULL && t2W != NULL) ret = false;
+            if (t2W == NULL && t1W != NULL) ret = false;
+            if (t1S == NULL && t2S != NULL) ret = false;
+            if (t2S == NULL && t1S != NULL) ret = false;
+
+            if (oldRet && !ret)
+            {
+                debug_PrintTestMessage("tiles!");
+            }
+        }
+    }
+
+    for (int o = H; o <= V; o++)
+    {
+        for (int i = 0; i < BOARD_SZ - 1; i++)
+        {
+            for (int j = 0; j < BOARD_SZ - 1; j++)
+            {
+                Wall_t* w1 = &(b1->walls[o][i][j]);
+                Wall_t* w2 = &(b2->walls[o][i][j]);
+
+                if(w1->permission != w2->permission)
+                {
+                    ret = false;
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
+static bool IsRecursiveRunOkForTestPossibleMoves(Board_t* board, Board_t* referenceBoard, uint8_t level)
+{
+    bool ret = true;
+
+    UpdatePossibleMoves(board, ME);
+    UpdatePossibleMoves(referenceBoard, ME);
+
+    if (level == 0)
+    {
+        if (!AreBoardsEqual(board, referenceBoard))
+        {
+            debug_PrintTestMessage("Deepest level Before Upd: Boards not equal and should be!");
+            ret = false;
+        }
+    }
+    else
+    {
+        if (level == 1)
+        {
+            if (!AreBoardsEqual(board, referenceBoard))
+            {
+                debug_PrintTestMessage("LVL 1: Boards not equal and should be!");
+                ret = false;
+            }
+        }
+
+        // go through walls
+        for (int o = H; o <= V; o++)
+        {
+            for (int i = 0; i < BOARD_SZ - 1; i++)
+            {
+                for (int j = 0; j < BOARD_SZ - 1; j++)
+                {
+                    Wall_t* wall = &(board->walls[o][i][j]);
+
+                    if (wall->permission == WALL_PERMITTED)
+                    {
+                        // make a copy of the reference board
+                        Board_t* boardTemp = NewDefaultBoard();
+                        DuplicateBoard(referenceBoard, boardTemp);
+
+                        if (!AreBoardsEqual(board, boardTemp))
+                        {
+                            debug_PrintTestMessage("After second duplication: Boards not equal and should be!");
+                            ret = false;
+                        }
+
+                        Wall_t* refWall = &(boardTemp->walls[o][i][j]);
+
+                        PlaceWall(board, ME, wall);
+                        PlaceWall(boardTemp, ME, refWall);
+                        // debug_PrintWall(wall);
+
+                        if (!AreBoardsEqual(board, boardTemp))
+                        {
+                            debug_PrintTestMessage("After wall placement: Boards not equal and should be!");
+                            ret = false;
+                        }
+
+                        if (!IsRecursiveRunOkForTestPossibleMoves(board, boardTemp, level - 1))
+                        {
+                            ret = false;
+                        }
+
+                        UndoWall(board, ME, wall);
+
+                        // If this next line is missing: on a deeper level the possible moves are updated
+                        // on the board to a different state that is not applicable on this level.
+                        UpdatePossibleMoves(board, ME);
+
+
+                        if (!AreBoardsEqual(board, referenceBoard))
+                        {
+                            debug_PrintTestMessage("After wall undo: Boards not equal and should be!");
+                            ret = false;
+                        }
+
+                        free(boardTemp);
+                    }
+                }
+            }
+        }
+
+        // go through moves
+        for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
+        {
+            if (board->moves[ME][moveID].isPossible)
+            {
+                // make a copy of the reference board
+                Board_t* boardTemp = NewDefaultBoard();
+                DuplicateBoard(referenceBoard, boardTemp);
+
+                if (!AreBoardsEqual(board, boardTemp))
+                {
+                    debug_PrintTestMessage("After second duplication (moves): Boards not equal and should be!");
+                    ret = false;
+                }
+
+                MakeMove(board, ME, (MoveID_t)moveID);
+                MakeMove(boardTemp, ME, (MoveID_t)moveID);
+
+                if (!AreBoardsEqual(board, boardTemp))
+                {
+                    debug_PrintTestMessage("After move making: Boards not equal and should be!");
+                    ret = false;
+                }
+                // debug_PrintMove((MoveID_t)moveID);
+
+                if(!IsRecursiveRunOkForTestPossibleMoves(board, boardTemp, level - 1))
+                {
+                    ret = false;
+                }
+
+                UndoMove(board, ME, (MoveID_t)moveID);
+
+                // If this next line is missing: on a deeper level the possible moves are updated
+                // on the board to a different state that is not applicable on this level.
+                UpdatePossibleMoves(board, ME);
+
+                if (!AreBoardsEqual(board, referenceBoard))
+                {
+                    debug_PrintTestMessage("After move undo: Boards not equal and should be!");
+                    ret = false;
+                }
+
+
+                free(boardTemp);
+            }
+        }
+    }
+
+    return ret;
+}
+
+
+void test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(Board_t* board, uint8_t level)
+{
+    debug_PrintTestMessage("Test 23: Possible moves recursive correctness (default player positions)");
+
+    // create a copy of the board
+    Board_t* boardCopy = NewDefaultBoard();
+    DuplicateBoard(board, boardCopy);
+
+    if (!AreBoardsEqual(board, boardCopy))
+    {
+        debug_PrintTestMessage("After creation: Boards not equal and should be!");
+    }
+
+    if (IsRecursiveRunOkForTestPossibleMoves(board, boardCopy, level))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+
+    free(boardCopy);
+}
+
+
+void test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(Board_t* board, uint8_t level)
+{
+    debug_PrintTestMessage("Test 24: Possible moves recursive correctness (modified player positions)");
+
+    // create a copy of the board
+    Board_t* boardCopy = NewDefaultBoard();
+    DuplicateBoard(board, boardCopy);
+
+    UpdatePos(board, ME, {5, 4});
+    UpdatePos(board, OPPONENT, {3, 4});
+
+    UpdatePos(boardCopy, ME, {5, 4});
+    UpdatePos(boardCopy, OPPONENT, {3, 4});
+
+    if (!AreBoardsEqual(board, boardCopy))
+    {
+        debug_PrintTestMessage("After creation: Boards not equal and should be!");
+    }
+
+    if (IsRecursiveRunOkForTestPossibleMoves(board, boardCopy, level))
+    {
+        debug_PrintTestPassed();
+    }
+    else
+    {
+        debug_PrintTestFailed();
+    }
+
+    free(boardCopy);
+}
+

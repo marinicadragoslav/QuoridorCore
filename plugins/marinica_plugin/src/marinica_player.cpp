@@ -174,6 +174,8 @@ namespace qplugin
       test_20_MinPathAndPossibleMoves();
       test_21_MinPathAndPossibleMoves();
       test_22_MinPathAndPossibleMoves();
+      test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(board, 3);
+      test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(board, 3);
 #endif
       }
 
