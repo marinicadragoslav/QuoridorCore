@@ -22,7 +22,7 @@ static uint16_t goalTilesReached;
 static Subpath_t* debug_destination;
 
 
-uint8_t FindMinPathLen(Board_t* board, Player_t player)
+uint8_t FindMinPathLen(Board_t* board, Player_t player, bool* found)
 {
     QueueInit();
     FoundSubpathsInit();
@@ -130,13 +130,9 @@ uint8_t FindMinPathLen(Board_t* board, Player_t player)
         // end debug ---------------------------------------------------------------------------
     #endif
 
+    *found = (!!goalTilesReached);
+
     return minPathLen;
-
-}
-
-uint16_t debug_GetReachedGoalTiles(void)
-{
-    return goalTilesReached;
 }
 
 static void QueueInit(void)

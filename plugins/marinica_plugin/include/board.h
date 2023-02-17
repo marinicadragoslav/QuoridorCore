@@ -11,7 +11,7 @@ typedef enum
 {
    ME,
    OPPONENT,
-   NONE
+   NOBODY
 }Player_t;
 
 
@@ -27,6 +27,14 @@ typedef struct
    int8_t x;
    int8_t y;
 }Position_t;
+
+
+typedef enum
+{
+   MOVE,
+   WALL,
+   NO_ACTION
+}Action_t;
 
 
 typedef struct Tile_t
@@ -58,6 +66,7 @@ typedef enum
    MOVE_COUNT,
    MOVE_FIRST = MOVE_NORTH,
    MOVE_LAST = JUMP_SOUTH_WEST,
+   NO_MOVE
 }MoveID_t;
 
 
@@ -105,6 +114,12 @@ typedef struct
 }Board_t;
 
 
+typedef struct
+{
+   Action_t action;
+   MoveID_t moveID;
+   Wall_t* wall;
+}BestPlay_t;
 
 
 Board_t* NewDefaultBoard(void);

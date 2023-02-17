@@ -132,6 +132,28 @@ void debug_PrintWall(Wall_t* wall)
     LOG_INFO(DOM) << buff;
 }
 
+void debug_PrintBestPlay(BestPlay_t bestPlay)
+{
+    ClearBuff();
+    sprintf(buff + strlen(buff), "  Best Play: ");
+    LOG_INFO(DOM) << buff;
+    if (bestPlay.action == MOVE)
+    {
+        debug_PrintMove(bestPlay.moveID);
+    }
+    else if (bestPlay.action == WALL)
+    {
+        debug_PrintWall(bestPlay.wall);
+    }
+    else
+    {
+        ClearBuff();
+        sprintf(buff + strlen(buff), "  NO BEST PLAY FOUND");
+        LOG_INFO(DOM) << buff;
+    }
+}
+
+
 void debug_PrintBoard(Board_t* board)
 {
     char tiles[BOARD_SZ * BOARD_SZ] = { 0 };

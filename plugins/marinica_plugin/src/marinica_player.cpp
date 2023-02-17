@@ -4,6 +4,7 @@
 #include "debug.h"
 #include "tests.h"
 #include "min_path.h"
+#include "minimax.h"
 #include <thread>
 
 using namespace qcore::literals;
@@ -174,8 +175,8 @@ namespace qplugin
       test_20_MinPathAndPossibleMoves();
       test_21_MinPathAndPossibleMoves();
       test_22_MinPathAndPossibleMoves();
-      test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(board, 3);
-      test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(board, 3);
+      test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(board, 2);
+      test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(board, 2);
 #endif
       }
 
@@ -211,10 +212,11 @@ namespace qplugin
       UpdatePossibleMoves(board, ME);
       UpdatePossibleMoves(board, OPPONENT);
 
-      uint8_t minPathOpp = FindMinPathLen(board, OPPONENT);
-      uint16_t debugFlagsOpp = debug_GetReachedGoalTiles(); // only for debugging
-      uint8_t minPathMe = FindMinPathLen(board, ME);
-      uint16_t debugFlagsMe = debug_GetReachedGoalTiles(); // only for debugging
+      bool foundMinPathOpp;
+      uint8_t minPathOpp = FindMinPathLen(board, OPPONENT, &foundMinPathOpp);
+
+      bool foundMinPathMe;
+      uint8_t minPathMe = FindMinPathLen(board, ME, &foundMinPathMe);
 
 
       // log info
@@ -242,15 +244,20 @@ namespace qplugin
       debug_PrintMyPossibleMoves(board);
       debug_PrintOppPossibleMoves(board);
 
-      LOG_INFO(DOM) << "  My minpath =  " << (int)minPathMe << ", (debug_flags = " << (int)debugFlagsMe << ")";
-      LOG_INFO(DOM) << "  Opp minpath = " << (int)minPathOpp << ", (debug_flags = " << (int)debugFlagsOpp << ")";
+      LOG_INFO(DOM) << "  My minpath =  " << (int)minPathMe << ", (found = " << (foundMinPathMe ? "true" : "false") << ")";
+      LOG_INFO(DOM) << "  Opp minpath = " << (int)minPathOpp << ", (found = " << (foundMinPathOpp ? "true" : "false") << ")";
       LOG_INFO(DOM) << "";
 
       debug_PrintBoard(board); // includes the last computed min path
 
 
       // Test
-      SpeedTest(board, 3);
+      //SpeedTest(board, 3);
+      BestPlay_t bestPlay = { NO_ACTION, NO_MOVE, NULL };
+      int score = minimax(board, ME, 3, &bestPlay);
+      LOG_INFO(DOM) << "  Minimax score: " << score;
+      debug_PrintBestPlay(bestPlay);
+
 
       LOG_INFO(DOM) << "---------------------------------------------------------------";
       turnCount++;

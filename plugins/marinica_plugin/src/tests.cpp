@@ -1432,9 +1432,10 @@ static bool IsMinPathAndPossibleMovesTestPassed(const char* stringInput, const c
     debug_PrintMinPaths(minPathMeTest, minPathOppTest);
 
     // Get min path the plugin way
+    bool found;
     debug_PrintTestMessage("  Min path Plugin:");
-    int minPathMePlugin = FindMinPathLen(testBoard, ME);
-    int minPathOppPlugin = FindMinPathLen(testBoard, OPPONENT);
+    int minPathMePlugin = FindMinPathLen(testBoard, ME, &found);
+    int minPathOppPlugin = FindMinPathLen(testBoard, OPPONENT, &found);
     debug_PrintMinPaths(minPathMePlugin, minPathOppPlugin);
 
     // Update possible moves for both

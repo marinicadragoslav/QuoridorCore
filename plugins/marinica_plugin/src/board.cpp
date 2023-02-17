@@ -27,7 +27,7 @@ Board_t* NewDefaultBoard(void)
             board->tiles[x][y].east  = ((y < (BOARD_SZ - 1)) ?   &(board->tiles[x][y + 1]) : NULL);
 
             // mark first row tiles as goal tiles for me, and last row tiles as goal tiles for opponent
-            board->tiles[x][y].isGoalFor = ((x == 0) ? ME : ((x == (BOARD_SZ - 1)) ? OPPONENT : NONE));           
+            board->tiles[x][y].isGoalFor = ((x == 0) ? ME : ((x == (BOARD_SZ - 1)) ? OPPONENT : NOBODY));           
         }
     }
 
