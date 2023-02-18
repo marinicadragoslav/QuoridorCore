@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "board.h"
 
-int minimax(Board_t* board, Player_t player, uint8_t level, BestPlay_t* bestPlay);
+
+int Minimax(Board_t* board, Player_t player, uint8_t level);
+Play_t GetBestPlayForLevel(uint8_t level);
 
 #endif // Header_qplugin_marinica_minimax

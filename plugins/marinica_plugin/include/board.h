@@ -31,9 +31,9 @@ typedef struct
 
 typedef enum
 {
-   MOVE,
-   WALL,
-   NO_ACTION
+   MAKE_MOVE,
+   PLACE_WALL,
+   NULL_ACTION
 }Action_t;
 
 
@@ -66,7 +66,7 @@ typedef enum
    MOVE_COUNT,
    MOVE_FIRST = MOVE_NORTH,
    MOVE_LAST = JUMP_SOUTH_WEST,
-   NO_MOVE
+   NULL_MOVE
 }MoveID_t;
 
 
@@ -119,7 +119,7 @@ typedef struct
    Action_t action;
    MoveID_t moveID;
    Wall_t* wall;
-}BestPlay_t;
+}Play_t;
 
 
 Board_t* NewDefaultBoard(void);

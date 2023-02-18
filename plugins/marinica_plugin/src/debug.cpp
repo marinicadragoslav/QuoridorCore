@@ -132,25 +132,31 @@ void debug_PrintWall(Wall_t* wall)
     LOG_INFO(DOM) << buff;
 }
 
-void debug_PrintBestPlay(BestPlay_t bestPlay)
+void debug_PrintPlay(Play_t play)
 {
     ClearBuff();
     sprintf(buff + strlen(buff), "  Best Play: ");
-    LOG_INFO(DOM) << buff;
-    if (bestPlay.action == MOVE)
+    if (play.action == MAKE_MOVE)
     {
-        debug_PrintMove(bestPlay.moveID);
+        sprintf(buff + strlen(buff), "  Make move [%s]", debug_ConvertMoveIDToString(play.moveID));
     }
-    else if (bestPlay.action == WALL)
+    else if (play.action == PLACE_WALL)
     {
-        debug_PrintWall(bestPlay.wall);
+        sprintf(buff + strlen(buff), "  Place wall: ");
+        if (play.wall->orientation == H)
+        {
+            sprintf(buff + strlen(buff), "H[%d, %d],", play.wall->pos.x, play.wall->pos.y);
+        }
+        else
+        {
+            sprintf(buff + strlen(buff), "V[%d, %d],", play.wall->pos.x, play.wall->pos.y);
+        }
     }
     else
     {
-        ClearBuff();
         sprintf(buff + strlen(buff), "  NO BEST PLAY FOUND");
-        LOG_INFO(DOM) << buff;
     }
+    LOG_INFO(DOM) << buff;
 }
 
 

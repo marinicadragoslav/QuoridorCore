@@ -2,8 +2,10 @@
 #define Header_qplugin_marinica_player
 
 #include "Player.h"
+#include <stdbool.h>
 
-#define RUN_TESTS 1
+#define RUN_TESTS       true
+#define MINIMAX_LEVEL   2
 
 namespace qplugin
 {

@@ -1,7 +1,10 @@
 #include <stdbool.h>
+#include <stddef.h>
 #include "board.h"
 #include "min_path.h"
 #include "minimax.h"
+
+#define MAX_RECURSIVE_LEVELS 6 // not achievable
 
 // these values are chosen arbitrarily, so that (ERROR_NO_PATH < NEG_INFINITY < BEST_NEG_SCORE) and (BEST_POS_SCORE < POS_INFINITY)
 #define ERROR_NO_PATH   (-0xFFFFFFF)
@@ -25,16 +28,36 @@
                                                     move = (MoveID_t)moveID;
 #define END_FOREACH_POSSIBLE_MOVE           } }
 
+// stores the best play for every level. Get it with GetBestPlayForLevel(level);
+static Play_t bestPlays[MAX_RECURSIVE_LEVELS]; 
 
 
-int minimax(Board_t* board, Player_t player, uint8_t level, BestPlay_t* bestPlay)
+// Static evaluation of the board position, from my perspective (maximizing player) => a high score is good for me
+static int StaticEval(Board_t* board)
 {
-    uint8_t myMinPath;
-    uint8_t oppMinPath;
     bool foundMinPathMe;
     bool foundMinPathOpp;
-    int score;
 
+    uint8_t myMinPath = FindMinPathLen(board, ME, &foundMinPathMe);
+    uint8_t oppMinPath = FindMinPathLen(board, OPPONENT, &foundMinPathOpp);
+
+    if ((!foundMinPathMe) || (!foundMinPathOpp))
+    {
+         // there is no valid path for one of the players in the current position
+        return ERROR_NO_PATH;
+    }
+    else
+    {
+        int pathScore = oppMinPath - myMinPath;
+        int wallScore = board->wallsLeft[ME] - board->wallsLeft[OPPONENT];
+
+        return (pathScore * 100 + wallScore);       
+    }
+}
+
+
+int Minimax(Board_t* board, Player_t player, uint8_t level)
+{
     UpdatePossibleMoves(board, ME);
     UpdatePossibleMoves(board, OPPONENT);
 
@@ -48,46 +71,44 @@ int minimax(Board_t* board, Player_t player, uint8_t level, BestPlay_t* bestPlay
     }
     else if (level == 0)
     {
-        myMinPath = FindMinPathLen(board, ME, &foundMinPathMe);
-        oppMinPath = FindMinPathLen(board, OPPONENT, &foundMinPathOpp);
-
-        return ((!foundMinPathMe) || (!foundMinPathOpp) ? ERROR_NO_PATH : (oppMinPath - myMinPath));
+        return StaticEval(board);
     }
     else
     {
-        score = (player == ME ? NEG_INFINITY : POS_INFINITY); // initialize to worst possible score
+        int score = (player == ME ? NEG_INFINITY : POS_INFINITY); // initialize to worst possible score
 
-        Wall_t* wall;
-        FOREACH_PERMITTED_WALL_AS(wall)
+        if (board->wallsLeft[ME])
         {
-            PlaceWall(board, player, wall);
-
-            BestPlay_t play;
-            int tempScore = minimax(board, board->otherPlayer[player], level - 1, &play);
-            if (IS_VALID(tempScore) && ((player == ME && tempScore > score) || (player == OPPONENT && tempScore < score)))
+            Wall_t* wall;
+            FOREACH_PERMITTED_WALL_AS(wall)
             {
-                score = tempScore;
-                *bestPlay = play;
+                PlaceWall(board, player, wall);
+
+                int tempScore = Minimax(board, board->otherPlayer[player], level - 1);
+                if (IS_VALID(tempScore) && ((player == ME && tempScore > score) || (player == OPPONENT && tempScore < score)))
+                {
+                    score = tempScore;
+                    bestPlays[level] = { PLACE_WALL, NULL_MOVE, wall };
+                }
+
+                UndoWall(board, player, wall);
+
+                UpdatePossibleMoves(board, ME);
+                UpdatePossibleMoves(board, OPPONENT);
             }
-
-            UndoWall(board, player, wall);
-
-            UpdatePossibleMoves(board, ME);
-            UpdatePossibleMoves(board, OPPONENT);
+            END_FOREACH_PERMITTED_WALL;
         }
-        END_FOREACH_PERMITTED_WALL;
 
         MoveID_t move;
         FOREACH_POSSIBLE_MOVE_AS(move)
         {
             MakeMove(board, player, move);
 
-            BestPlay_t play;
-            int tempScore = minimax(board, board->otherPlayer[player], level - 1, &play);
+            int tempScore = Minimax(board, board->otherPlayer[player], level - 1);
             if (IS_VALID(tempScore) && ((player == ME && tempScore > score) || (player == OPPONENT && tempScore < score)))
             {
                 score = tempScore;
-                *bestPlay = play;
+                bestPlays[level] = { MAKE_MOVE, move, NULL };
             }
 
             UndoMove(board, player, move);
@@ -96,7 +117,12 @@ int minimax(Board_t* board, Player_t player, uint8_t level, BestPlay_t* bestPlay
             UpdatePossibleMoves(board, OPPONENT);
         }
         END_FOREACH_POSSIBLE_MOVE;
-    }
 
-    return score;
+        return score;
+    }
+}
+
+Play_t GetBestPlayForLevel(uint8_t level)
+{
+    return bestPlays[level];
 }

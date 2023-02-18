@@ -54,6 +54,7 @@ void test_21_MinPathAndPossibleMoves(void);
 void test_22_MinPathAndPossibleMoves(void);
 void test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(Board_t* board, uint8_t level);
 void test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(Board_t* board, uint8_t level);
+void RunAllTests(Board_t* board);
 
 
 #endif // Header_qplugin_marinica_debug

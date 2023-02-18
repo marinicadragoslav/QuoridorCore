@@ -2144,7 +2144,6 @@ static bool IsRecursiveRunOkForTestPossibleMoves(Board_t* board, Board_t* refere
 
                         PlaceWall(board, ME, wall);
                         PlaceWall(boardTemp, ME, refWall);
-                        // debug_PrintWall(wall);
 
                         if (!AreBoardsEqual(board, boardTemp))
                         {
@@ -2285,3 +2284,30 @@ void test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(Board_t* bo
     free(boardCopy);
 }
 
+void RunAllTests(Board_t* board)
+{
+    test_1_CheckInitialBoardStructure(board);
+    test_2_PlaceThenUndoOneHorizWallThatIsNotOnTheBorder(board);
+    test_3_PlaceThenUndoOneVertWallThatIsNotOnTheBorder(board);
+    test_4_PlaceThenUndoOneHorizWallThatIsOnTheBorder(board);
+    test_5_PlaceThenUndoOneVertWallThatIsOnTheBorder(board);
+    test_6_PlaceTwoConsecutiveHorizWallsAndUndoThem(board);
+    test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(board);
+    test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(board);
+    test_9_PlaceAndUndoGroupsOf3Walls(board);
+    test_10_MinPathAndPossibleMoves();
+    test_11_MinPathAndPossibleMoves();
+    test_12_MinPathAndPossibleMoves();
+    test_13_MinPathAndPossibleMoves();
+    test_14_MinPathAndPossibleMoves();
+    test_15_MinPathAndPossibleMoves();
+    test_16_MinPathAndPossibleMoves();
+    test_17_MinPathAndPossibleMoves();
+    test_18_MinPathAndPossibleMoves();
+    test_19_MinPathAndPossibleMoves();
+    test_20_MinPathAndPossibleMoves();
+    test_21_MinPathAndPossibleMoves();
+    test_22_MinPathAndPossibleMoves();
+    test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(board, 2);
+    test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(board, 2);
+}

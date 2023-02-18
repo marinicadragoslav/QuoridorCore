@@ -13,6 +13,7 @@ add_library(qmarinica-plugin SHARED
    src/tests.cpp
    src/min_path.cpp
    src/minimax.cpp
+   src/plugin_core_interface.cpp
 )
 
 target_include_directories(qmarinica-plugin PUBLIC include)

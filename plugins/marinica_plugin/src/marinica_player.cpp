@@ -1,4 +1,5 @@
 #include "marinica_player.h"
+#include "plugin_core_interface.h"
 #include "QcoreUtil.h"
 #include "board.h"
 #include "debug.h"
@@ -45,95 +46,7 @@ namespace qplugin
     */ 
 
    /** Log domain */
-   const char * const DOM = "qplugin::MP";
-   
-   // Convert absolute wall position to relative position
-   static qcore::Position AbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation)   
-   {
-      qcore::Position relPos;
-
-      // flip around the board center, on both axis
-      relPos.x = qcore::BOARD_SIZE - absPos.x;
-      relPos.y = qcore::BOARD_SIZE - absPos.y;
-
-      // the wall's position now refers to the wrong end of the wall, so adjust for that
-      relPos.x -= (orientation == qcore::Orientation::Vertical ? 2 : 0);
-      relPos.y -= (orientation == qcore::Orientation::Horizontal ? 2 : 0);
-
-      return relPos;
-   }
-
-   // Convert core wall position to plugin wall position (both type and value)
-   static Position_t CoreToPluginWallPos(qcore::Position gameWallPos, qcore::Orientation orientation)
-   {
-      Position_t pluginWallPos;
-
-      if (orientation == qcore::Orientation::Horizontal)
-      {
-         pluginWallPos.x = gameWallPos.x - 1;
-         pluginWallPos.y = gameWallPos.y;
-      }
-      else
-      {           
-         pluginWallPos.x = gameWallPos.x;
-         pluginWallPos.y = gameWallPos.y - 1;
-      }
-
-      return pluginWallPos;
-   }
-
-   // Convert core wall orientation type to plugin wall orientation type
-   static Orientation_t CoreToPluginWallOrientation(qcore::Orientation orientation)
-   {
-      return (orientation == qcore::Orientation::Horizontal ? H : V);
-   }
-
-   static void SpeedTest(Board_t* board, uint8_t level)
-   {
-      if (level == 0)
-      {
-         return;
-      }
-
-      // go through walls
-      for (int o = H; o <= V; o++)
-      {
-         for (int i = 0; i < BOARD_SZ - 1; i++)
-         {
-            for (int j = 0; j < BOARD_SZ - 1; j++)
-            {
-               Wall_t* wall = &(board->walls[o][i][j]);
-
-               if (wall->permission == WALL_PERMITTED)
-               {
-                  PlaceWall(board, ME, wall);
-                  // debug_PrintWall(wall);
-
-                  SpeedTest(board, level - 1);
-
-                  UndoWall(board, ME, wall);
-               }
-            }
-         }
-      }
-
-      UpdatePossibleMoves(board, ME);
-
-      // go through moves
-      for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
-      {
-         if (board->moves[ME][moveID].isPossible)
-         {
-            MakeMove(board, ME, (MoveID_t)moveID);
-            // debug_PrintMove((MoveID_t)moveID);
-
-            SpeedTest(board, level - 1);
-
-            UndoMove(board, ME, (MoveID_t)moveID);
-            UpdatePossibleMoves(board, ME);
-         }
-      }
-   }
+   const char * const DOM = "qplugin::MP";   
 
    MarinicaPlayer::MarinicaPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
       qcore::Player(id, name, game)
@@ -146,42 +59,22 @@ namespace qplugin
    void MarinicaPlayer::doNextMove()
    {
       static int turnCount;
+      int turn = (turnCount++);
+
       static Board_t* board;
 
-      if (turnCount == 0)
+      if (turn == 0)
       {
+         // only on the first function entry
          board = NewDefaultBoard();
-         
-#if (RUN_TESTS)
-      test_1_CheckInitialBoardStructure(board);
-      test_2_PlaceThenUndoOneHorizWallThatIsNotOnTheBorder(board);
-      test_3_PlaceThenUndoOneVertWallThatIsNotOnTheBorder(board);
-      test_4_PlaceThenUndoOneHorizWallThatIsOnTheBorder(board);
-      test_5_PlaceThenUndoOneVertWallThatIsOnTheBorder(board);
-      test_6_PlaceTwoConsecutiveHorizWallsAndUndoThem(board);
-      test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(board);
-      test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(board);
-      test_9_PlaceAndUndoGroupsOf3Walls(board);
-      test_10_MinPathAndPossibleMoves();
-      test_11_MinPathAndPossibleMoves();
-      test_12_MinPathAndPossibleMoves();
-      test_13_MinPathAndPossibleMoves();
-      test_14_MinPathAndPossibleMoves();
-      test_15_MinPathAndPossibleMoves();
-      test_16_MinPathAndPossibleMoves();
-      test_17_MinPathAndPossibleMoves();
-      test_18_MinPathAndPossibleMoves();
-      test_19_MinPathAndPossibleMoves();
-      test_20_MinPathAndPossibleMoves();
-      test_21_MinPathAndPossibleMoves();
-      test_22_MinPathAndPossibleMoves();
-      test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(board, 2);
-      test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(board, 2);
-#endif
+
+         #if (RUN_TESTS)
+            RunAllTests(board);
+         #endif
       }
 
 
-      // get game info 
+      // get game info ----------------------------------------------------------------------------------------------------------------------
       uint8_t              myID           = getId(); // 0 (if I am the first player to move) or 1
       uint8_t              oppID          = (myID ? 0 : 1);
       qcore::Position      myPos          = getPosition();
@@ -192,12 +85,12 @@ namespace qplugin
       qcore::ActionType    lastActType    = lastAct.actionType;
       qcore::Orientation   lastActWallOr  = lastAct.wallState.orientation;
       qcore::Position      lastActWallPos = (myID == 0 ? lastAct.wallState.position : 
-                                                AbsToRelWallPos(lastAct.wallState.position, lastActWallOr)); // only convert when I am 2nd to move
+                                                CoreAbsToRelWallPos(lastAct.wallState.position, lastActWallOr)); // only convert when I am 2nd to move
       uint8_t              myWallsLeft    = getWallsLeft();
       uint8_t              oppWallsLeft   = oppState.wallsLeft;
 
 
-      // update board structure
+      // update board structure -------------------------------------------------------------------------------------------------------------
       UpdatePos(board, ME, {myPos.x, myPos.y});
       UpdatePos(board, OPPONENT, {oppPos.x, oppPos.y});
 
@@ -219,9 +112,9 @@ namespace qplugin
       uint8_t minPathMe = FindMinPathLen(board, ME, &foundMinPathMe);
 
 
-      // log info
+      // log info ---------------------------------------------------------------------------------------------------------------------------
       LOG_INFO(DOM) << "---------------------------------------------------------------";
-      LOG_INFO(DOM) << "  Turn count = " << turnCount;
+      LOG_INFO(DOM) << "  Turn count = " << turn;
       LOG_INFO(DOM) << "  Me  (" << (int)myID << ") pos = [" << (int)myPos.x << ", " << (int)myPos.y << "], walls = " << (int)myWallsLeft;
       LOG_INFO(DOM) << "  Opp (" << (int)oppID << ") pos = [" << (int)oppPos.x << ", " << (int)oppPos.y << "], walls = " << (int)oppWallsLeft;
       LOG_INFO(DOM) << "  Last act = " << (lastActType == qcore::ActionType::Invalid ? "Invalid" : 
@@ -248,72 +141,89 @@ namespace qplugin
       LOG_INFO(DOM) << "  Opp minpath = " << (int)minPathOpp << ", (found = " << (foundMinPathOpp ? "true" : "false") << ")";
       LOG_INFO(DOM) << "";
 
-      debug_PrintBoard(board); // includes the last computed min path
+      debug_PrintBoard(board);
 
 
-      // Test
-      //SpeedTest(board, 3);
-      BestPlay_t bestPlay = { NO_ACTION, NO_MOVE, NULL };
-      int score = minimax(board, ME, 3, &bestPlay);
-      LOG_INFO(DOM) << "  Minimax score: " << score;
-      debug_PrintBestPlay(bestPlay);
-
-
+      // Find best play ---------------------------------------------------------------------------------------------------------------------
+      Minimax(board, ME, MINIMAX_LEVEL);
+      Play_t bestPlay = GetBestPlayForLevel(MINIMAX_LEVEL);
+      debug_PrintPlay(bestPlay);
       LOG_INFO(DOM) << "---------------------------------------------------------------";
-      turnCount++;
 
-      // ----------------------------------------------------------------------------
-      LOG_INFO(DOM) << "Player " << (int)getId() << " is thinking..";
-
-      // Simulate more thinking
-      // std::this_thread::sleep_for(1000ms);
-
-      myPos = getPosition() * 2;
-      qcore::BoardMap map;
-      std::list<qcore::Position> pos;
-
-      getBoardState()->createBoardMap(map, getId());
-
-      for (uint8_t i = 0; i < qcore::BOARD_MAP_SIZE; i += 2)
+      // Perform best play ------------------------------------------------------------------------------------------------------------------
+      if (bestPlay.action == PLACE_WALL)
       {
-         qcore::Position p(0, i);
-         map(p) = qcore::BoardMap::Invalid;
-         pos.push_back(p);
+         // place wall in the plugin logic
+         PlaceWall(board, ME, GetWallByPosAndOrientation(board, bestPlay.wall->pos, bestPlay.wall->orientation));
+
+         // place wall in the game core
+         placeWall(qcore::WallState{PluginToCoreWallPos(bestPlay.wall->pos, bestPlay.wall->orientation), 
+                     PluginToCoreWallOrientation(bestPlay.wall->orientation)});
+
+         return;
       }
-
-      auto checkPos = [&](const qcore::Position& p, qcore::Direction dir) -> bool
+      else if (bestPlay.action == MAKE_MOVE)
       {
-         if (myPos == p)
-         {
-            move(dir);
-            return true;
-         }
+         // make move in the plugin logic
+         MakeMove(board, ME, bestPlay.moveID);
 
-         if(map(p) < qcore::BoardMap::HorizontalWall)
+         // make move in the game core
+         move((myPos.x + board->moves[ME][bestPlay.moveID].xDiff), 
+               (myPos.y + board->moves[ME][bestPlay.moveID].yDiff));
+
+         return;
+      }
+      else // something went wrong, perform dummy move --------------------------------------------------------------------------------------
+      {
+         LOG_INFO(DOM) << "Player " << (int)getId() << " has f*cked up.. Fallback on dummy player... ";
+
+         myPos = getPosition() * 2;
+         qcore::BoardMap map;
+         std::list<qcore::Position> pos;
+
+         getBoardState()->createBoardMap(map, getId());
+
+         for (uint8_t i = 0; i < qcore::BOARD_MAP_SIZE; i += 2)
          {
+            qcore::Position p(0, i);
             map(p) = qcore::BoardMap::Invalid;
-            pos.emplace_back(p);
+            pos.push_back(p);
          }
 
-         return false;
-      };
-
-      while (not pos.empty())
-      {
-         auto p = pos.front();
-         pos.pop_front();
-
-         if ((map(p + 1_x) == 0 and checkPos(p + 2_x, qcore::Direction::Up)) or
-            (map(p - 1_x) == 0 and checkPos(p - 2_x, qcore::Direction::Down)) or
-            (map(p + 1_y) == 0 and checkPos(p + 2_y, qcore::Direction::Left)) or
-            (map(p - 1_y) == 0 and checkPos(p - 2_y, qcore::Direction::Right)))
+         auto checkPos = [&](const qcore::Position& p, qcore::Direction dir) -> bool
          {
-            return;
-         }
-      }
+            if (myPos == p)
+            {
+               move(dir);
+               return true;
+            }
 
-      LOG_WARN(DOM) << "Something went wrong. Making a random move.";
-      move(qcore::Direction::Down) or move(qcore::Direction::Left) or move(qcore::Direction::Right) or move(qcore::Direction::Up);
+            if(map(p) < qcore::BoardMap::HorizontalWall)
+            {
+               map(p) = qcore::BoardMap::Invalid;
+               pos.emplace_back(p);
+            }
+
+            return false;
+         };
+
+         while (not pos.empty())
+         {
+            auto p = pos.front();
+            pos.pop_front();
+
+            if ((map(p + 1_x) == 0 and checkPos(p + 2_x, qcore::Direction::Up)) or
+               (map(p - 1_x) == 0 and checkPos(p - 2_x, qcore::Direction::Down)) or
+               (map(p + 1_y) == 0 and checkPos(p + 2_y, qcore::Direction::Left)) or
+               (map(p - 1_y) == 0 and checkPos(p - 2_y, qcore::Direction::Right)))
+            {
+               return;
+            }
+         }
+
+         LOG_WARN(DOM) << "Something went wrong. Making a random move.";
+         move(qcore::Direction::Down) or move(qcore::Direction::Left) or move(qcore::Direction::Right) or move(qcore::Direction::Up);
+      }
    }
 
 } // namespace qplugin

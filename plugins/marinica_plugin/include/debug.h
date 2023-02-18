@@ -16,6 +16,6 @@ void debug_PrintTile(const char* name, int8_t x, int8_t y);
 void debug_PrintMove(MoveID_t moveID);
 void debug_PrintWall(Wall_t* wall);
 void debug_PrintMinPaths(int minPathMe, int minPathOpp);
-void debug_PrintBestPlay(BestPlay_t bestPlay);
+void debug_PrintPlay(Play_t play);
 
 #endif // Header_qplugin_marinica_debug

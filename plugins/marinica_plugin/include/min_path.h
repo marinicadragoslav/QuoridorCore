@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "board.h"
 
-#define SHOW_MIN_PATH_ON_LOGGED_BOARD 0
+#define SHOW_MIN_PATH_ON_LOGGED_BOARD  false
 
 typedef struct
 {
