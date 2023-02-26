@@ -50,8 +50,9 @@ static int StaticEval(Board_t* board)
     {
         int pathScore = oppMinPath - myMinPath;
         int wallScore = board->wallsLeft[ME] - board->wallsLeft[OPPONENT];
+        int closerToEnemyBaseScore = ((BOARD_SZ - 1) - board->playerPos[OPPONENT].x) - board->playerPos[ME].x;
 
-        return (pathScore * 100 + wallScore);       
+        return (pathScore * 1000 + wallScore * 10 + closerToEnemyBaseScore);   
     }
 }
 
@@ -61,6 +62,7 @@ int Minimax(Board_t* board, Player_t player, uint8_t level)
     UpdatePossibleMoves(board, ME);
     UpdatePossibleMoves(board, OPPONENT);
 
+/*
     if (HasPlayerWon(board, ME))
     {
         return BEST_POS_SCORE;
@@ -70,6 +72,8 @@ int Minimax(Board_t* board, Player_t player, uint8_t level)
         return BEST_NEG_SCORE;
     }
     else if (level == 0)
+*/
+    if (HasPlayerWon(board, ME) || HasPlayerWon(board, OPPONENT) || (level == 0))
     {
         return StaticEval(board);
     }
@@ -77,7 +81,7 @@ int Minimax(Board_t* board, Player_t player, uint8_t level)
     {
         int score = (player == ME ? NEG_INFINITY : POS_INFINITY); // initialize to worst possible score
 
-        if (board->wallsLeft[ME])
+        if (board->wallsLeft[player])
         {
             Wall_t* wall;
             FOREACH_PERMITTED_WALL_AS(wall)

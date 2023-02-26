@@ -3,9 +3,8 @@
 #include <string.h>
 #include "min_path.h"
 
-#define INFINITE_LEN            0xFFU
-#define ALL_GOAL_TILES_REACHED  0x01FF // 9 LSB bits set
-#define QUEUE_MAX_SIZE          1000
+#define INFINITE_LEN     0xFFU
+#define QUEUE_MAX_SIZE   1000
 
 
 static void QueueInit(void);
@@ -19,11 +18,18 @@ static Subpath_t queue[QUEUE_MAX_SIZE];
 static uint16_t queueNext, queueFirst;
 static Subpath_t foundSubpaths[BOARD_SZ][BOARD_SZ];
 static uint16_t goalTilesReached;
-static Subpath_t* debug_destination;
+static Subpath_t* destination;
 
 
 uint8_t FindMinPathLen(Board_t* board, Player_t player, bool* found)
 {
+    if (GetPlayerTile(board, player)->isGoalFor == player)
+    {
+        // player is in the enemy base
+        *found = true;
+        return 0;
+    }
+
     QueueInit();
     FoundSubpathsInit();
 
@@ -40,8 +46,8 @@ uint8_t FindMinPathLen(Board_t* board, Player_t player, bool* found)
     QueuePush(source);
 
     // Breadth-First-Search. 
-    // Stops when min paths were found for each goal tile or when queue empty (meaning some goal tiles are unreachable).
-    while((goalTilesReached != ALL_GOAL_TILES_REACHED) && !IsQueueEmpty())
+    // Stops when min path was found for a goal tile or when queue empty (meaning there is no path).
+    while((goalTilesReached == 0) && !IsQueueEmpty())
     {
         Subpath_t* item = QueuePop();
 
@@ -64,7 +70,7 @@ uint8_t FindMinPathLen(Board_t* board, Player_t player, bool* found)
                 if (minPathLen > item->pathLen)
                 {
                     minPathLen = item->pathLen;
-                    debug_destination = item; // debug
+                    destination = item; // debug
                 }
             }
 
@@ -121,7 +127,7 @@ uint8_t FindMinPathLen(Board_t* board, Player_t player, bool* found)
         memset(board->debug_isOnMinPath, 0, sizeof(board->debug_isOnMinPath));
         // debug - backtrack from destination tile to mark all tiles that are part of min path
         Tile_t* stopAt = &(board->tiles[board->playerPos[player].x][board->playerPos[player].y]);
-        Tile_t* current = debug_destination->tile;
+        Tile_t* current = destination->tile;
         while (current != stopAt)
         {
             board->debug_isOnMinPath[current->pos.x][current->pos.y] = true;
