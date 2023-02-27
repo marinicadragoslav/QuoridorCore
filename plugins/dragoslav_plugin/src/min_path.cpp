@@ -3,6 +3,8 @@
 #include <string.h>
 #include "min_path.h"
 
+namespace qplugin_d {
+
 #define INFINITE_LEN            0xFFU
 #define QUEUE_MAX_SIZE          1000
 
@@ -172,4 +174,6 @@ static void FoundSubpathsInit(void)
 static bool IsMinPathFoundForTile(Tile_t* tile)
 {
     return (foundSubpaths[tile->pos.x][tile->pos.y].pathLen != 0);
+}
+
 }

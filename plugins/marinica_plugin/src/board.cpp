@@ -4,6 +4,8 @@
 #include <string.h>
 #include "board.h"
 
+namespace qplugin {
+
 static void DecreaseWallPermission(Wall_t* wall);
 static void IncreaseWallPermission(Wall_t* wall);
 
@@ -285,4 +287,6 @@ Tile_t* GetPlayerTile(Board_t* board, Player_t player)
 bool HasPlayerWon(Board_t* board, Player_t player)
 {
     return (GetPlayerTile(board, player)->isGoalFor == player ? true : false);
+}
+
 }

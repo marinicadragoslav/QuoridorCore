@@ -1,6 +1,6 @@
 #include "plugin_core_interface.h"
 
-namespace qplugin
+namespace qplugin_d
 {
     qcore::Position CoreAbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation)   
     {

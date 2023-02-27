@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+namespace qplugin {
+
 #define BOARD_SZ 9
 
 
@@ -134,5 +136,5 @@ bool HasPlayerWon(Board_t* board, Player_t player);
 void MakeMove(Board_t* board, Player_t player, MoveID_t moveID);
 void UndoMove(Board_t* board, Player_t player, MoveID_t moveID);
 
-
+}
 #endif // Header_qplugin_marinica_board

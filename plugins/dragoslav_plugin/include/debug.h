@@ -1,9 +1,11 @@
-#ifndef Header_qplugin_dragoslav_debug
-#define Header_qplugin_dragoslav_debug
+#ifndef Header_qplugin_d_dragoslav_debug
+#define Header_qplugin_d_dragoslav_debug
 
 #include <stdint.h>
 #include <stdbool.h>
 #include "board.h"
+
+namespace qplugin_d {
 
 void debug_PrintTestFailed(void);
 void debug_PrintTestPassed(void);
@@ -18,4 +20,6 @@ void debug_PrintWall(Wall_t* wall);
 void debug_PrintMinPaths(int minPathMe, int minPathOpp);
 void debug_PrintPlay(Play_t play);
 
-#endif // Header_qplugin_dragoslav_debug
+}
+
+#endif // Header_qplugin_d_dragoslav_debug

@@ -4,12 +4,14 @@
 #include "debug.h"
 #include "min_path.h"
 
+namespace qplugin_d {
+
 #define LOGLEN 120
 
 static void ClearBuff(void);
 static const char* debug_ConvertMoveIDToString(MoveID_t moveID);
 
-static const char * const DOM = "qplugin::MP";
+static const char * const DOM = "qplugin_d::MP";
 static char buff[LOGLEN];
 
 void debug_PrintTestMessage(const char* msg)
@@ -258,4 +260,6 @@ void debug_PrintBoard(Board_t* board)
 void debug_PrintMinPaths(int minPathMe, int minPathOpp)
 {
     LOG_INFO(DOM) << "  Me: " << minPathMe << ", Opponent: " << minPathOpp;
+}
+
 }

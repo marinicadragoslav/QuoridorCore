@@ -3,6 +3,8 @@
 
 #include "board.h"
 
+namespace qplugin {
+
 typedef enum
 {
     N, S, E, W
@@ -56,5 +58,5 @@ void test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(Board_t* boar
 void test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(Board_t* board, uint8_t level);
 void RunAllTests(Board_t* board);
 
-
+}
 #endif // Header_qplugin_marinica_debug

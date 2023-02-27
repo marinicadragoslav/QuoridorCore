@@ -1,7 +1,9 @@
-#ifndef Header_qplugin_dragoslav_tests
-#define Header_qplugin_dragoslav_tests
+#ifndef Header_qplugin_d_dragoslav_tests
+#define Header_qplugin_d_dragoslav_tests
 
 #include "board.h"
+
+namespace qplugin_d {
 
 typedef enum
 {
@@ -56,5 +58,7 @@ void test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(Board_t* boar
 void test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(Board_t* board, uint8_t level);
 void RunAllTests(Board_t* board);
 
+}
 
-#endif // Header_qplugin_dragoslav_debug
+
+#endif // Header_qplugin_d_dragoslav_debug

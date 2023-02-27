@@ -6,6 +6,8 @@
 #include "debug.h"
 #include "min_path.h"
 
+namespace qplugin_d {
+
 #define COUNT(A) (A == NULL ? 0 : (sizeof(A) / sizeof(A[0])))
 
 #define DEFAULT_NULL_TILE_LINKS { 0, 0, N }, \
@@ -2310,4 +2312,6 @@ void RunAllTests(Board_t* board)
     test_22_MinPathAndPossibleMoves();
     test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(board, 2);
     test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(board, 2);
+}
+
 }

@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include "board.h"
 
+namespace qplugin {
+
 void debug_PrintTestFailed(void);
 void debug_PrintTestPassed(void);
 void debug_PrintTestErrorMsg(const char* errMsg);
@@ -17,5 +19,6 @@ void debug_PrintMove(MoveID_t moveID);
 void debug_PrintWall(Wall_t* wall);
 void debug_PrintMinPaths(int minPathMe, int minPathOpp);
 void debug_PrintPlay(Play_t play);
+}
 
 #endif // Header_qplugin_marinica_debug

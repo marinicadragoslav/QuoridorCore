@@ -11,7 +11,7 @@
 using namespace qcore::literals;
 using namespace std::chrono_literals;
 
-namespace qplugin
+namespace qplugin_d
 {
    /** Notes:
     *  Plugin player is called "ME", the other player is "OPPONENT".
@@ -46,7 +46,7 @@ namespace qplugin
     */ 
 
    /** Log domain */
-   const char * const DOM = "qplugin::MP";   
+   const char * const DOM = "qplugin_d::MP";   
 
    dragoslavPlayer::dragoslavPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
       qcore::Player(id, name, game)
@@ -62,6 +62,8 @@ namespace qplugin
       int turn = (turnCount++);
 
       static Board_t* board;
+      static bool areCornerWallsDisabled = false;
+      static bool areAllWallsDisabled = false;
 
       if (turn == 0)
       {
@@ -146,13 +148,36 @@ namespace qplugin
 
       // Find best play ---------------------------------------------------------------------------------------------------------------------
       Play_t bestPlay;
+
+      if ((myWallsLeft + oppWallsLeft == 20) && !areAllWallsDisabled)
+      {
+         DisableAllWalls(board);
+         areAllWallsDisabled = true;
+      }
+      else if ((myWallsLeft + oppWallsLeft < 20 || myPos.x <= 5 || oppPos.x >= 3) && areAllWallsDisabled)
+      {
+         EnableAllWalls(board);
+         areAllWallsDisabled = false;
+      }
+      else if ((myWallsLeft + oppWallsLeft > 16) && !areCornerWallsDisabled)
+      {
+         DisableCornerWalls(board);
+         areCornerWallsDisabled = true;
+      }
+      else if ((myWallsLeft + oppWallsLeft <= 16) && areCornerWallsDisabled)
+      {
+         EnableCornerWalls(board);
+         areCornerWallsDisabled = false;
+      }
+
+
       if (myID == 0 && turn == 3 && myWallsLeft == 10 && oppWallsLeft == 10)
       {
          bestPlay = {PLACE_WALL, NULL_MOVE, GetWallByPosAndOrientation(board, {7, 4}, V)};
       }
       else
       {
-         Minimax(board, ME, MINIMAX_LEVEL);
+         Minimax(board, ME, MINIMAX_LEVEL, NEG_INFINITY, POS_INFINITY);
          bestPlay = GetBestPlayForLevel(MINIMAX_LEVEL);
       }
       debug_PrintPlay(bestPlay);
@@ -234,4 +259,4 @@ namespace qplugin
       }
    }
 
-} // namespace qplugin
+} // namespace qplugin_d

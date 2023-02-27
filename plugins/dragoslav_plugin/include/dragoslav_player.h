@@ -1,5 +1,5 @@
-#ifndef Header_qplugin_dragoslav_player
-#define Header_qplugin_dragoslav_player
+#ifndef Header_qplugin_d_dragoslav_player
+#define Header_qplugin_d_dragoslav_player
 
 #include "Player.h"
 #include <stdbool.h>
@@ -7,7 +7,7 @@
 #define RUN_TESTS       true
 #define MINIMAX_LEVEL   3
 
-namespace qplugin
+namespace qplugin_d
 {
    class dragoslavPlayer : public qcore::Player
    {
@@ -21,4 +21,4 @@ namespace qplugin
    };
 }
 
-#endif // Header_qplugin_dragoslav_player
+#endif // Header_qplugin_d_dragoslav_player

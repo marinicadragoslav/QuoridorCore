@@ -4,6 +4,8 @@
 #include <string.h>
 #include "board.h"
 
+namespace qplugin_d {
+
 static void DecreaseWallPermission(Wall_t* wall);
 static void IncreaseWallPermission(Wall_t* wall);
 
@@ -41,6 +43,7 @@ Board_t* NewDefaultBoard(void)
                 board->walls[o][x][y].pos = {x, y};
                 board->walls[o][x][y].orientation = (Orientation_t)o;
                 board->walls[o][x][y].permission = WALL_PERMITTED;
+                board->walls[o][x][y].isDisabled = false;
 
                 // set tiles that this wall separates when placed
                 Tile_t* referenceTile = &(board->tiles[x][y]);
@@ -285,4 +288,98 @@ Tile_t* GetPlayerTile(Board_t* board, Player_t player)
 bool HasPlayerWon(Board_t* board, Player_t player)
 {
     return (GetPlayerTile(board, player)->isGoalFor == player ? true : false);
+}
+
+void DisableCornerWalls(Board_t* board)
+{
+    for (int8_t o = H; o <= V; o++) // orientation V or H
+    {
+        for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+        {
+            for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+            {
+                if (x == 0 && y == 0)
+                {
+                    board->walls[o][x][y].isDisabled = true;
+                }
+                
+                if (x == 0 && y == BOARD_SZ - 2)
+                {
+                    board->walls[o][x][y].isDisabled = true;
+                }
+
+                if (y == 0 && x == BOARD_SZ - 2)
+                {
+                    board->walls[o][x][y].isDisabled = true;
+                }
+
+                if (y == BOARD_SZ - 2 && x == BOARD_SZ - 2)
+                {
+                    board->walls[o][x][y].isDisabled = true;
+                }
+            }
+        }
+    }
+}
+
+void EnableCornerWalls(Board_t*board)
+{
+    for (int8_t o = H; o <= V; o++) // orientation V or H
+    {
+        for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+        {
+            for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+            {
+                if (x == 0 && y == 0)
+                {
+                    board->walls[o][x][y].isDisabled = false;
+                }
+                
+                if (x == 0 && y == BOARD_SZ - 2)
+                {
+                    board->walls[o][x][y].isDisabled = false;
+                }
+
+                if (y == 0 && x == BOARD_SZ - 2)
+                {
+                    board->walls[o][x][y].isDisabled = false;
+                }
+
+                if (y == BOARD_SZ - 2 && x == BOARD_SZ - 2)
+                {
+                    board->walls[o][x][y].isDisabled = false;
+                }
+            }
+        }
+    }
+}
+
+void DisableAllWalls(Board_t* board)
+{
+    for (int8_t o = H; o <= V; o++) // orientation V or H
+    {
+        for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+        {
+            for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+            {
+                board->walls[o][x][y].isDisabled = true;
+            }
+        }
+    }
+}
+
+void EnableAllWalls(Board_t*board)
+{
+    for (int8_t o = H; o <= V; o++) // orientation V or H
+    {
+        for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+        {
+            for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+            {               
+                board->walls[o][x][y].isDisabled = false;               
+            }
+        }
+    }
+}
+
 }

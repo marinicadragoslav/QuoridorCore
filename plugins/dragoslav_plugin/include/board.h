@@ -1,8 +1,10 @@
-#ifndef Header_qplugin_dragoslav_board
-#define Header_qplugin_dragoslav_board
+#ifndef Header_qplugin_d_dragoslav_board
+#define Header_qplugin_d_dragoslav_board
 
 #include <stdint.h>
 #include <stdbool.h>
+
+namespace qplugin_d {
 
 #define BOARD_SZ 9
 
@@ -99,6 +101,7 @@ typedef struct Wall_t
    struct Wall_t* forbidsNext;
    struct Wall_t* forbidsCompl;
    WallPermission_t permission;
+   bool isDisabled;
 }Wall_t;
 
 
@@ -133,6 +136,10 @@ void UpdatePossibleMoves(Board_t* board, Player_t player);
 bool HasPlayerWon(Board_t* board, Player_t player);
 void MakeMove(Board_t* board, Player_t player, MoveID_t moveID);
 void UndoMove(Board_t* board, Player_t player, MoveID_t moveID);
+void DisableCornerWalls(Board_t* board);
+void EnableCornerWalls(Board_t* board);
+void DisableAllWalls(Board_t* board);
+void EnableAllWalls(Board_t* board);
 
-
-#endif // Header_qplugin_dragoslav_board
+}
+#endif // Header_qplugin_d_dragoslav_board

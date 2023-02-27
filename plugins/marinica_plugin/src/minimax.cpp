@@ -4,6 +4,8 @@
 #include "min_path.h"
 #include "minimax.h"
 
+namespace qplugin {
+
 #define MAX_RECURSIVE_LEVELS 6 // not achievable
 
 // these values are chosen arbitrarily, so that (ERROR_NO_PATH < NEG_INFINITY < BEST_NEG_SCORE) and (BEST_POS_SCORE < POS_INFINITY)
@@ -129,4 +131,6 @@ int Minimax(Board_t* board, Player_t player, uint8_t level)
 Play_t GetBestPlayForLevel(uint8_t level)
 {
     return bestPlays[level];
+}
+
 }
