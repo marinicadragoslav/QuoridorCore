@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 #define RUN_TESTS       true
-#define MINIMAX_LEVEL   3
+#define MINIMAX_LEVEL   2
 
 namespace qplugin
 {
