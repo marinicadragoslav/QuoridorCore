@@ -64,6 +64,7 @@ namespace qplugin_d
       static Board_t* board;
       static bool areCornerWallsDisabled = false;
       static bool areAllWallsDisabled = false;
+      static bool areFirstAndLastColVertWallsDisabled = false;
 
       if (turn == 0)
       {
@@ -149,28 +150,55 @@ namespace qplugin_d
       // Find best play ---------------------------------------------------------------------------------------------------------------------
       Play_t bestPlay;
 
-      if ((myWallsLeft + oppWallsLeft == 20) && !areAllWallsDisabled)
+      // disable wall placing at the beginning of the game
+      if ((myWallsLeft + oppWallsLeft == 20) && myPos.x > 5 && oppPos.x < 3 && !areAllWallsDisabled)
       {
          DisableAllWalls(board);
          areAllWallsDisabled = true;
+         LOG_INFO(DOM) << "  Disabled all walls";
       }
-      else if ((myWallsLeft + oppWallsLeft < 20 || myPos.x <= 5 || oppPos.x >= 3) && areAllWallsDisabled)
+      
+      // enable walls if a wall was placed or the players have advanced enough
+      if ((myWallsLeft + oppWallsLeft < 20 || myPos.x <= 5 || oppPos.x >= 3) && areAllWallsDisabled)
       {
          EnableAllWalls(board);
          areAllWallsDisabled = false;
+         LOG_INFO(DOM) << "  Enabled all walls";
       }
-      else if ((myWallsLeft + oppWallsLeft > 16) && !areCornerWallsDisabled)
+
+      // disable first and last col vertical walls until at least 2 walls were placed
+       if ((myWallsLeft + oppWallsLeft > 18) && !areFirstAndLastColVertWallsDisabled && !areAllWallsDisabled)
+      {
+         DisableFirstAndLastColVertWalls(board);
+         areFirstAndLastColVertWallsDisabled = true;
+         LOG_INFO(DOM) << "  Disabled FLCV walls";
+      }
+
+      // enable first and last col vertical walls when the first the first 2 walls were placed
+      if ((myWallsLeft + oppWallsLeft <= 18) && areFirstAndLastColVertWallsDisabled)
+      {
+         EnableFirstAndLastColVertWalls(board);
+         areFirstAndLastColVertWallsDisabled = false;
+         LOG_INFO(DOM) << "  Enabled FLCV walls";
+      }
+      
+      // disable corner walls until at least 4 walls have been placed
+      if ((myWallsLeft + oppWallsLeft > 16) && !areCornerWallsDisabled && !areAllWallsDisabled)
       {
          DisableCornerWalls(board);
          areCornerWallsDisabled = true;
+         LOG_INFO(DOM) << "  Disabled Corner walls";
       }
-      else if ((myWallsLeft + oppWallsLeft <= 16) && areCornerWallsDisabled)
+      
+      // enable corner walls when the first the first 4 walls were placed
+      if ((myWallsLeft + oppWallsLeft <= 16) && areCornerWallsDisabled)
       {
          EnableCornerWalls(board);
          areCornerWallsDisabled = false;
+         LOG_INFO(DOM) << "  Enabled Corner walls";
       }
 
-
+      // shiller opening if possible
       if (myID == 0 && turn == 3 && myWallsLeft == 10 && oppWallsLeft == 10)
       {
          bestPlay = {PLACE_WALL, NULL_MOVE, GetWallByPosAndOrientation(board, {7, 4}, V)};

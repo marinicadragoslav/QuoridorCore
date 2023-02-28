@@ -140,6 +140,8 @@ void DisableCornerWalls(Board_t* board);
 void EnableCornerWalls(Board_t* board);
 void DisableAllWalls(Board_t* board);
 void EnableAllWalls(Board_t* board);
+void DisableFirstAndLastColVertWalls(Board_t* board);
+void EnableFirstAndLastColVertWalls(Board_t* board);
 
 }
 #endif // Header_qplugin_d_dragoslav_board

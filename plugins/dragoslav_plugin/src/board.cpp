@@ -382,4 +382,34 @@ void EnableAllWalls(Board_t*board)
     }
 }
 
+
+void DisableFirstAndLastColVertWalls(Board_t* board)
+{
+    for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+    {
+        for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+        {
+            if (y == 0 || y == (BOARD_SZ - 2)) // first or last col
+            {
+                board->walls[V][x][y].isDisabled = true;
+            }
+        }
+    }
 }
+
+void EnableFirstAndLastColVertWalls(Board_t* board)
+{
+    for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+    {
+        for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+        {
+            if (y == 0 || y == (BOARD_SZ - 2)) // first or last col
+            {
+                board->walls[V][x][y].isDisabled = false;
+            }
+        }
+    }
+}
+
+}
+
