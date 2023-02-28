@@ -64,13 +64,20 @@ namespace qcore
    void PluginManager::LoadPlayerLibraries()
    {
       auto libPath = fs::current_path().concat(SHARED_LIBRARY_PATH);
+      const char *envPath = std::getenv("QUORIDOR_PLUGIN_PATH");
+
+      if (envPath)
+      {
+         libPath = envPath;
+      }
+
       // Check all shared libraries from our path
       if (not fs::exists(libPath) and not fs::is_directory(libPath))
       {
          throw util::Exception("Invalid shared library path [" + libPath.string() + "]");
       }
 
-      for (auto& p: fs::directory_iterator(fs::current_path().concat(SHARED_LIBRARY_PATH)))
+      for (auto& p: fs::directory_iterator(libPath))
       {
          if (p.path().extension() == SHARED_LIBRARY_EXT)
          {
@@ -78,13 +85,19 @@ namespace qcore
 
 #ifdef WIN32
             libHandle = LoadLibrary(p.path().string().c_str());
-#else
-            libHandle = dlopen(p.path().c_str(), RTLD_NOW | RTLD_GLOBAL);
-#endif
+
             if (not libHandle)
             {
-                throw util::Exception("Failed to load library " + p.path().string());
+                throw util::Exception("Failed to load library " + p.path().string() + ": Error code " + std::to_string(GetLastError()));
             }
+#else
+            libHandle = dlopen(p.path().c_str(), RTLD_NOW | RTLD_GLOBAL);
+
+            if (not libHandle)
+            {
+                throw util::Exception("Failed to load library " + p.path().string() + ": " + dlerror());
+            }
+#endif
 
             LOG_INFO(DOM) << "Loading " << p.path();
 

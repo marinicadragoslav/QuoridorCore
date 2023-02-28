@@ -16,6 +16,10 @@ cd build/export/bin/
 ./quoridor-cli
 ```
 
+### App environment variables ###
+* **QUORIDOR_PLUGIN_PATH**: Configure quoridor plugin directory. If not set, it will default to ../lib (relative to current dir).
+* **QUORIDOR_PLAYER_TIMEOUT_DISABLE**: The game will end by default when player exceeds its time limit (5 sec). This can be disable by setting QUORIDOR_PLAYER_TIMEOUT_DISABLE=1
+
 ## Create a new plugin
 
 A plugin implements the logic of a Quoridor player.
