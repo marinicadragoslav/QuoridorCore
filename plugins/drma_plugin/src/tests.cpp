@@ -6,7 +6,7 @@
 #include "debug.h"
 #include "min_path.h"
 
-namespace qplugin_d {
+namespace qplugin_drma {
 
 #define COUNT(A) (A == NULL ? 0 : (sizeof(A) / sizeof(A[0])))
 

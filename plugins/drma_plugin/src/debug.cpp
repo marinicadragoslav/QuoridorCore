@@ -4,14 +4,14 @@
 #include "debug.h"
 #include "min_path.h"
 
-namespace qplugin {
+namespace qplugin_drma {
 
 #define LOGLEN 120
 
 static void ClearBuff(void);
 static const char* debug_ConvertMoveIDToString(MoveID_t moveID);
 
-static const char * const DOM = "qplugin::MP";
+static const char * const DOM = "qplugin_drma::DRMA";
 static char buff[LOGLEN];
 
 void debug_PrintTestMessage(const char* msg)

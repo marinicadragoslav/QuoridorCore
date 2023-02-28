@@ -3,7 +3,7 @@
 #include <string.h>
 #include "min_path.h"
 
-namespace qplugin_d {
+namespace qplugin_drma {
 
 #define INFINITE_LEN            0xFFU
 #define QUEUE_MAX_SIZE          1000

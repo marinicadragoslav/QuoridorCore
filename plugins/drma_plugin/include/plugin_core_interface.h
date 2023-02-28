@@ -1,10 +1,10 @@
-#ifndef Header_qplugin_d_dragoslav_plugin_core_interface
-#define Header_qplugin_d_dragoslav_plugin_core_interface
+#ifndef Header_qplugin_drma_plugin_core_interface
+#define Header_qplugin_drma_plugin_core_interface
 
 #include "Player.h"
 #include "board.h"
 
-namespace qplugin_d
+namespace qplugin_drma
 {
     // Convert absolute core wall position to relative core wall position (value)
     qcore::Position CoreAbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation); 
@@ -22,4 +22,4 @@ namespace qplugin_d
     qcore::Orientation PluginToCoreWallOrientation(Orientation_t orientation);
 }
 
-#endif // Header_qplugin_d_dragoslav_plugin_core_interface
+#endif // Header_qplugin_drma_plugin_core_interface

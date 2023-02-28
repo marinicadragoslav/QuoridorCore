@@ -1,11 +1,11 @@
-#ifndef Header_qplugin_marinica_min_path
-#define Header_qplugin_marinica_min_path
+#ifndef Header_qplugin_drma_min_path
+#define Header_qplugin_drma_min_path
 
 #include <stdint.h>
 #include <stdbool.h>
 #include "board.h"
 
-namespace qplugin {
+namespace qplugin_drma {
 
 #define SHOW_MIN_PATH_ON_LOGGED_BOARD  false
 
@@ -17,6 +17,6 @@ typedef struct
 }Subpath_t;
 
 uint8_t FindMinPathLen(Board_t* board, Player_t player, bool* found);
-}
 
-#endif // Header_qplugin_marinica_min_path
+}
+#endif // Header_qplugin_drma_min_path

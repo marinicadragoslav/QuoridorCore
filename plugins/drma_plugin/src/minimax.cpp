@@ -3,8 +3,13 @@
 #include "board.h"
 #include "min_path.h"
 #include "minimax.h"
+#include <chrono>
 
-namespace qplugin_d {
+namespace qplugin_drma {
+
+extern bool isSecondMinimaxPassInterrupted;
+extern bool isFirstMinimaxPass;
+extern std::chrono::time_point<std::chrono::steady_clock> t0;
 
 #define MAX_RECURSIVE_LEVELS 6 // not achievable
 
@@ -25,7 +30,6 @@ namespace qplugin_d {
 
 // stores the best play for every level. Get it with GetBestPlayForLevel(level);
 static Play_t bestPlays[MAX_RECURSIVE_LEVELS]; 
-
 
 // Static evaluation of the board position, from my perspective (maximizing player) => a high score is good for me
 static int StaticEval(Board_t* board)
@@ -57,17 +61,6 @@ int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta)
     UpdatePossibleMoves(board, ME);
     UpdatePossibleMoves(board, OPPONENT);
 
-/*
-    if (HasPlayerWon(board, ME))
-    {
-        return BEST_POS_SCORE;
-    }
-    else if (HasPlayerWon(board, OPPONENT))
-    {
-        return BEST_NEG_SCORE;
-    }
-    else if (level == 0)
-*/
     if (HasPlayerWon(board, ME) || HasPlayerWon(board, OPPONENT) || (level == 0))
     {
         return StaticEval(board);
@@ -129,6 +122,16 @@ int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta)
                 {
                     goto Exit_walls_loop;
                 }
+
+                if (!isFirstMinimaxPass && (level == 1))
+                {
+                    std::chrono::time_point<std::chrono::steady_clock> t1 = std::chrono::steady_clock::now();
+                    if (((std::chrono::duration<double>)(t1 - t0)).count() > 4.5)
+                    {
+                        isSecondMinimaxPassInterrupted = true;
+                        goto Exit_walls_loop;
+                    }
+                }
             }
             END_FOREACH_PERMITTED_WALL;
         }
@@ -185,6 +188,16 @@ int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta)
             if (prune)
             {
                 goto Exit_moves_loop;
+            }
+
+            if (!isFirstMinimaxPass && (level == 1))
+            {
+                std::chrono::time_point<std::chrono::steady_clock> t1 = std::chrono::steady_clock::now();
+                if (((std::chrono::duration<double>)(t1 - t0)).count() > 4.5)
+                {
+                    isSecondMinimaxPassInterrupted = true;
+                    goto Exit_moves_loop;
+                }
             }
         }
         END_FOREACH_POSSIBLE_MOVE;

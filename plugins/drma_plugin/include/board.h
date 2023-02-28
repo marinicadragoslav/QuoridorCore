@@ -1,10 +1,10 @@
-#ifndef Header_qplugin_marinica_board
-#define Header_qplugin_marinica_board
+#ifndef Header_qplugin_drma_board
+#define Header_qplugin_drma_board
 
 #include <stdint.h>
 #include <stdbool.h>
 
-namespace qplugin {
+namespace qplugin_drma {
 
 #define BOARD_SZ 9
 
@@ -101,6 +101,7 @@ typedef struct Wall_t
    struct Wall_t* forbidsNext;
    struct Wall_t* forbidsCompl;
    WallPermission_t permission;
+   bool isDisabled;
 }Wall_t;
 
 
@@ -135,6 +136,12 @@ void UpdatePossibleMoves(Board_t* board, Player_t player);
 bool HasPlayerWon(Board_t* board, Player_t player);
 void MakeMove(Board_t* board, Player_t player, MoveID_t moveID);
 void UndoMove(Board_t* board, Player_t player, MoveID_t moveID);
+void DisableCornerWalls(Board_t* board);
+void EnableCornerWalls(Board_t* board);
+void DisableAllWalls(Board_t* board);
+void EnableAllWalls(Board_t* board);
+void DisableFirstAndLastColVertWalls(Board_t* board);
+void EnableFirstAndLastColVertWalls(Board_t* board);
 
 }
-#endif // Header_qplugin_marinica_board
+#endif // Header_qplugin_drma_board

@@ -1,9 +1,9 @@
-#ifndef Header_qplugin_d_dragoslav_tests
-#define Header_qplugin_d_dragoslav_tests
+#ifndef Header_qplugin_drma_tests
+#define Header_qplugin_drma_tests
 
 #include "board.h"
 
-namespace qplugin_d {
+namespace qplugin_drma {
 
 typedef enum
 {
@@ -61,4 +61,4 @@ void RunAllTests(Board_t* board);
 }
 
 
-#endif // Header_qplugin_d_dragoslav_debug
+#endif // Header_qplugin_drma_debug

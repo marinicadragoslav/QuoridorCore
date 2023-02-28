@@ -4,7 +4,7 @@
 #include <string.h>
 #include "board.h"
 
-namespace qplugin_d {
+namespace qplugin_drma {
 
 static void DecreaseWallPermission(Wall_t* wall);
 static void IncreaseWallPermission(Wall_t* wall);

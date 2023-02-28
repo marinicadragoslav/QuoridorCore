@@ -5,8 +5,8 @@ find_library(qcore ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # Create qcore shared library
-add_library(qdragoslav-plugin SHARED
-   src/dragoslav_player.cpp
+add_library(qdrma-plugin SHARED
+   src/drma_player.cpp
    src/player_registration.cpp
    src/board.cpp
    src/debug.cpp
@@ -16,5 +16,5 @@ add_library(qdragoslav-plugin SHARED
    src/plugin_core_interface.cpp
 )
 
-target_include_directories(qdragoslav-plugin PUBLIC include)
-target_link_libraries(qdragoslav-plugin qcore)
+target_include_directories(qdrma-plugin PUBLIC include)
+target_link_libraries(qdrma-plugin qcore)

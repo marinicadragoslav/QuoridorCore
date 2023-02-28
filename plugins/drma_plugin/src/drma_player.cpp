@@ -1,4 +1,4 @@
-#include "dragoslav_player.h"
+#include "drma_player.h"
 #include "plugin_core_interface.h"
 #include "QcoreUtil.h"
 #include "board.h"
@@ -7,48 +7,21 @@
 #include "min_path.h"
 #include "minimax.h"
 #include <thread>
+#include <chrono>
 
 using namespace qcore::literals;
 using namespace std::chrono_literals;
 
-namespace qplugin_d
+namespace qplugin_drma
 {
-   /** Notes:
-    *  Plugin player is called "ME", the other player is "OPPONENT".
-    *  The board will always be viewed from my perspective, with me on the bottom (last row).
-    *  Opponent's position (as given by the game) will always need converting to my prespective.
-    *  Last wall position (as given by the game) will only need converting to my perspective when I am the second player.
-    *  The game graph is represented by a matrix of tiles with each tile linked to its neighbours:
-    *                         
-    *                                                                Placing a wall renders
-    *                  NULL                                          the corresponding links NULL:
-    *                   ^                                          
-    *                0  | north     1          2                    0           1          2       
-    *             ------|------------------------              -------------------------------               
-    *             |     |     |           |                    |           |           |
-    *          0  |           |           |                    |           |           |   
-    *            west      east           |                 0  |  NULL     |    NULL   |
-    *    NULL <-------  |  ------->       |                    |    ^      |    ^      |
-    *             |     |     |           |                    |    | |    |    | |    |
-    *             ------|------------------------              -xxxx|x|xxxxxxxxx|x|xxxx--------
-    *             |     v     |           |                    |    | |    |      |    |
-    *             |    south  |           |                    |      v    |      v    |
-    *          1  |           |           |                 1  |     NULL  |     NULL  |
-    *             |           |           |                    |           |           |
-    *             |           |           |
-    *             -------------------------------
-    *             |           |           |
-    *             |           |           |
-    *          2  |           |           |
-    * 
-    * 
-    *  TO BE CONTINUED...    
-    */ 
+   std::chrono::time_point<std::chrono::steady_clock> t0;
+   bool isFirstMinimaxPass = true;
+   bool isSecondMinimaxPassInterrupted = false;
 
-   /** Log domain */
-   const char * const DOM = "qplugin_d::MP";   
 
-   dragoslavPlayer::dragoslavPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
+   const char * const DOM = "qplugin_drma::DRMA";   
+
+   drmaPlayer::drmaPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
       qcore::Player(id, name, game)
    {
    }
@@ -56,8 +29,10 @@ namespace qplugin_d
    /** This function defines the behaviour of the player. It is called by the game when it is my turn, and it 
     *  needs to end with a call to one of the action functions: move(...), placeWall(...).
     */      
-   void dragoslavPlayer::doNextMove()
+   void drmaPlayer::doNextMove()
    {
+      t0 = std::chrono::steady_clock::now();
+
       static int turnCount;
       int turn = (turnCount++);
 
@@ -202,13 +177,29 @@ namespace qplugin_d
       if (myID == 0 && turn == 3 && myWallsLeft == 10 && oppWallsLeft == 10)
       {
          bestPlay = {PLACE_WALL, NULL_MOVE, GetWallByPosAndOrientation(board, {7, 4}, V)};
+         debug_PrintPlay(bestPlay);
       }
       else
       {
+         isFirstMinimaxPass = true;
+         Minimax(board, ME, MINIMAX_LEVEL - 1, NEG_INFINITY, POS_INFINITY);
+         Play_t bestPlayFromFirstPass = GetBestPlayForLevel(MINIMAX_LEVEL - 1); 
+         LOG_INFO(DOM) << "  Best play for Minimax First Pass:";
+         debug_PrintPlay(bestPlayFromFirstPass);
+
+         isSecondMinimaxPassInterrupted = false;
+         isFirstMinimaxPass = false;
          Minimax(board, ME, MINIMAX_LEVEL, NEG_INFINITY, POS_INFINITY);
          bestPlay = GetBestPlayForLevel(MINIMAX_LEVEL);
+         if (isSecondMinimaxPassInterrupted)
+         {
+            LOG_INFO(DOM) << "  Minimax second pass was interrupted!";
+            bestPlay = bestPlayFromFirstPass;
+         }
+         LOG_INFO(DOM) << "  Best play for Minimax Second Pass:";
+         debug_PrintPlay(bestPlay);
       }
-      debug_PrintPlay(bestPlay);
+
       LOG_INFO(DOM) << "---------------------------------------------------------------";
 
       // Perform best play ------------------------------------------------------------------------------------------------------------------
@@ -287,4 +278,4 @@ namespace qplugin_d
       }
    }
 
-} // namespace qplugin_d
+} // namespace qplugin_drma
