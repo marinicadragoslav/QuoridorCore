@@ -66,4 +66,5 @@ namespace qplugin_drma
     {
         return (orientation == H ? qcore::Orientation::Horizontal : qcore::Orientation::Vertical);
     }
-}
+    
+} // end namespace

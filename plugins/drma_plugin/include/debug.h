@@ -5,21 +5,21 @@
 #include <stdbool.h>
 #include "board.h"
 
-namespace qplugin_drma {
+namespace qplugin_drma 
+{
 
-void debug_PrintTestFailed(void);
-void debug_PrintTestPassed(void);
-void debug_PrintTestErrorMsg(const char* errMsg);
-void debug_PrintTestMessage(const char* msg);
-char* debug_PrintMyPossibleMoves(Board_t* board);
-char* debug_PrintOppPossibleMoves(Board_t* board);
-void debug_PrintBoard(Board_t* board);
-void debug_PrintTile(const char* name, int8_t x, int8_t y);
-void debug_PrintMove(MoveID_t moveID);
-void debug_PrintWall(Wall_t* wall);
-void debug_PrintMinPaths(int minPathMe, int minPathOpp);
-void debug_PrintPlay(Play_t play);
+    #if (RUN_TESTS)
+    void debug_PrintTestFailed(void);
+    void debug_PrintTestPassed(void);
+    void debug_PrintTestErrorMsg(const char* errMsg);
+    void debug_PrintTestMessage(const char* msg);
+    #endif
 
-}
+    char* debug_PrintMyPossibleMoves(Board_t* board);
+    char* debug_PrintOppPossibleMoves(Board_t* board);
+    void debug_PrintBoard(Board_t* board);
+    void debug_PrintTestMinPaths(int minPathMe, int minPathOpp);
+    void debug_PrintPlay(Play_t play);
 
+} // end namespace
 #endif // Header_qplugin_drma_debug

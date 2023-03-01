@@ -20,6 +20,6 @@ namespace qplugin_drma
 
     // Convert plugin wall orientation (type) to core wall orientation (type)
     qcore::Orientation PluginToCoreWallOrientation(Orientation_t orientation);
-}
 
+} // end namespace
 #endif // Header_qplugin_drma_plugin_core_interface

@@ -286,4 +286,4 @@ namespace qplugin_drma
       }
    }
 
-} // namespace qplugin_drma
+} // end namespace

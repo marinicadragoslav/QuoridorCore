@@ -5,20 +5,14 @@
 #include <chrono>
 #include "board.h"
 
-namespace qplugin_drma {
+namespace qplugin_drma 
+{
 
-// these values are chosen arbitrarily, so that (ERROR_NO_PATH < NEG_INFINITY < BEST_NEG_SCORE) and (BEST_POS_SCORE < POS_INFINITY)
-#define ERROR_NO_PATH   (-0xFFFFFFF)
-#define POS_INFINITY    (+0xFFFFFF)
-#define NEG_INFINITY    (-0xFFFFFF)
-#define BEST_POS_SCORE  (+0xFFFFF0)
-#define BEST_NEG_SCORE  (-0xFFFFF0)
+    int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta, 
+                    std::chrono::time_point<std::chrono::steady_clock> tStart, bool canTimeOut,
+                    uint16_t timeoutMs, bool *hasTimedOut);
 
-int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta, 
-                std::chrono::time_point<std::chrono::steady_clock> tStart, bool canTimeOut,
-                uint16_t timeoutMs, bool *hasTimedOut);
+    Play_t GetBestPlayForLevel(uint8_t level);
 
-Play_t GetBestPlayForLevel(uint8_t level);
-
-}
+} // end namespace
 #endif // Header_qplugin_drma_minimax
