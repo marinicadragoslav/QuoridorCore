@@ -2,6 +2,7 @@
 #define Header_qplugin_drma_minimax
 
 #include <stdint.h>
+#include <chrono>
 #include "board.h"
 
 namespace qplugin_drma {
@@ -13,7 +14,10 @@ namespace qplugin_drma {
 #define BEST_POS_SCORE  (+0xFFFFF0)
 #define BEST_NEG_SCORE  (-0xFFFFF0)
 
-int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta);
+int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta, 
+                std::chrono::time_point<std::chrono::steady_clock> tStart, bool canTimeOut,
+                uint16_t timeoutMs, bool *hasTimedOut);
+
 Play_t GetBestPlayForLevel(uint8_t level);
 
 }

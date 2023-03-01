@@ -3,15 +3,10 @@
 #include "board.h"
 #include "min_path.h"
 #include "minimax.h"
+#include "drma_player.h"
 #include <chrono>
 
 namespace qplugin_drma {
-
-extern bool isSecondMinimaxPassInterrupted;
-extern bool isFirstMinimaxPass;
-extern std::chrono::time_point<std::chrono::steady_clock> t0;
-
-#define MAX_RECURSIVE_LEVELS 6 // not achievable
 
 #define IS_VALID(score) (BEST_NEG_SCORE <= score && score <= BEST_POS_SCORE)
 
@@ -29,7 +24,7 @@ extern std::chrono::time_point<std::chrono::steady_clock> t0;
 #define END_FOREACH_POSSIBLE_MOVE           } }
 
 // stores the best play for every level. Get it with GetBestPlayForLevel(level);
-static Play_t bestPlays[MAX_RECURSIVE_LEVELS]; 
+static Play_t bestPlays[MINIMAX_DEPTH + 1]; 
 
 // Static evaluation of the board position, from my perspective (maximizing player) => a high score is good for me
 static int StaticEval(Board_t* board)
@@ -56,7 +51,9 @@ static int StaticEval(Board_t* board)
 }
 
 
-int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta)
+int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta,
+            std::chrono::time_point<std::chrono::steady_clock> tStart,
+            bool canTimeOut, uint16_t timeoutMs, bool *hasTimedOut)
 {
     UpdatePossibleMoves(board, ME);
     UpdatePossibleMoves(board, OPPONENT);
@@ -69,6 +66,16 @@ int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta)
     {
         int score = (player == ME ? NEG_INFINITY : POS_INFINITY); // initialize to worst possible score
 
+        if (canTimeOut && (level == 1))
+        {
+            std::chrono::time_point<std::chrono::steady_clock> tNow = std::chrono::steady_clock::now();
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(tNow - tStart).count() > MINIMAX_TIMEOUT_MS)
+            {
+                *hasTimedOut = true;
+                return score;
+            }
+        }
+
         if (board->wallsLeft[player])
         {
             Wall_t* wall;
@@ -77,8 +84,9 @@ int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta)
                 bool prune = false;
                 PlaceWall(board, player, wall);
 
-                int tempScore = Minimax(board, board->otherPlayer[player], level - 1, alpha, beta);
-                if (IS_VALID(tempScore))
+                int tempScore = Minimax(board, board->otherPlayer[player], level - 1, alpha, beta, tStart, canTimeOut, timeoutMs, hasTimedOut);
+
+                if (IS_VALID(tempScore) && (!canTimeOut || (canTimeOut && !(*hasTimedOut))))
                 {
                     if(player == ME)
                     {
@@ -111,26 +119,21 @@ int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta)
                     {
                         prune = true;
                     }
-                }         
+                }  
 
                 UndoWall(board, player, wall);
 
                 UpdatePossibleMoves(board, ME);
                 UpdatePossibleMoves(board, OPPONENT);
 
+                if (canTimeOut && (*hasTimedOut))
+                {
+                    return score;
+                }
+
                 if (prune)
                 {
                     goto Exit_walls_loop;
-                }
-
-                if (!isFirstMinimaxPass && (level == 1))
-                {
-                    std::chrono::time_point<std::chrono::steady_clock> t1 = std::chrono::steady_clock::now();
-                    if (((std::chrono::duration<double>)(t1 - t0)).count() > 4.5)
-                    {
-                        isSecondMinimaxPassInterrupted = true;
-                        goto Exit_walls_loop;
-                    }
                 }
             }
             END_FOREACH_PERMITTED_WALL;
@@ -144,8 +147,9 @@ int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta)
             bool prune = false;
             MakeMove(board, player, move);
 
-            int tempScore = Minimax(board, board->otherPlayer[player], level - 1, alpha, beta);
-            if (IS_VALID(tempScore))
+            int tempScore = Minimax(board, board->otherPlayer[player], level - 1, alpha, beta, tStart, canTimeOut, timeoutMs, hasTimedOut);
+
+            if (IS_VALID(tempScore) && (!canTimeOut || (canTimeOut && !(*hasTimedOut))))
             {
                 if(player == ME)
                 {
@@ -185,19 +189,14 @@ int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta)
             UpdatePossibleMoves(board, ME);
             UpdatePossibleMoves(board, OPPONENT);
 
+            if (canTimeOut && *hasTimedOut)
+            {
+                return score;
+            }
+
             if (prune)
             {
                 goto Exit_moves_loop;
-            }
-
-            if (!isFirstMinimaxPass && (level == 1))
-            {
-                std::chrono::time_point<std::chrono::steady_clock> t1 = std::chrono::steady_clock::now();
-                if (((std::chrono::duration<double>)(t1 - t0)).count() > 4.5)
-                {
-                    isSecondMinimaxPassInterrupted = true;
-                    goto Exit_moves_loop;
-                }
             }
         }
         END_FOREACH_POSSIBLE_MOVE;

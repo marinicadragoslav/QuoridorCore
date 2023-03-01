@@ -6,8 +6,9 @@
 
 namespace qplugin_drma
 {
-   #define RUN_TESTS       true
-   #define MINIMAX_LEVEL   3
+   #define RUN_TESTS          (true)
+   #define MINIMAX_DEPTH      (3)
+   #define MINIMAX_TIMEOUT_MS (4500)
 
    class drmaPlayer : public qcore::Player
    {

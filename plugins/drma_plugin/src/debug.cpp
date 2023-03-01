@@ -11,7 +11,7 @@ namespace qplugin_drma {
 static void ClearBuff(void);
 static const char* debug_ConvertMoveIDToString(MoveID_t moveID);
 
-static const char * const DOM = "qplugin_drma::DRMA";
+static const char * const DOM = "qplugin_drma";
 static char buff[LOGLEN];
 
 void debug_PrintTestMessage(const char* msg)

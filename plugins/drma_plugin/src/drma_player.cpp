@@ -14,12 +14,7 @@ using namespace std::chrono_literals;
 
 namespace qplugin_drma
 {
-   std::chrono::time_point<std::chrono::steady_clock> t0;
-   bool isFirstMinimaxPass = true;
-   bool isSecondMinimaxPassInterrupted = false;
-
-
-   const char * const DOM = "qplugin_drma::DRMA";   
+   const char * const DOM = "qplugin_drma";
 
    drmaPlayer::drmaPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
       qcore::Player(id, name, game)
@@ -31,7 +26,7 @@ namespace qplugin_drma
     */      
    void drmaPlayer::doNextMove()
    {
-      t0 = std::chrono::steady_clock::now();
+      std::chrono::time_point<std::chrono::steady_clock> tStart = std::chrono::steady_clock::now();
 
       static int turnCount;
       int turn = (turnCount++);
@@ -122,8 +117,7 @@ namespace qplugin_drma
       debug_PrintBoard(board);
 
 
-      // Find best play ---------------------------------------------------------------------------------------------------------------------
-      Play_t bestPlay;
+      // Reduce the branching factor in the first part of the game --------------------------------------------------------------------------
 
       // disable wall placing at the beginning of the game
       if ((myWallsLeft + oppWallsLeft == 20) && myPos.x > 5 && oppPos.x < 3 && !areAllWallsDisabled)
@@ -173,30 +167,43 @@ namespace qplugin_drma
          LOG_INFO(DOM) << "  Enabled Corner walls";
       }
 
-      // shiller opening if possible
+      // Figure out best play ---------------------------------------------------------------------------------------------------------------
+
+      Play_t bestPlay;
+      
+      // Shiller opening if possible
       if (myID == 0 && turn == 3 && myWallsLeft == 10 && oppWallsLeft == 10)
       {
          bestPlay = {PLACE_WALL, NULL_MOVE, GetWallByPosAndOrientation(board, {7, 4}, V)};
          debug_PrintPlay(bestPlay);
       }
-      else
+      else // Minimax
       {
-         isFirstMinimaxPass = true;
-         Minimax(board, ME, MINIMAX_LEVEL - 1, NEG_INFINITY, POS_INFINITY);
-         Play_t bestPlayFromFirstPass = GetBestPlayForLevel(MINIMAX_LEVEL - 1); 
-         LOG_INFO(DOM) << "  Best play for Minimax First Pass:";
-         debug_PrintPlay(bestPlayFromFirstPass);
+         bool hasTimedOut = false;
 
-         isSecondMinimaxPassInterrupted = false;
-         isFirstMinimaxPass = false;
-         Minimax(board, ME, MINIMAX_LEVEL, NEG_INFINITY, POS_INFINITY);
-         bestPlay = GetBestPlayForLevel(MINIMAX_LEVEL);
-         if (isSecondMinimaxPassInterrupted)
+         // First minimax pass with (depth - 1): to make sure there is a best play if minimax with full depth times out
+         Minimax(board, ME, MINIMAX_DEPTH - 1, NEG_INFINITY, POS_INFINITY, tStart, false, 0, NULL);
+
+         Play_t bestPlayFirstPass = GetBestPlayForLevel(MINIMAX_DEPTH - 1); 
+         LOG_INFO(DOM) << "  After Minimax first pass:";
+         debug_PrintPlay(bestPlayFirstPass);
+
+         // Second minimax pass with full depth - can timeout:
+         hasTimedOut = false;
+         Minimax(board, ME, MINIMAX_DEPTH, NEG_INFINITY, POS_INFINITY, tStart, true, MINIMAX_TIMEOUT_MS, &hasTimedOut);
+         
+         // Get final best play
+         if (hasTimedOut)
          {
-            LOG_INFO(DOM) << "  Minimax second pass was interrupted!";
-            bestPlay = bestPlayFromFirstPass;
+            LOG_INFO(DOM) << "  Minimax second pass timed out! Proceed with best play from first pass... ";
+            bestPlay = bestPlayFirstPass;
          }
-         LOG_INFO(DOM) << "  Best play for Minimax Second Pass:";
+         else
+         {
+            bestPlay = GetBestPlayForLevel(MINIMAX_DEPTH);
+            LOG_INFO(DOM) << "  After Minimax second pass:";
+         }
+
          debug_PrintPlay(bestPlay);
       }
 
