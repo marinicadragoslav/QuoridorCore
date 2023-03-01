@@ -83,9 +83,9 @@ typedef struct Move_t
 typedef enum
 {
     WALL_PERMITTED = 3,
-    WALL_FORBIDDEN_BY_1_OTHER_WALL = 2,
-    WALL_FORBIDDEN_BY_2_OTHER_WALLS = 1,
-    WALL_FORBIDDEN_BY_3_OTHER_WALLS = 0
+    WALL_FORBIDDEN_BY_1 = 2,
+    WALL_FORBIDDEN_BY_2 = 1,
+    WALL_FORBIDDEN_BY_3 = 0
 }WallPermission_t;
 
 
@@ -101,7 +101,7 @@ typedef struct Wall_t
    struct Wall_t* forbidsNext;
    struct Wall_t* forbidsCompl;
    WallPermission_t permission;
-   bool isDisabled;
+   bool isEnabled;
 }Wall_t;
 
 
@@ -124,6 +124,14 @@ typedef struct
    Wall_t* wall;
 }Play_t;
 
+typedef enum
+{
+   ALL_WALLS,
+   CORNER_WALLS,
+   VERT_WALLS_FIRST_LAST_COL
+}WallsSubset_t;
+
+
 
 Board_t* NewDefaultBoard(void);
 Wall_t* GetWallByPosAndOrientation(Board_t* board, Position_t wallPos, Orientation_t wallOr);
@@ -136,12 +144,9 @@ void UpdatePossibleMoves(Board_t* board, Player_t player);
 bool HasPlayerWon(Board_t* board, Player_t player);
 void MakeMove(Board_t* board, Player_t player, MoveID_t moveID);
 void UndoMove(Board_t* board, Player_t player, MoveID_t moveID);
-void DisableCornerWalls(Board_t* board);
-void EnableCornerWalls(Board_t* board);
-void DisableAllWalls(Board_t* board);
-void EnableAllWalls(Board_t* board);
-void DisableFirstAndLastColVertWalls(Board_t* board);
-void EnableFirstAndLastColVertWalls(Board_t* board);
+void EnableWallsSubset(Board_t* board, WallsSubset_t subset);
+void DisableWallsSubset(Board_t* board, WallsSubset_t subset);
+
 
 }
 #endif // Header_qplugin_drma_board

@@ -4,11 +4,10 @@
 #include <string.h>
 #include "board.h"
 
+#define DECREASE_WALL_PERMISSION(wall)  (wall && (wall->permission = (WallPermission_t)(wall->permission - 1)))
+#define INCREASE_WALL_PERMISSION(wall)  (wall && (wall->permission = (WallPermission_t)(wall->permission + 1)))
+
 namespace qplugin_drma {
-
-static void DecreaseWallPermission(Wall_t* wall);
-static void IncreaseWallPermission(Wall_t* wall);
-
 
 Board_t* NewDefaultBoard(void)
 {
@@ -43,7 +42,7 @@ Board_t* NewDefaultBoard(void)
                 board->walls[o][x][y].pos = {x, y};
                 board->walls[o][x][y].orientation = (Orientation_t)o;
                 board->walls[o][x][y].permission = WALL_PERMITTED;
-                board->walls[o][x][y].isDisabled = false;
+                board->walls[o][x][y].isEnabled = true;
 
                 // set tiles that this wall separates when placed
                 Tile_t* referenceTile = &(board->tiles[x][y]);
@@ -182,10 +181,10 @@ void PlaceWall(Board_t* board, Player_t player, Wall_t* wall)
     // 2. Forbidding the given wall, along with the walls it displaces, from future use.
     // Any decrease in the permission level of a wall renders that wall forbidden.
     // Multiple levels of permission are needed because a wall can be forbidden by 1 or more walls.
-    DecreaseWallPermission(wall);
-    DecreaseWallPermission(wall->forbidsPrev);
-    DecreaseWallPermission(wall->forbidsNext);
-    DecreaseWallPermission(wall->forbidsCompl);
+    DECREASE_WALL_PERMISSION(wall);
+    DECREASE_WALL_PERMISSION(wall->forbidsPrev);
+    DECREASE_WALL_PERMISSION(wall->forbidsNext);
+    DECREASE_WALL_PERMISSION(wall->forbidsCompl);
 
     // 3. Adjusting number of walls left for given player
     board->wallsLeft[player]--;
@@ -213,10 +212,10 @@ void UndoWall(Board_t* board, Player_t player, Wall_t* wall)
     // 2. Increasing the permissions for the current wall and the walls it is displacing.
     // A wall can be forbidden by 1 or more walls, so an increase in the permission level doesn't necessarily mean it is permitted.
     // A wall will be permitted only when its permission level is max.
-    IncreaseWallPermission(wall->forbidsCompl);
-    IncreaseWallPermission(wall->forbidsNext);
-    IncreaseWallPermission(wall->forbidsPrev);
-    IncreaseWallPermission(wall);
+    INCREASE_WALL_PERMISSION(wall->forbidsCompl);
+    INCREASE_WALL_PERMISSION(wall->forbidsNext);
+    INCREASE_WALL_PERMISSION(wall->forbidsPrev);
+    INCREASE_WALL_PERMISSION(wall);
 
     // 3. Adjusting number of walls left for given player
     board->wallsLeft[player]++;
@@ -239,13 +238,13 @@ void UpdatePossibleMoves(Board_t* board, Player_t player)
     board->moves[player][JUMP_WEST].isPossible = ((pT->west) && (pT->west == oT) && (oT->west) ? true : false);
 
     board->moves[player][JUMP_NORTH_EAST].isPossible = (((pT->north) && (pT->north == oT) && (!oT->north) && (oT->east)) ? true :          // jump N -> E
-                                                        (((pT->east) && (pT->east == oT) && (!oT->east) && (oT->north)) ? true : false)); // jump E -> N
+                                                         (((pT->east) && (pT->east == oT) && (!oT->east) && (oT->north)) ? true : false)); // jump E -> N
     board->moves[player][JUMP_NORTH_WEST].isPossible = (((pT->north) && (pT->north == oT) && (!oT->north) && (oT->west)) ? true :          // jump N -> W
-                                                        (((pT->west) && (pT->west == oT) && (!oT->west) && (oT->north)) ? true : false)); // jump W -> N                          
+                                                         (((pT->west) && (pT->west == oT) && (!oT->west) && (oT->north)) ? true : false)); // jump W -> N                          
     board->moves[player][JUMP_SOUTH_EAST].isPossible = (((pT->south) && (pT->south == oT) && (!oT->south) && (oT->east)) ? true :          // jump S -> E
-                                                        (((pT->east) && (pT->east == oT) && (!oT->east) && (oT->south)) ? true : false)); // jump E -> S
+                                                         (((pT->east) && (pT->east == oT) && (!oT->east) && (oT->south)) ? true : false)); // jump E -> S
     board->moves[player][JUMP_SOUTH_WEST].isPossible = (((pT->south) && (pT->south == oT) && (!oT->south) && (oT->west)) ? true :          // jump S -> W
-                                                        (((pT->west) && (pT->west == oT) && (!oT->west) && (oT->south)) ? true : false)); // jump W -> S
+                                                         (((pT->west) && (pT->west == oT) && (!oT->west) && (oT->south)) ? true : false)); // jump W -> S
 }
 
 
@@ -263,23 +262,6 @@ void UndoMove(Board_t* board, Player_t player, MoveID_t moveID)
     board->playerPos[player].y -= board->moves[player][moveID].yDiff;
 }
 
-
-static void DecreaseWallPermission(Wall_t* wall)
-{
-    if (wall)
-    {
-        wall->permission = (WallPermission_t)(wall->permission - 1);        
-    }
-}
-
-static void IncreaseWallPermission(Wall_t* wall)
-{
-    if (wall)
-    {
-        wall->permission = (WallPermission_t)(wall->permission + 1);   
-    }
-}
-
 Tile_t* GetPlayerTile(Board_t* board, Player_t player)
 {
     return (&(board->tiles[board->playerPos[player].x][board->playerPos[player].y]));
@@ -290,7 +272,7 @@ bool HasPlayerWon(Board_t* board, Player_t player)
     return (GetPlayerTile(board, player)->isGoalFor == player ? true : false);
 }
 
-void DisableCornerWalls(Board_t* board)
+void EnableWallsSubset(Board_t* board, WallsSubset_t subset)
 {
     for (int8_t o = H; o <= V; o++) // orientation V or H
     {
@@ -298,31 +280,32 @@ void DisableCornerWalls(Board_t* board)
         {
             for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
             {
-                if (x == 0 && y == 0)
+                switch (subset)
                 {
-                    board->walls[o][x][y].isDisabled = true;
-                }
-                
-                if (x == 0 && y == BOARD_SZ - 2)
-                {
-                    board->walls[o][x][y].isDisabled = true;
-                }
-
-                if (y == 0 && x == BOARD_SZ - 2)
-                {
-                    board->walls[o][x][y].isDisabled = true;
-                }
-
-                if (y == BOARD_SZ - 2 && x == BOARD_SZ - 2)
-                {
-                    board->walls[o][x][y].isDisabled = true;
+                    case ALL_WALLS:
+                        board->walls[o][x][y].isEnabled = true;
+                    break;
+                    case CORNER_WALLS:
+                        if ((x == 0 || x == BOARD_SZ - 2) && (y == 0 || y == BOARD_SZ - 2))
+                        {
+                            board->walls[o][x][y].isEnabled = true;
+                        }
+                    break;
+                    case VERT_WALLS_FIRST_LAST_COL:
+                        if ((o == V) && (y == 0 || y == (BOARD_SZ - 2)))
+                        {
+                            board->walls[o][x][y].isEnabled = true;
+                        }
+                    break;
+                    default:
+                        board->walls[o][x][y].isEnabled = true;
                 }
             }
         }
     }
 }
 
-void EnableCornerWalls(Board_t*board)
+void DisableWallsSubset(Board_t* board, WallsSubset_t subset)
 {
     for (int8_t o = H; o <= V; o++) // orientation V or H
     {
@@ -330,82 +313,26 @@ void EnableCornerWalls(Board_t*board)
         {
             for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
             {
-                if (x == 0 && y == 0)
+                switch (subset)
                 {
-                    board->walls[o][x][y].isDisabled = false;
+                    case ALL_WALLS:
+                        board->walls[o][x][y].isEnabled = false;
+                    break;
+                    case CORNER_WALLS:
+                        if ((x == 0 || x == BOARD_SZ - 2) && (y == 0 || y == BOARD_SZ - 2))
+                        {
+                            board->walls[o][x][y].isEnabled = false;
+                        }
+                    break;
+                    case VERT_WALLS_FIRST_LAST_COL:
+                        if ((o == V) && (y == 0 || y == (BOARD_SZ - 2)))
+                        {
+                            board->walls[o][x][y].isEnabled = false;
+                        }
+                    break;
+                    default:
+                        board->walls[o][x][y].isEnabled = false;
                 }
-                
-                if (x == 0 && y == BOARD_SZ - 2)
-                {
-                    board->walls[o][x][y].isDisabled = false;
-                }
-
-                if (y == 0 && x == BOARD_SZ - 2)
-                {
-                    board->walls[o][x][y].isDisabled = false;
-                }
-
-                if (y == BOARD_SZ - 2 && x == BOARD_SZ - 2)
-                {
-                    board->walls[o][x][y].isDisabled = false;
-                }
-            }
-        }
-    }
-}
-
-void DisableAllWalls(Board_t* board)
-{
-    for (int8_t o = H; o <= V; o++) // orientation V or H
-    {
-        for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
-        {
-            for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
-            {
-                board->walls[o][x][y].isDisabled = true;
-            }
-        }
-    }
-}
-
-void EnableAllWalls(Board_t*board)
-{
-    for (int8_t o = H; o <= V; o++) // orientation V or H
-    {
-        for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
-        {
-            for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
-            {               
-                board->walls[o][x][y].isDisabled = false;               
-            }
-        }
-    }
-}
-
-
-void DisableFirstAndLastColVertWalls(Board_t* board)
-{
-    for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
-    {
-        for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
-        {
-            if (y == 0 || y == (BOARD_SZ - 2)) // first or last col
-            {
-                board->walls[V][x][y].isDisabled = true;
-            }
-        }
-    }
-}
-
-void EnableFirstAndLastColVertWalls(Board_t* board)
-{
-    for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
-    {
-        for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
-        {
-            if (y == 0 || y == (BOARD_SZ - 2)) // first or last col
-            {
-                board->walls[V][x][y].isDisabled = false;
             }
         }
     }

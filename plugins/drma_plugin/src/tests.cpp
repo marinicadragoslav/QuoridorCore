@@ -292,10 +292,10 @@ void test_2_PlaceThenUndoOneHorizWallThatIsNotOnTheBorder(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 3, WALL_FORBIDDEN_BY_1 },
+            { V, 1, 2, WALL_FORBIDDEN_BY_1 },
         };
         
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -350,10 +350,10 @@ void test_3_PlaceThenUndoOneVertWallThatIsNotOnTheBorder(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 5, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 7, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 6, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 5, 2, WALL_FORBIDDEN_BY_1 },
+            { V, 7, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 6, 2, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 2, WALL_FORBIDDEN_BY_1 },
         };
         
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -409,9 +409,9 @@ void test_4_PlaceThenUndoOneHorizWallThatIsOnTheBorder(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {            
-            { H, 7, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 7, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 1, WALL_FORBIDDEN_BY_1 },
+            { V, 7, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 0, WALL_FORBIDDEN_BY_1 },
         };
         
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -462,9 +462,9 @@ void test_4_PlaceThenUndoOneHorizWallThatIsOnTheBorder(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {            
-            { H, 7, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 7, 6, WALL_FORBIDDEN_BY_1 },
+            { V, 7, 7, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 7, WALL_FORBIDDEN_BY_1 },
         };
         
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -519,9 +519,9 @@ void test_5_PlaceThenUndoOneVertWallThatIsOnTheBorder(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 1, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 0, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 0, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 1, 7, WALL_FORBIDDEN_BY_1 },
+            { H, 0, 7, WALL_FORBIDDEN_BY_1 },
+            { V, 0, 7, WALL_FORBIDDEN_BY_1 },
         };
         
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -572,9 +572,9 @@ void test_5_PlaceThenUndoOneVertWallThatIsOnTheBorder(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 1, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 0, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 0, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 1, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 0, 0, WALL_FORBIDDEN_BY_1 },
+            { V, 0, 0, WALL_FORBIDDEN_BY_1 },
         };
         
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -635,13 +635,13 @@ void test_6_PlaceTwoConsecutiveHorizWallsAndUndoThem(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 3, WALL_FORBIDDEN_BY_2_OTHER_WALLS }, // This is forbidden by both H 1 2 and H 1 4
-            { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 5, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 3, WALL_FORBIDDEN_BY_2 }, // This is forbidden by both H 1 2 and H 1 4
+            { V, 1, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 4, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 5, WALL_FORBIDDEN_BY_1 },
+            { V, 1, 4, WALL_FORBIDDEN_BY_1 },
         };
 
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -670,10 +670,10 @@ void test_6_PlaceTwoConsecutiveHorizWallsAndUndoThem(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL }
+            { H, 1, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 3, WALL_FORBIDDEN_BY_1 },
+            { V, 1, 2, WALL_FORBIDDEN_BY_1 }
         };
         
         UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
@@ -741,16 +741,16 @@ void test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 3, WALL_FORBIDDEN_BY_3_OTHER_WALLS }, // This is forbidden by H 1 2 and H 1 4 and V 1 3
-            { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 5, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 1, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 0, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 2, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL }
+            { H, 1, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 3, WALL_FORBIDDEN_BY_3 }, // This is forbidden by H 1 2 and H 1 4 and V 1 3
+            { V, 1, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 4, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 5, WALL_FORBIDDEN_BY_1 },
+            { V, 1, 4, WALL_FORBIDDEN_BY_1 },
+            { V, 1, 3, WALL_FORBIDDEN_BY_1 },
+            { V, 0, 3, WALL_FORBIDDEN_BY_1 },
+            { V, 2, 3, WALL_FORBIDDEN_BY_1 }
         };
 
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -784,13 +784,13 @@ void test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* boa
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 3, WALL_FORBIDDEN_BY_2_OTHER_WALLS }, // This is forbidden by both H 1 2 and H 1 4
-            { V, 1, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 1, 5, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 1, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { H, 1, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 3, WALL_FORBIDDEN_BY_2 }, // This is forbidden by both H 1 2 and H 1 4
+            { V, 1, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 4, WALL_FORBIDDEN_BY_1 },
+            { H, 1, 5, WALL_FORBIDDEN_BY_1 },
+            { V, 1, 4, WALL_FORBIDDEN_BY_1 },
         };
 
         UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
@@ -848,9 +848,9 @@ void test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL }
+            { V, 7, 7, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 7, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 7, WALL_FORBIDDEN_BY_1 }
         };
 
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -884,13 +884,13 @@ void test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 7, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 5, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 7, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 7, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 7, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 6, WALL_FORBIDDEN_BY_1 },
+            { V, 7, 6, WALL_FORBIDDEN_BY_1 },
+            { H, 6, 6, WALL_FORBIDDEN_BY_1 },
+            { V, 5, 6, WALL_FORBIDDEN_BY_1 },
         };
 
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -928,15 +928,15 @@ void test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 7, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
-            { V, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 7, 6, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
-            { H, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 5, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 5, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 7, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 7, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 7, WALL_FORBIDDEN_BY_2 },
+            { V, 6, 6, WALL_FORBIDDEN_BY_1 },
+            { V, 7, 6, WALL_FORBIDDEN_BY_2 },
+            { H, 6, 6, WALL_FORBIDDEN_BY_1 },
+            { V, 5, 6, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 6, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 5, WALL_FORBIDDEN_BY_1 },
         };
 
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -970,13 +970,13 @@ void test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 7, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 6, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 5, 6, WALL_FORBIDDEN_BY_1_OTHER_WALL },
+            { V, 7, 7, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 7, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 7, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 6, WALL_FORBIDDEN_BY_1 },
+            { V, 7, 6, WALL_FORBIDDEN_BY_1 },
+            { H, 6, 6, WALL_FORBIDDEN_BY_1 },
+            { V, 5, 6, WALL_FORBIDDEN_BY_1 },
         };
 
         UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
@@ -1006,9 +1006,9 @@ void test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { V, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 7, WALL_FORBIDDEN_BY_1_OTHER_WALL }
+            { V, 7, 7, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 7, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 7, WALL_FORBIDDEN_BY_1 }
         };
 
         UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));
@@ -1074,16 +1074,16 @@ void test_9_PlaceAndUndoGroupsOf3Walls(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 7, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 7, 0, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
-            { V, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL }
+            { H, 7, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 1, WALL_FORBIDDEN_BY_1 },
+            { V, 7, 0, WALL_FORBIDDEN_BY_2 },
+            { V, 5, 0, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 2, WALL_FORBIDDEN_BY_1 },
+            { V, 5, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 6, 0, WALL_FORBIDDEN_BY_1 }
         };
 
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -1135,27 +1135,27 @@ void test_9_PlaceAndUndoGroupsOf3Walls(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 7, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 7, 0, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
-            { V, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 2, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
-            { V, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 4, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 4, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 4, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 4, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 4, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 5, 3, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 7, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 5, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 6, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL }
+            { H, 7, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 1, WALL_FORBIDDEN_BY_1 },
+            { V, 7, 0, WALL_FORBIDDEN_BY_2 },
+            { V, 5, 0, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 2, WALL_FORBIDDEN_BY_2 },
+            { V, 5, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 6, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 4, 3, WALL_FORBIDDEN_BY_1 },
+            { V, 4, 3, WALL_FORBIDDEN_BY_1 },
+            { H, 4, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 4, 4, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 3, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 4, WALL_FORBIDDEN_BY_1 },
+            { V, 5, 3, WALL_FORBIDDEN_BY_1 },
+            { V, 7, 2, WALL_FORBIDDEN_BY_1 },
+            { V, 5, 2, WALL_FORBIDDEN_BY_1 },
+            { H, 6, 2, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 2, WALL_FORBIDDEN_BY_1 }
         };
 
         PlaceWalls(board, wallsToPlace, COUNT(wallsToPlace));
@@ -1195,16 +1195,16 @@ void test_9_PlaceAndUndoGroupsOf3Walls(Board_t* board)
         // define some walls that should be flagged as forbidden after the placement of walls above
         TestWallPermission_t permissionsToCheck[] =
         {
-            { H, 7, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 7, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 7, 0, WALL_FORBIDDEN_BY_2_OTHER_WALLS },
-            { V, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 5, 2, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { V, 5, 1, WALL_FORBIDDEN_BY_1_OTHER_WALL },
-            { H, 6, 0, WALL_FORBIDDEN_BY_1_OTHER_WALL }
+            { H, 7, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 7, 1, WALL_FORBIDDEN_BY_1 },
+            { V, 7, 0, WALL_FORBIDDEN_BY_2 },
+            { V, 5, 0, WALL_FORBIDDEN_BY_1 },
+            { V, 6, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 0, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 5, 2, WALL_FORBIDDEN_BY_1 },
+            { V, 5, 1, WALL_FORBIDDEN_BY_1 },
+            { H, 6, 0, WALL_FORBIDDEN_BY_1 }
         };
 
         UndoWalls(board, wallsToUndo, COUNT(wallsToUndo));

@@ -11,11 +11,11 @@ namespace qplugin_drma {
 #define IS_VALID(score) (BEST_NEG_SCORE <= score && score <= BEST_POS_SCORE)
 
 // yeah, I know.. but it keeps minimax function readable
-#define FOREACH_PERMITTED_WALL_AS(wall)     for (int o = V; o >= H; o--) { \
+#define FOREACH_ALLOWED_WALL_AS(wall)       for (int o = V; o >= H; o--) { \
                                                 for (int i = 0; i < BOARD_SZ - 1; i++) { \
                                                     for (int j = 0; j < BOARD_SZ - 1; j++) { \
                                                         wall = &(board->walls[o][i][j]); \
-                                                            if (wall->permission == WALL_PERMITTED && (!wall->isDisabled))
+                                                            if (wall->permission == WALL_PERMITTED && (wall->isEnabled))
 #define END_FOREACH_PERMITTED_WALL           } } }
 
 #define FOREACH_POSSIBLE_MOVE_AS(move)      for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++) { \
@@ -79,7 +79,7 @@ int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta,
         if (board->wallsLeft[player])
         {
             Wall_t* wall;
-            FOREACH_PERMITTED_WALL_AS(wall)
+            FOREACH_ALLOWED_WALL_AS(wall)
             {
                 bool prune = false;
                 PlaceWall(board, player, wall);

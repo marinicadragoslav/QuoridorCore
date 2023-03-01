@@ -32,9 +32,6 @@ namespace qplugin_drma
       int turn = (turnCount++);
 
       static Board_t* board;
-      static bool areCornerWallsDisabled = false;
-      static bool areAllWallsDisabled = false;
-      static bool areFirstAndLastColVertWallsDisabled = false;
 
       if (turn == 0)
       {
@@ -119,18 +116,22 @@ namespace qplugin_drma
 
       // Reduce the branching factor in the first part of the game --------------------------------------------------------------------------
 
-      // disable wall placing at the beginning of the game
+      static bool areAllWallsDisabled = false;
+      static bool areCornerWallsDisabled = false;
+      static bool areFirstAndLastColVertWallsDisabled = false;
+
+      // disable all walls if no walls were placed yet and the players are close to their home base
       if ((myWallsLeft + oppWallsLeft == 20) && myPos.x > 5 && oppPos.x < 3 && !areAllWallsDisabled)
       {
-         DisableAllWalls(board);
+         DisableWallsSubset(board, ALL_WALLS);
          areAllWallsDisabled = true;
          LOG_INFO(DOM) << "  Disabled all walls";
       }
       
-      // enable walls if a wall was placed or the players have advanced enough
+      // enable all walls if a wall was placed or the players have advanced enough
       if ((myWallsLeft + oppWallsLeft < 20 || myPos.x <= 5 || oppPos.x >= 3) && areAllWallsDisabled)
       {
-         EnableAllWalls(board);
+         EnableWallsSubset(board, ALL_WALLS);
          areAllWallsDisabled = false;
          LOG_INFO(DOM) << "  Enabled all walls";
       }
@@ -138,31 +139,31 @@ namespace qplugin_drma
       // disable first and last col vertical walls until at least 2 walls were placed
        if ((myWallsLeft + oppWallsLeft > 18) && !areFirstAndLastColVertWallsDisabled && !areAllWallsDisabled)
       {
-         DisableFirstAndLastColVertWalls(board);
+         DisableWallsSubset(board, VERT_WALLS_FIRST_LAST_COL);
          areFirstAndLastColVertWallsDisabled = true;
-         LOG_INFO(DOM) << "  Disabled FLCV walls";
+         LOG_INFO(DOM) << "  Disabled First Last Col Vertical walls";
       }
 
-      // enable first and last col vertical walls when the first the first 2 walls were placed
+      // enable first and last col vertical walls after the first 2 walls were placed
       if ((myWallsLeft + oppWallsLeft <= 18) && areFirstAndLastColVertWallsDisabled)
       {
-         EnableFirstAndLastColVertWalls(board);
+         EnableWallsSubset(board, VERT_WALLS_FIRST_LAST_COL);
          areFirstAndLastColVertWallsDisabled = false;
-         LOG_INFO(DOM) << "  Enabled FLCV walls";
+         LOG_INFO(DOM) << "  Enabled First Last Col Vertical walls";
       }
       
       // disable corner walls until at least 4 walls have been placed
       if ((myWallsLeft + oppWallsLeft > 16) && !areCornerWallsDisabled && !areAllWallsDisabled)
       {
-         DisableCornerWalls(board);
+         DisableWallsSubset(board, CORNER_WALLS);
          areCornerWallsDisabled = true;
          LOG_INFO(DOM) << "  Disabled Corner walls";
       }
       
-      // enable corner walls when the first the first 4 walls were placed
+      // enable corner walls after the first 4 walls were placed
       if ((myWallsLeft + oppWallsLeft <= 16) && areCornerWallsDisabled)
       {
-         EnableCornerWalls(board);
+         EnableWallsSubset(board, CORNER_WALLS);
          areCornerWallsDisabled = false;
          LOG_INFO(DOM) << "  Enabled Corner walls";
       }
