@@ -77,12 +77,12 @@
 
 namespace qplugin
 {
-   class drmaPlayer : public qcore::Player
+   class MagneB6Player : public qcore::Player
    {
    public:
 
       /** Construction */
-      drmaPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game);
+      MagneB6Player(qcore::PlayerId id, const std::string& name, qcore::GamePtr game);
 
       /** Defines player's behavior. In this particular case, it's a really dummy one */
       void doNextMove() override;

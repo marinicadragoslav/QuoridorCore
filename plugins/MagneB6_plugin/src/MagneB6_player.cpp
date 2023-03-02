@@ -1,13 +1,13 @@
-#include "drma_player.h"
+#include "MagneB6_player.h"
 
 using namespace qcore::literals;
 using namespace std::chrono_literals;
 
 namespace qplugin
 {
-   const char * const DOM = "drma";
+   const char * const DOM = "qplugin::MB6";
 
-   drmaPlayer::drmaPlayer(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
+   MagneB6Player::MagneB6Player(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
       qcore::Player(id, name, game)
    {
    }
@@ -15,7 +15,7 @@ namespace qplugin
    /** This function defines the behaviour of the player. It is called by the game when it is my turn, and it 
     *  needs to end with a call to one of the action functions: move(...), placeWall(...).
     */      
-   void drmaPlayer::doNextMove()
+   void MagneB6Player::doNextMove()
    {
       std::chrono::time_point<std::chrono::steady_clock> tStart = std::chrono::steady_clock::now();
 
@@ -162,17 +162,15 @@ namespace qplugin
       }
       else // Minimax
       {
-         bool hasTimedOut = false;
-
          // First minimax pass with (depth - 1): to make sure there is a best play if minimax with full depth times out
          Minimax(board, ME, MINIMAX_DEPTH - 1, NEG_INFINITY, POS_INFINITY, tStart, false, NULL);
+         Play_t bestPlayFirstPass = GetBestPlayForLevel(MINIMAX_DEPTH - 1);
 
-         Play_t bestPlayFirstPass = GetBestPlayForLevel(MINIMAX_DEPTH - 1); 
          LOG_INFO(DOM) << "  After Minimax first pass:";
          debug_PrintPlay(bestPlayFirstPass);
 
          // Second minimax pass with full depth - can timeout:
-         hasTimedOut = false;
+         bool hasTimedOut = false;
          Minimax(board, ME, MINIMAX_DEPTH, NEG_INFINITY, POS_INFINITY, tStart, true, &hasTimedOut);
          
          // Get final best play
@@ -268,7 +266,7 @@ namespace qplugin
       }
    }
 
-   qcore::Position drmaPlayer::CoreAbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation)   
+   qcore::Position MagneB6Player::CoreAbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation)   
    {
       qcore::Position relPos;
 
@@ -284,7 +282,7 @@ namespace qplugin
    }
 
 
-   drmaPlayer::Position_t drmaPlayer::CoreToPluginWallPos(qcore::Position coreWallPos, qcore::Orientation orientation)
+   MagneB6Player::Position_t MagneB6Player::CoreToPluginWallPos(qcore::Position coreWallPos, qcore::Orientation orientation)
    {
       Position_t pluginWallPos;
 
@@ -303,7 +301,7 @@ namespace qplugin
    }
 
 
-   qcore::Position drmaPlayer::PluginToCoreWallPos(Position_t pluginWallPos, Orientation_t orientation)
+   qcore::Position MagneB6Player::PluginToCoreWallPos(Position_t pluginWallPos, Orientation_t orientation)
    {
       qcore::Position coreWallPos;
 
@@ -322,76 +320,76 @@ namespace qplugin
    }
 
 
-   drmaPlayer::Orientation_t drmaPlayer::CoreToPluginWallOrientation(qcore::Orientation orientation)
+   MagneB6Player::Orientation_t MagneB6Player::CoreToPluginWallOrientation(qcore::Orientation orientation)
    {
       return (orientation == qcore::Orientation::Horizontal ? H : V);
    }
 
 
-   qcore::Orientation drmaPlayer::PluginToCoreWallOrientation(Orientation_t orientation)
+   qcore::Orientation MagneB6Player::PluginToCoreWallOrientation(Orientation_t orientation)
    {
       return (orientation == H ? qcore::Orientation::Horizontal : qcore::Orientation::Vertical);
    }
 
-   drmaPlayer::Board_t* drmaPlayer::NewDefaultBoard(void)
+   MagneB6Player::Board_t* MagneB6Player::NewDefaultBoard(void)
    {
       Board_t* board = (Board_t*)calloc(1, sizeof(Board_t));
 
       // init tiles
       for (int8_t x = 0; x < BOARD_SZ; x++)
       {
-            for (int8_t y = 0; y < BOARD_SZ; y++)
-            {
-               // set current tile's position
-               board->tiles[x][y].pos = {x, y};
+         for (int8_t y = 0; y < BOARD_SZ; y++)
+         {
+            // set current tile's position
+            board->tiles[x][y].pos = {x, y};
 
-               // link tile to its neighbours. Link to NULL if the tile is on the border.
-               board->tiles[x][y].north = ((x > 0)              ?   &(board->tiles[x - 1][y]) : NULL);
-               board->tiles[x][y].south = ((x < (BOARD_SZ - 1)) ?   &(board->tiles[x + 1][y]) : NULL);
-               board->tiles[x][y].west  = ((y > 0)              ?   &(board->tiles[x][y - 1]) : NULL);
-               board->tiles[x][y].east  = ((y < (BOARD_SZ - 1)) ?   &(board->tiles[x][y + 1]) : NULL);
+            // link tile to its neighbours. Link to NULL if the tile is on the border.
+            board->tiles[x][y].north = ((x > 0)              ?   &(board->tiles[x - 1][y]) : NULL);
+            board->tiles[x][y].south = ((x < (BOARD_SZ - 1)) ?   &(board->tiles[x + 1][y]) : NULL);
+            board->tiles[x][y].west  = ((y > 0)              ?   &(board->tiles[x][y - 1]) : NULL);
+            board->tiles[x][y].east  = ((y < (BOARD_SZ - 1)) ?   &(board->tiles[x][y + 1]) : NULL);
 
-               // mark first row tiles as goal tiles for me, and last row tiles as goal tiles for opponent
-               board->tiles[x][y].isGoalFor = ((x == 0) ? ME : ((x == (BOARD_SZ - 1)) ? OPPONENT : NOBODY));           
-            }
+            // mark first row tiles as goal tiles for me, and last row tiles as goal tiles for opponent
+            board->tiles[x][y].isGoalFor = ((x == 0) ? ME : ((x == (BOARD_SZ - 1)) ? OPPONENT : NOBODY));           
+         }
       }
 
       // init walls
       for (int8_t o = H; o <= V; o++) // orientation V or H
       {
-            for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+         for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+         {
+            for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
             {
-               for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+               board->walls[o][x][y].pos = {x, y};
+               board->walls[o][x][y].orientation = (Orientation_t)o;
+               board->walls[o][x][y].permission = WALL_PERMITTED;
+               board->walls[o][x][y].isEnabled = true;
+
+               // set tiles that this wall separates when placed
+               Tile_t* referenceTile = &(board->tiles[x][y]);
+               board->walls[o][x][y].northwest = referenceTile;
+               board->walls[o][x][y].northeast = referenceTile->east;
+               board->walls[o][x][y].southwest = referenceTile->south;
+               board->walls[o][x][y].southeast = referenceTile->south->east;
+
+               // link to walls that this wall forbids when placed
+               if (o == H)
                {
-                  board->walls[o][x][y].pos = {x, y};
-                  board->walls[o][x][y].orientation = (Orientation_t)o;
-                  board->walls[o][x][y].permission = WALL_PERMITTED;
-                  board->walls[o][x][y].isEnabled = true;
-
-                  // set tiles that this wall separates when placed
-                  Tile_t* referenceTile = &(board->tiles[x][y]);
-                  board->walls[o][x][y].northwest = referenceTile;
-                  board->walls[o][x][y].northeast = referenceTile->east;
-                  board->walls[o][x][y].southwest = referenceTile->south;
-                  board->walls[o][x][y].southeast = referenceTile->south->east;
-
-                  // link to walls that this wall forbids when placed
-                  if (o == H)
-                  {
-                        // each horizontal wall forbids 2 other horizontal walls and a vertical wall
-                        board->walls[o][x][y].forbidsPrev  = ((y == 0) ?  NULL : &(board->walls[H][x][y - 1]));
-                        board->walls[o][x][y].forbidsNext  = ((y == (BOARD_SZ - 2)) ? NULL : &(board->walls[H][x][y + 1]));
-                        board->walls[o][x][y].forbidsCompl = &(board->walls[V][x][y]);
-                  }
-                  else
-                  {
-                        // each vertical wall forbids 2 other vertical walls and a horizontal wall
-                        board->walls[o][x][y].forbidsPrev  = ((x == 0) ?     NULL : &(board->walls[V][x - 1][y]));
-                        board->walls[o][x][y].forbidsNext  = ((x == (BOARD_SZ - 2)) ? NULL : &(board->walls[V][x + 1][y]));
-                        board->walls[o][x][y].forbidsCompl = &(board->walls[H][x][y]);
-                  }                
+                     // each horizontal wall forbids 2 other horizontal walls and a vertical wall
+                     board->walls[o][x][y].forbidsPrev  = ((y == 0) ?  NULL : &(board->walls[H][x][y - 1]));
+                     board->walls[o][x][y].forbidsNext  = ((y == (BOARD_SZ - 2)) ? NULL : &(board->walls[H][x][y + 1]));
+                     board->walls[o][x][y].forbidsCompl = &(board->walls[V][x][y]);
                }
+               else
+               {
+                     // each vertical wall forbids 2 other vertical walls and a horizontal wall
+                     board->walls[o][x][y].forbidsPrev  = ((x == 0) ?     NULL : &(board->walls[V][x - 1][y]));
+                     board->walls[o][x][y].forbidsNext  = ((x == (BOARD_SZ - 2)) ? NULL : &(board->walls[V][x + 1][y]));
+                     board->walls[o][x][y].forbidsCompl = &(board->walls[H][x][y]);
+               }                
             }
+         }
       }
 
       // init number of walls left
@@ -409,63 +407,63 @@ namespace qplugin
       // init moveIDs and set the difference on x and y axes that each move implies
       for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
       {
-            board->moves[ME][moveID].moveID = (MoveID_t)moveID;
-            board->moves[OPPONENT][moveID].moveID = (MoveID_t)moveID;
+         board->moves[ME][moveID].moveID = (MoveID_t)moveID;
+         board->moves[OPPONENT][moveID].moveID = (MoveID_t)moveID;
 
-            switch (moveID)
-            {
-               case MOVE_NORTH:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -1;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
-               break;
-               case MOVE_SOUTH:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +1;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
-               break;
-               case MOVE_WEST:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -1;
-               break;
-               case MOVE_EAST:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +1;
-               break;
-               case JUMP_NORTH:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -2;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
-               break;
-               case JUMP_SOUTH:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +2;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
-               break;
-               case JUMP_WEST:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -2;
-               break;
-               case JUMP_EAST:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +2;
-               break;
-               case JUMP_NORTH_WEST:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -1;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -1;
-               break;
-               case JUMP_NORTH_EAST:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -1;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +1;
-               break;
-               case JUMP_SOUTH_WEST:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +1;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -1;
-               break;
-               case JUMP_SOUTH_EAST:
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +1;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +1;
-               break;
-               default: // this should never happen
-                  board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = 0;
-                  board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = 0;
-            }
+         switch (moveID)
+         {
+            case MOVE_NORTH:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -1;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
+            break;
+            case MOVE_SOUTH:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +1;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
+            break;
+            case MOVE_WEST:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -1;
+            break;
+            case MOVE_EAST:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +1;
+            break;
+            case JUMP_NORTH:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -2;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
+            break;
+            case JUMP_SOUTH:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +2;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff =  0;
+            break;
+            case JUMP_WEST:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -2;
+            break;
+            case JUMP_EAST:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff =  0;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +2;
+            break;
+            case JUMP_NORTH_WEST:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -1;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -1;
+            break;
+            case JUMP_NORTH_EAST:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = -1;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +1;
+            break;
+            case JUMP_SOUTH_WEST:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +1;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = -1;
+            break;
+            case JUMP_SOUTH_EAST:
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = +1;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = +1;
+            break;
+            default: // this should never happen
+               board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = 0;
+               board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = 0;
+         }
       }
 
       // init plays
@@ -473,50 +471,50 @@ namespace qplugin
 
       for (int8_t o = V; o >= H; o--) // orientation V or H
       {
-            for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+         for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+         {
+            for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
             {
-               for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
-               {
-                  board->plays[numPlays].action = PLACE_WALL;
-                  board->plays[numPlays].wall = &(board->walls[o][x][y]);
-                  board->plays[numPlays].move = NULL;
-                  board->plays[numPlays].player = NOBODY;
-                  numPlays++;
-               }
+               board->plays[numPlays].action = PLACE_WALL;
+               board->plays[numPlays].wall = &(board->walls[o][x][y]);
+               board->plays[numPlays].move = NULL;
+               board->plays[numPlays].player = NOBODY;
+               numPlays++;
             }
+         }
       }
 
       for (int8_t pl = ME; pl <= OPPONENT; pl++) // for each player
       {
-            for (int8_t moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
-            {
-               board->plays[numPlays].action = MAKE_MOVE;
-               board->plays[numPlays].move = &(board->moves[pl][moveID]);
-               board->plays[numPlays].wall = NULL;
-               board->plays[numPlays].player = (Player_t)pl;
-               numPlays++;
-            }
+         for (int8_t moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
+         {
+            board->plays[numPlays].action = MAKE_MOVE;
+            board->plays[numPlays].move = &(board->moves[pl][moveID]);
+            board->plays[numPlays].wall = NULL;
+            board->plays[numPlays].player = (Player_t)pl;
+            numPlays++;
+         }
       }
 
       return board;
    }
 
-   drmaPlayer::Wall_t* drmaPlayer::GetWallByPosAndOrientation(Board_t* board, Position_t wallPos, Orientation_t wallOr)
+   MagneB6Player::Wall_t* MagneB6Player::GetWallByPosAndOrientation(Board_t* board, Position_t wallPos, Orientation_t wallOr)
    {
       return &(board->walls[wallOr][wallPos.x][wallPos.y]);
    }
 
-   void drmaPlayer::UpdatePos(Board_t* board, Player_t player, Position_t pos)
+   void MagneB6Player::UpdatePos(Board_t* board, Player_t player, Position_t pos)
    {
       board->playerPos[player] = pos;
    }
 
-   void drmaPlayer::UpdateWallsLeft(Board_t* board, Player_t player, uint8_t wallsLeft)
+   void MagneB6Player::UpdateWallsLeft(Board_t* board, Player_t player, uint8_t wallsLeft)
    {
       board->wallsLeft[player] = wallsLeft;
    }
 
-   void drmaPlayer::PlaceWall(Board_t* board, Player_t player, Wall_t* wall)
+   void MagneB6Player::PlaceWall(Board_t* board, Player_t player, Wall_t* wall)
    {
       // Placing a wall means:
       // 1. removing links (graph edges) between tiles separated by the wall
@@ -547,7 +545,7 @@ namespace qplugin
       board->wallsLeft[player]--;
    }
 
-   void drmaPlayer::UndoWall(Board_t* board, Player_t player, Wall_t* wall)
+   void MagneB6Player::UndoWall(Board_t* board, Player_t player, Wall_t* wall)
    {
       // Undoing a wall means:
       // 1. Restoring links (graph edges) between tiles separated by the wall
@@ -579,7 +577,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::UpdatePossibleMoves(Board_t* board, Player_t player)
+   void MagneB6Player::UpdatePossibleMoves(Board_t* board, Player_t player)
    {
       Tile_t* pT = GetPlayerTile(board, player);
       Tile_t* oT = GetPlayerTile(board, board->otherPlayer[player]);
@@ -606,97 +604,97 @@ namespace qplugin
 
 
    // Check that move is possible BEFORE calling this!
-   void drmaPlayer::MakeMove(Board_t* board, Player_t player, MoveID_t moveID)
+   void MagneB6Player::MakeMove(Board_t* board, Player_t player, MoveID_t moveID)
    {
       board->playerPos[player].x += board->moves[player][moveID].xDiff;
       board->playerPos[player].y += board->moves[player][moveID].yDiff;
    }
 
    // Only call this in pair with MakeMove()
-   void drmaPlayer::UndoMove(Board_t* board, Player_t player, MoveID_t moveID)
+   void MagneB6Player::UndoMove(Board_t* board, Player_t player, MoveID_t moveID)
    {
       board->playerPos[player].x -= board->moves[player][moveID].xDiff;
       board->playerPos[player].y -= board->moves[player][moveID].yDiff;
    }
 
-   drmaPlayer::Tile_t* drmaPlayer::GetPlayerTile(Board_t* board, Player_t player)
+   MagneB6Player::Tile_t* MagneB6Player::GetPlayerTile(Board_t* board, Player_t player)
    {
       return (&(board->tiles[board->playerPos[player].x][board->playerPos[player].y]));
    }
 
-   bool drmaPlayer::HasPlayerWon(Board_t* board, Player_t player)
+   bool MagneB6Player::HasPlayerWon(Board_t* board, Player_t player)
    {
       return (GetPlayerTile(board, player)->isGoalFor == player ? true : false);
    }
 
-   void drmaPlayer::EnableWallsSubset(Board_t* board, WallsSubset_t subset)
+   void MagneB6Player::EnableWallsSubset(Board_t* board, WallsSubset_t subset)
    {
       for (int8_t o = H; o <= V; o++) // orientation V or H
       {
          for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
          {
-               for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+            for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+            {
+               switch (subset)
                {
-                  switch (subset)
-                  {
-                     case ALL_WALLS:
+                  case ALL_WALLS:
+                        board->walls[o][x][y].isEnabled = true;
+                  break;
+                  case CORNER_WALLS:
+                        if ((x == 0 || x == BOARD_SZ - 2) && (y == 0 || y == BOARD_SZ - 2))
+                        {
                            board->walls[o][x][y].isEnabled = true;
-                     break;
-                     case CORNER_WALLS:
-                           if ((x == 0 || x == BOARD_SZ - 2) && (y == 0 || y == BOARD_SZ - 2))
-                           {
-                              board->walls[o][x][y].isEnabled = true;
-                           }
-                     break;
-                     case VERT_WALLS_FIRST_LAST_COL:
-                           if ((o == V) && (y == 0 || y == (BOARD_SZ - 2)))
-                           {
-                              board->walls[o][x][y].isEnabled = true;
-                           }
-                     break;
-                     default:
+                        }
+                  break;
+                  case VERT_WALLS_FIRST_LAST_COL:
+                        if ((o == V) && (y == 0 || y == (BOARD_SZ - 2)))
+                        {
                            board->walls[o][x][y].isEnabled = true;
-                  }
+                        }
+                  break;
+                  default:
+                        board->walls[o][x][y].isEnabled = true;
                }
+            }
          }
       }
    }
 
-   void drmaPlayer::DisableWallsSubset(Board_t* board, WallsSubset_t subset)
+   void MagneB6Player::DisableWallsSubset(Board_t* board, WallsSubset_t subset)
    {
       for (int8_t o = H; o <= V; o++) // orientation V or H
       {
          for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
          {
-               for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+            for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+            {
+               switch (subset)
                {
-                  switch (subset)
-                  {
-                     case ALL_WALLS:
+                  case ALL_WALLS:
+                        board->walls[o][x][y].isEnabled = false;
+                  break;
+                  case CORNER_WALLS:
+                        if ((x == 0 || x == BOARD_SZ - 2) && (y == 0 || y == BOARD_SZ - 2))
+                        {
                            board->walls[o][x][y].isEnabled = false;
-                     break;
-                     case CORNER_WALLS:
-                           if ((x == 0 || x == BOARD_SZ - 2) && (y == 0 || y == BOARD_SZ - 2))
-                           {
-                              board->walls[o][x][y].isEnabled = false;
-                           }
-                     break;
-                     case VERT_WALLS_FIRST_LAST_COL:
-                           if ((o == V) && (y == 0 || y == (BOARD_SZ - 2)))
-                           {
-                              board->walls[o][x][y].isEnabled = false;
-                           }
-                     break;
-                     default:
+                        }
+                  break;
+                  case VERT_WALLS_FIRST_LAST_COL:
+                        if ((o == V) && (y == 0 || y == (BOARD_SZ - 2)))
+                        {
                            board->walls[o][x][y].isEnabled = false;
-                  }
+                        }
+                  break;
+                  default:
+                        board->walls[o][x][y].isEnabled = false;
                }
+            }
          }
       }
    }
 
    // Static evaluation of the board position, from my perspective (maximizing player). A high score is good for me.
-   int drmaPlayer::StaticEval(Board_t* board)
+   int MagneB6Player::StaticEval(Board_t* board)
    {
       bool foundMinPathMe;
       bool foundMinPathOpp;
@@ -720,7 +718,7 @@ namespace qplugin
       }
    }
 
-   int drmaPlayer::Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta,
+   int MagneB6Player::Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta,
                   std::chrono::time_point<std::chrono::steady_clock> tStart, bool canTimeOut, bool *hasTimedOut)
    {
       UpdatePossibleMoves(board, ME);
@@ -833,12 +831,12 @@ namespace qplugin
       }
    }
 
-   drmaPlayer::Play_t drmaPlayer::GetBestPlayForLevel(uint8_t level)
+   MagneB6Player::Play_t MagneB6Player::GetBestPlayForLevel(uint8_t level)
    {
       return bestPlays[level];
    }
 
-   uint8_t drmaPlayer::FindMinPathLen(Board_t* board, Player_t player, bool* found)
+   uint8_t MagneB6Player::FindMinPathLen(Board_t* board, Player_t player, bool* found)
    {
       if (GetPlayerTile(board, player)->isGoalFor == player)
       {
@@ -943,46 +941,46 @@ namespace qplugin
       return minPathLen;
    }
 
-   void drmaPlayer::QueueInit(void)
+   void MagneB6Player::QueueInit(void)
    {
       queueNext = 0;
       queueFirst = 0;
    }
 
-   bool drmaPlayer::IsQueueEmpty(void)
+   bool MagneB6Player::IsQueueEmpty(void)
    {
       return (queueNext == queueFirst);
    }
 
-   void drmaPlayer::QueuePush(Subpath_t item)
+   void MagneB6Player::QueuePush(Subpath_t item)
    {
       queue[queueNext++] = item;
    }
 
-   drmaPlayer::Subpath_t* drmaPlayer::QueuePop(void)
+   MagneB6Player::Subpath_t* MagneB6Player::QueuePop(void)
    {
       return &(queue[queueFirst++]);
    }
 
-   void drmaPlayer::FoundSubpathsInit(void)
+   void MagneB6Player::FoundSubpathsInit(void)
    {
       memset(foundSubpaths, 0, sizeof(foundSubpaths));
       goalTilesReached = 0;
    }
 
-   bool drmaPlayer::IsMinPathFoundForTile(Tile_t* tile)
+   bool MagneB6Player::IsMinPathFoundForTile(Tile_t* tile)
    {
       return (foundSubpaths[tile->pos.x][tile->pos.y].pathLen != 0);
    }
    
 
    #if (PRINT_DEBUG_INFO)
-   void drmaPlayer::ClearBuff(void)
+   void MagneB6Player::ClearBuff(void)
    {
       memset(buff, 0, sizeof(buff));
    }
 
-   const char* drmaPlayer::debug_ConvertMoveIDToString(MoveID_t moveID)
+   const char* MagneB6Player::debug_ConvertMoveIDToString(MoveID_t moveID)
    {   
       switch (moveID)
       {
@@ -1002,7 +1000,7 @@ namespace qplugin
       }
    }
 
-   char* drmaPlayer::debug_PrintMyPossibleMoves(Board_t* board)
+   char* MagneB6Player::debug_PrintMyPossibleMoves(Board_t* board)
    {    
       ClearBuff();
       sprintf(buff + strlen(buff), "  My possible moves: ");
@@ -1018,7 +1016,7 @@ namespace qplugin
       return buff;
    }
 
-   char* drmaPlayer::debug_PrintOppPossibleMoves(Board_t* board)
+   char* MagneB6Player::debug_PrintOppPossibleMoves(Board_t* board)
    {    
       ClearBuff();
       sprintf(buff + strlen(buff), "  Opp possible moves: ");
@@ -1034,7 +1032,7 @@ namespace qplugin
       return buff;
    }    
 
-   void drmaPlayer::debug_PrintPlay(Play_t play)
+   void MagneB6Player::debug_PrintPlay(Play_t play)
    {
       ClearBuff();
       sprintf(buff + strlen(buff), "  Best Play: ");
@@ -1061,7 +1059,7 @@ namespace qplugin
       LOG_INFO(DOM) << buff;
    }
 
-   void drmaPlayer::debug_PrintBoard(Board_t* board)
+   void MagneB6Player::debug_PrintBoard(Board_t* board)
    {
       char tiles[BOARD_SZ * BOARD_SZ] = { 0 };
       char vertw[BOARD_SZ * (BOARD_SZ - 1)] = { 0 };
@@ -1151,33 +1149,33 @@ namespace qplugin
    #endif
 
    #if (PRINT_DEBUG_INFO && RUN_TESTS)
-      void drmaPlayer::debug_PrintTestMessage(const char* msg)
+      void MagneB6Player::debug_PrintTestMessage(const char* msg)
       {
          LOG_WARN(DOM) << msg;
       }
 
-      void drmaPlayer::debug_PrintTestPassed(void)
+      void MagneB6Player::debug_PrintTestPassed(void)
       {
          LOG_WARN(DOM) << "TEST PASSED!";
       }
 
-      void drmaPlayer::debug_PrintTestFailed(void)
+      void MagneB6Player::debug_PrintTestFailed(void)
       {
          LOG_ERROR(DOM) << "TEST FAILED!";
       }
 
-      void drmaPlayer::debug_PrintTestErrorMsg(const char* errMsg)
+      void MagneB6Player::debug_PrintTestErrorMsg(const char* errMsg)
       {
          LOG_ERROR(DOM) << errMsg;
       }
 
-      void drmaPlayer::debug_PrintTestMinPaths(int minPathMe, int minPathOpp)
+      void MagneB6Player::debug_PrintTestMinPaths(int minPathMe, int minPathOpp)
       {
          LOG_INFO(DOM) << "  Me: " << minPathMe << ", Opponent: " << minPathOpp;
       }
 
 
-   void drmaPlayer::PlaceWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount)
+   void MagneB6Player::PlaceWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount)
    {
       if (walls)
       {
@@ -1188,7 +1186,7 @@ namespace qplugin
       }
    }
 
-   void drmaPlayer::UndoWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount)
+   void MagneB6Player::UndoWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount)
    {
       if (walls)
       {
@@ -1199,7 +1197,7 @@ namespace qplugin
       }
    }
 
-   void drmaPlayer::CheckBoardStructure(Board_t* board, TestTileLink_t* tileLinksToTest, int8_t tileLinksCount,
+   void MagneB6Player::CheckBoardStructure(Board_t* board, TestTileLink_t* tileLinksToTest, int8_t tileLinksCount,
                      TestWallPermission_t* permissionsToCheck, int8_t permissionsToCheckCount)
    { 
       const char* errMsg;    
@@ -1376,7 +1374,7 @@ namespace qplugin
          }
    }
 
-   void drmaPlayer::test_1_CheckInitialBoardStructure(Board_t* board)
+   void MagneB6Player::test_1_CheckInitialBoardStructure(Board_t* board)
    {
       debug_PrintTestMessage("Test 1.1:");
 
@@ -1398,7 +1396,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_2_PlaceThenUndoOneHorizWallThatIsNotOnTheBorder(Board_t* board)
+   void MagneB6Player::test_2_PlaceThenUndoOneHorizWallThatIsNotOnTheBorder(Board_t* board)
    {
       {
          debug_PrintTestMessage("Test 2.1:");
@@ -1456,7 +1454,7 @@ namespace qplugin
       }
    }
 
-   void drmaPlayer::test_3_PlaceThenUndoOneVertWallThatIsNotOnTheBorder(Board_t* board)
+   void MagneB6Player::test_3_PlaceThenUndoOneVertWallThatIsNotOnTheBorder(Board_t* board)
    {
       {
          debug_PrintTestMessage("Test 3.1:");
@@ -1515,7 +1513,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_4_PlaceThenUndoOneHorizWallThatIsOnTheBorder(Board_t* board)
+   void MagneB6Player::test_4_PlaceThenUndoOneHorizWallThatIsOnTheBorder(Board_t* board)
    {
       {
          debug_PrintTestMessage("Test 4.1:");
@@ -1625,7 +1623,7 @@ namespace qplugin
       }
    }
 
-   void drmaPlayer::test_5_PlaceThenUndoOneVertWallThatIsOnTheBorder(Board_t* board)
+   void MagneB6Player::test_5_PlaceThenUndoOneVertWallThatIsOnTheBorder(Board_t* board)
    {
       {
          debug_PrintTestMessage("Test 5.1:");
@@ -1736,7 +1734,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_6_PlaceTwoConsecutiveHorizWallsAndUndoThem(Board_t* board)
+   void MagneB6Player::test_6_PlaceTwoConsecutiveHorizWallsAndUndoThem(Board_t* board)
    {
       {
          debug_PrintTestMessage("Test 6.1:");
@@ -1836,7 +1834,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* board)
+   void MagneB6Player::test_7_Place2HorizWallsAndOneVertWallBetweenThemAndThenUndoAll(Board_t* board)
    {
       {
          debug_PrintTestMessage("Test 7.1:");
@@ -1954,7 +1952,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
+   void MagneB6Player::test_8_Place2VertWallsAndOneHorizWallAndThenUndoAll(Board_t* board)
    {
       {
          debug_PrintTestMessage("Test 8.1:");
@@ -2170,7 +2168,7 @@ namespace qplugin
       }
    }
 
-   void drmaPlayer::test_9_PlaceAndUndoGroupsOf3Walls(Board_t* board)
+   void MagneB6Player::test_9_PlaceAndUndoGroupsOf3Walls(Board_t* board)
    {
       {
          debug_PrintTestMessage("Test 9.1:");
@@ -2370,7 +2368,7 @@ namespace qplugin
       }
    }
 
-   void drmaPlayer::StringToMap(const char* stringInput, char* mapOutput, int8_t* myPosX, int8_t* myPosY, int8_t* oppPosX, int8_t* oppPosY)
+   void MagneB6Player::StringToMap(const char* stringInput, char* mapOutput, int8_t* myPosX, int8_t* myPosY, int8_t* oppPosX, int8_t* oppPosY)
    {
       int n = 0, i = 0, j = 0;
 
@@ -2412,7 +2410,7 @@ namespace qplugin
    }
 
 
-   int drmaPlayer::TestGetMinPathToTargetTile(char* map, int playerX, int playerY, int targetX, int targetY)
+   int MagneB6Player::TestGetMinPathToTargetTile(char* map, int playerX, int playerY, int targetX, int targetY)
    {
       int distances[17][17] = { 0 };
       distances[playerX][playerY] = 1;
@@ -2480,7 +2478,7 @@ namespace qplugin
    }
 
 
-   int drmaPlayer::TestGetMinPathForMe(char* map, int myX, int myY)
+   int MagneB6Player::TestGetMinPathForMe(char* map, int myX, int myY)
    {
       int min = 0xFFFF;
 
@@ -2496,7 +2494,7 @@ namespace qplugin
       return min;
    }
 
-   int drmaPlayer::TestGetMinPathForOpp(char* map, int oppX, int oppY)
+   int MagneB6Player::TestGetMinPathForOpp(char* map, int oppX, int oppY)
    {
       int min = 0xFFFF;
 
@@ -2512,7 +2510,7 @@ namespace qplugin
       return min;
    }
 
-   void drmaPlayer::MapToBoard(char* map, Board_t* board, int8_t myMapPosX, int8_t myMapPosY, int8_t oppMapPosX, int8_t oppMapPosY)
+   void MagneB6Player::MapToBoard(char* map, Board_t* board, int8_t myMapPosX, int8_t myMapPosY, int8_t oppMapPosX, int8_t oppMapPosY)
    {
       for (int i = 0; i < 17; i += 2)
       {
@@ -2540,7 +2538,7 @@ namespace qplugin
       board->playerPos[OPPONENT] = { (int8_t)(oppMapPosX / 2), (int8_t)(oppMapPosY / 2)};
    }
 
-   bool drmaPlayer::IsMinPathAndPossibleMovesTestPassed(const char* stringInput, const char* possibleMovesMeInput, const char* possibleMovesOppInput)
+   bool MagneB6Player::IsMinPathAndPossibleMovesTestPassed(const char* stringInput, const char* possibleMovesMeInput, const char* possibleMovesOppInput)
    {
       int8_t myMapPosX;
       int8_t myMapPosY;
@@ -2603,7 +2601,7 @@ namespace qplugin
       return false;
    }
 
-   void drmaPlayer::test_10_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_10_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 10: Min path and possible moves");
 
@@ -2640,7 +2638,7 @@ namespace qplugin
       }
    }
 
-   void drmaPlayer::test_11_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_11_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 11: Min path and possible moves");
 
@@ -2678,7 +2676,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_12_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_12_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 12: Min path and possible moves");
 
@@ -2715,7 +2713,7 @@ namespace qplugin
       }
    }
 
-   void drmaPlayer::test_13_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_13_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 13: Min path and possible moves");
 
@@ -2753,7 +2751,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_14_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_14_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 14: Min path and possible moves");
 
@@ -2791,7 +2789,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_15_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_15_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 15: Min path and possible moves");
 
@@ -2829,7 +2827,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_16_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_16_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 16: Min path and possible moves");
 
@@ -2866,7 +2864,7 @@ namespace qplugin
       }
    }
 
-   void drmaPlayer::test_17_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_17_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 17: Min path and possible moves");
 
@@ -2903,7 +2901,7 @@ namespace qplugin
       }
    }
 
-   void drmaPlayer::test_18_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_18_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 18: Min path and possible moves");
 
@@ -2941,7 +2939,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_19_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_19_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 19: Min path and possible moves");
 
@@ -2979,7 +2977,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_20_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_20_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 20: Min path and possible moves");
 
@@ -3017,7 +3015,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_21_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_21_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 21: Min path and possible moves");
 
@@ -3055,7 +3053,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_22_MinPathAndPossibleMoves(void)
+   void MagneB6Player::test_22_MinPathAndPossibleMoves(void)
    {
       debug_PrintTestMessage("Test 22: Min path and possible moves");
 
@@ -3093,7 +3091,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::DuplicateBoard(Board_t* origBoard, Board_t* copyBoard)
+   void MagneB6Player::DuplicateBoard(Board_t* origBoard, Board_t* copyBoard)
    {
       // memcopy what doesn't contain pointers (and can change)
       memcpy(copyBoard->playerPos, origBoard->playerPos, sizeof(origBoard->playerPos));
@@ -3147,7 +3145,7 @@ namespace qplugin
       }
    }
 
-   bool drmaPlayer::AreBoardsEqual(Board_t* b1, Board_t* b2)
+   bool MagneB6Player::AreBoardsEqual(Board_t* b1, Board_t* b2)
    {
       bool ret = true;
 
@@ -3225,7 +3223,7 @@ namespace qplugin
       return ret;
    }
 
-   bool drmaPlayer::IsRecursiveRunOkForTestPossibleMoves(Board_t* board, Board_t* referenceBoard, uint8_t level)
+   bool MagneB6Player::IsRecursiveRunOkForTestPossibleMoves(Board_t* board, Board_t* referenceBoard, uint8_t level)
    {
       bool ret = true;
 
@@ -3358,7 +3356,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(Board_t* board, uint8_t level)
+   void MagneB6Player::test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(Board_t* board, uint8_t level)
    {
       debug_PrintTestMessage("Test 23: Possible moves recursive correctness (default player positions)");
 
@@ -3384,7 +3382,7 @@ namespace qplugin
    }
 
 
-   void drmaPlayer::test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(Board_t* board, uint8_t level)
+   void MagneB6Player::test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(Board_t* board, uint8_t level)
    {
       debug_PrintTestMessage("Test 24: Possible moves recursive correctness (modified player positions)");
 
@@ -3415,7 +3413,7 @@ namespace qplugin
       free(boardCopy);
    }
 
-   void drmaPlayer::RunAllTests(Board_t* board)
+   void MagneB6Player::RunAllTests(Board_t* board)
    {
       test_1_CheckInitialBoardStructure(board);
       test_2_PlaceThenUndoOneHorizWallThatIsNotOnTheBorder(board);
