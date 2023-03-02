@@ -29,11 +29,12 @@ namespace qplugin_drma
         }
         else
         {
+            int winTheGameScore = (myMinPath == 0 ? 1 : (oppMinPath == 0? -1 : 0));
             int pathScore = oppMinPath - myMinPath;
             int wallScore = board->wallsLeft[ME] - board->wallsLeft[OPPONENT];
             int closerToEnemyBaseScore = ((BOARD_SZ - 1) - board->playerPos[OPPONENT].x) - board->playerPos[ME].x;
 
-            return (pathScore * 1000 + wallScore * 10 + closerToEnemyBaseScore);
+            return (winTheGameScore * 100000 + pathScore * 1000 + wallScore * 10 + closerToEnemyBaseScore);
         }
     }
 
