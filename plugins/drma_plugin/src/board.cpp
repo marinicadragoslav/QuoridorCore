@@ -84,9 +84,12 @@ namespace qplugin_drma
         board->otherPlayer[ME] = OPPONENT;
         board->otherPlayer[OPPONENT] = ME;
 
-        // set the difference on x and y axes that each move implies
+        // init moveIDs and set the difference on x and y axes that each move implies
         for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
         {
+            board->moves[ME][moveID].moveID = (MoveID_t)moveID;
+            board->moves[OPPONENT][moveID].moveID = (MoveID_t)moveID;
+
             switch (moveID)
             {
                 case MOVE_NORTH:
@@ -140,6 +143,36 @@ namespace qplugin_drma
                 default: // this should never happen
                     board->moves[ME][moveID].xDiff = board->moves[OPPONENT][moveID].xDiff = 0;
                     board->moves[ME][moveID].yDiff = board->moves[OPPONENT][moveID].yDiff = 0;
+            }
+        }
+
+        // init plays
+        uint8_t numPlays = 0;
+
+        for (int8_t o = V; o >= H; o--) // orientation V or H
+        {
+            for (int8_t x = 0; x < (BOARD_SZ - 1); x++)
+            {
+                for (int8_t y = 0; y < (BOARD_SZ - 1); y++)
+                {
+                    board->plays[numPlays].action = PLACE_WALL;
+                    board->plays[numPlays].wall = &(board->walls[o][x][y]);
+                    board->plays[numPlays].move = NULL;
+                    board->plays[numPlays].player = NOBODY;
+                    numPlays++;
+                }
+            }
+        }
+
+        for (int8_t pl = ME; pl <= OPPONENT; pl++) // for each player
+        {
+            for (int8_t moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++)
+            {
+                board->plays[numPlays].action = MAKE_MOVE;
+                board->plays[numPlays].move = &(board->moves[pl][moveID]);
+                board->plays[numPlays].wall = NULL;
+                board->plays[numPlays].player = (Player_t)pl;
+                numPlays++;
             }
         }
 

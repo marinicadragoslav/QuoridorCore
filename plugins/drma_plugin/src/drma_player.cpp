@@ -183,7 +183,7 @@ namespace qplugin_drma
          bool hasTimedOut = false;
 
          // First minimax pass with (depth - 1): to make sure there is a best play if minimax with full depth times out
-         Minimax(board, ME, MINIMAX_DEPTH - 1, NEG_INFINITY, POS_INFINITY, tStart, false, 0, NULL);
+         Minimax(board, ME, MINIMAX_DEPTH - 1, NEG_INFINITY, POS_INFINITY, tStart, false, NULL);
 
          Play_t bestPlayFirstPass = GetBestPlayForLevel(MINIMAX_DEPTH - 1); 
          LOG_INFO(DOM) << "  After Minimax first pass:";
@@ -191,7 +191,7 @@ namespace qplugin_drma
 
          // Second minimax pass with full depth - can timeout:
          hasTimedOut = false;
-         Minimax(board, ME, MINIMAX_DEPTH, NEG_INFINITY, POS_INFINITY, tStart, true, MINIMAX_TIMEOUT_MS, &hasTimedOut);
+         Minimax(board, ME, MINIMAX_DEPTH, NEG_INFINITY, POS_INFINITY, tStart, true, &hasTimedOut);
          
          // Get final best play
          if (hasTimedOut)

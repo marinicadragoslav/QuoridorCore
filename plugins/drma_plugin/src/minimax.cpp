@@ -10,24 +10,10 @@
 
 namespace qplugin_drma 
 {
-
-    // yeah, I know.. but it keeps minimax function readable
-    #define FOREACH_ALLOWED_WALL_AS(wall)       for (int o = V; o >= H; o--) { \
-                                                    for (int i = 0; i < BOARD_SZ - 1; i++) { \
-                                                        for (int j = 0; j < BOARD_SZ - 1; j++) { \
-                                                            wall = &(board->walls[o][i][j]); \
-                                                                if (wall->permission == WALL_PERMITTED && (wall->isEnabled))
-    #define END_FOREACH_PERMITTED_WALL           } } }
-
-    #define FOREACH_POSSIBLE_MOVE_AS(move)      for (int moveID = MOVE_FIRST; moveID <= MOVE_LAST; moveID++) { \
-                                                    if (board->moves[player][moveID].isPossible) { \
-                                                        move = (MoveID_t)moveID;
-    #define END_FOREACH_POSSIBLE_MOVE           } }
-
     // stores the best play for every level. Get it with GetBestPlayForLevel(level);
     static Play_t bestPlays[MINIMAX_DEPTH + 1]; 
 
-    // Static evaluation of the board position, from my perspective (maximizing player) => a high score is good for me
+    // Static evaluation of the board position, from my perspective (maximizing player). A high score is good for me.
     static int StaticEval(Board_t* board)
     {
         bool foundMinPathMe;
@@ -51,10 +37,8 @@ namespace qplugin_drma
         }
     }
 
-
     int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta,
-                std::chrono::time_point<std::chrono::steady_clock> tStart,
-                bool canTimeOut, uint16_t timeoutMs, bool *hasTimedOut)
+                std::chrono::time_point<std::chrono::steady_clock> tStart, bool canTimeOut, bool *hasTimedOut)
     {
         UpdatePossibleMoves(board, ME);
         UpdatePossibleMoves(board, OPPONENT);
@@ -77,15 +61,31 @@ namespace qplugin_drma
                 }
             }
 
-            if (board->wallsLeft[player])
+            for (uint32_t i = 0; i < (sizeof(board->plays) / sizeof(board->plays[0])); i++)
             {
-                Wall_t* wall;
-                FOREACH_ALLOWED_WALL_AS(wall)
-                {
-                    bool prune = false;
-                    PlaceWall(board, player, wall);
+                NominalPlay_t play = board->plays[i];
+                bool prune = false;
+                Action_t currentAction = NULL_ACTION;
+                MoveID_t currentMoveID = NULL_MOVE;
+                Wall_t* currentWall = NULL;
 
-                    int tempScore = Minimax(board, board->otherPlayer[player], level - 1, alpha, beta, tStart, canTimeOut, timeoutMs, hasTimedOut);
+                if ((play.action == PLACE_WALL) && (board->wallsLeft[player]) && 
+                        (play.wall->permission == WALL_PERMITTED) && (play.wall->isEnabled))
+                {
+                    PlaceWall(board, player, play.wall);
+                    currentAction = PLACE_WALL;
+                    currentWall = play.wall;
+                }
+                else if (play.action == MAKE_MOVE && play.player == player && play.move->isPossible)
+                {
+                    MakeMove(board, player, play.move->moveID);
+                    currentAction = MAKE_MOVE;
+                    currentMoveID = play.move->moveID;
+                }
+
+                if (currentAction != NULL_ACTION)
+                {
+                    int tempScore = Minimax(board, board->otherPlayer[player], level - 1, alpha, beta, tStart, canTimeOut, hasTimedOut);
 
                     if (IS_VALID(tempScore) && (!canTimeOut || (canTimeOut && !(*hasTimedOut))))
                     {
@@ -94,7 +94,7 @@ namespace qplugin_drma
                             if (tempScore > score)
                             {
                                 score = tempScore;
-                                bestPlays[level] = { PLACE_WALL, NULL_MOVE, wall };
+                                bestPlays[level] = { currentAction, currentMoveID, currentWall};
                             }
 
                             if (tempScore > alpha)
@@ -107,7 +107,7 @@ namespace qplugin_drma
                             if (tempScore < score)
                             {
                                 score = tempScore;
-                                bestPlays[level] = { PLACE_WALL, NULL_MOVE, wall };
+                                bestPlays[level] = { currentAction, currentMoveID, currentWall };
                             }
 
                             if (tempScore < beta)
@@ -120,9 +120,16 @@ namespace qplugin_drma
                         {
                             prune = true;
                         }
-                    }  
+                    }
 
-                    UndoWall(board, player, wall);
+                    if (currentAction == PLACE_WALL)
+                    {
+                        UndoWall(board, player, play.wall);
+                    }
+                    else
+                    {
+                        UndoMove(board, player, play.move->moveID);
+                    }
 
                     UpdatePossibleMoves(board, ME);
                     UpdatePossibleMoves(board, OPPONENT);
@@ -134,79 +141,15 @@ namespace qplugin_drma
 
                     if (prune)
                     {
-                        goto Exit_walls_loop;
+                        break;
                     }
-                }
-                END_FOREACH_PERMITTED_WALL;
-            }
-
-            Exit_walls_loop:
-
-            MoveID_t move;
-            FOREACH_POSSIBLE_MOVE_AS(move)
-            {
-                bool prune = false;
-                MakeMove(board, player, move);
-
-                int tempScore = Minimax(board, board->otherPlayer[player], level - 1, alpha, beta, tStart, canTimeOut, timeoutMs, hasTimedOut);
-
-                if (IS_VALID(tempScore) && (!canTimeOut || (canTimeOut && !(*hasTimedOut))))
-                {
-                    if(player == ME)
-                    {
-                        if (tempScore > score)
-                        {
-                            score = tempScore;
-                            bestPlays[level] = { MAKE_MOVE, move, NULL };
-                        }
-
-                        if (tempScore > alpha)
-                        {
-                            alpha = tempScore;
-                        }
-                    }
-                    else
-                    {
-                        if (tempScore < score)
-                        {
-                            score = tempScore;
-                            bestPlays[level] = { MAKE_MOVE, move, NULL };
-                        }
-
-                        if (tempScore < beta)
-                        {
-                            beta = tempScore;
-                        }
-                    }
-
-                    if (beta <= alpha)
-                    {
-                        prune = true;
-                    }
-                }         
-
-                UndoMove(board, player, move);
-
-                UpdatePossibleMoves(board, ME);
-                UpdatePossibleMoves(board, OPPONENT);
-
-                if (canTimeOut && *hasTimedOut)
-                {
-                    return score;
-                }
-
-                if (prune)
-                {
-                    goto Exit_moves_loop;
                 }
             }
-            END_FOREACH_POSSIBLE_MOVE;
-
-            Exit_moves_loop:
 
             return score;
         }
     }
+
 
     Play_t GetBestPlayForLevel(uint8_t level)
     {

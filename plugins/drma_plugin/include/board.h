@@ -72,6 +72,7 @@ namespace qplugin_drma
 
    typedef struct Move_t
    {
+      MoveID_t moveID;
       bool isPossible;
       int8_t xDiff;
       int8_t yDiff;
@@ -105,6 +106,23 @@ namespace qplugin_drma
 
    typedef struct
    {
+      Action_t action;
+      MoveID_t moveID;
+      Wall_t* wall;
+   }Play_t;
+   
+
+   typedef struct
+   {
+      Player_t player;
+      Action_t action;
+      Move_t* move;
+      Wall_t* wall;
+   }NominalPlay_t;   
+
+
+   typedef struct
+   {
       Position_t playerPos[2];
       Player_t otherPlayer[2];
       uint8_t wallsLeft[2];
@@ -112,15 +130,9 @@ namespace qplugin_drma
       Wall_t walls[2][BOARD_SZ - 1][BOARD_SZ - 1];
       Move_t moves[2][MOVE_COUNT];
       bool isOnMinPath[BOARD_SZ][BOARD_SZ];
+      NominalPlay_t plays[sizeof(walls)/sizeof(walls[0][0][0]) + sizeof(moves)/sizeof(moves[0][0])];
    }Board_t;
 
-
-   typedef struct
-   {
-      Action_t action;
-      MoveID_t moveID;
-      Wall_t* wall;
-   }Play_t;
 
    typedef enum
    {
