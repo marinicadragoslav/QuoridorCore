@@ -1,6 +1,4 @@
 #include "drma_player.h"
-#include "QcoreUtil.h"
-#include <chrono>
 
 using namespace qcore::literals;
 using namespace std::chrono_literals;
@@ -746,7 +744,7 @@ namespace qplugin
                }
          }
 
-         for (uint32_t i = 0; i < (sizeof(board->plays) / sizeof(board->plays[0])); i++)
+         for (uint32_t i = 0; i < COUNT(board->plays); i++)
          {
                NominalPlay_t play = board->plays[i];
                bool prune = false;
@@ -940,22 +938,6 @@ namespace qplugin
          }
       }
       
-      #if (SHOW_MIN_PATH_ON_LOGGED_BOARD)
-         // delete prev tiles marked as being on the min path
-         memset(board->isOnMinPath, 0, sizeof(board->isOnMinPath));
-
-         // the end of the path is the player's position
-         Tile_t* stopAt = &(board->tiles[board->playerPos[player].x][board->playerPos[player].y]);
-
-         // backtrack from destination tile to mark all tiles that are part of min path
-         Tile_t* current = destination->tile;
-         while (current != stopAt)
-         {
-               board->isOnMinPath[current->pos.x][current->pos.y] = true;
-               current = foundSubpaths[current->pos.x][current->pos.y].prevTile;
-         }
-      #endif
-
       *found = (!!goalTilesReached);
 
       return minPathLen;
@@ -994,6 +976,7 @@ namespace qplugin
    }
    
 
+   #if (PRINT_DEBUG_INFO)
    void drmaPlayer::ClearBuff(void)
    {
       memset(buff, 0, sizeof(buff));
@@ -1018,33 +1001,6 @@ namespace qplugin
          default:                return "F*ck";
       }
    }
-
-   #if (RUN_TESTS)
-      void drmaPlayer::debug_PrintTestMessage(const char* msg)
-      {
-         LOG_WARN(DOM) << msg;
-      }
-
-      void drmaPlayer::debug_PrintTestPassed(void)
-      {
-         LOG_WARN(DOM) << "TEST PASSED!";
-      }
-
-      void drmaPlayer::debug_PrintTestFailed(void)
-      {
-         LOG_ERROR(DOM) << "TEST FAILED!";
-      }
-
-      void drmaPlayer::debug_PrintTestErrorMsg(const char* errMsg)
-      {
-         LOG_ERROR(DOM) << errMsg;
-      }
-
-      void drmaPlayer::debug_PrintTestMinPaths(int minPathMe, int minPathOpp)
-      {
-         LOG_INFO(DOM) << "  Me: " << minPathMe << ", Opponent: " << minPathOpp;
-      }
-   #endif
 
    char* drmaPlayer::debug_PrintMyPossibleMoves(Board_t* board)
    {    
@@ -1142,13 +1098,6 @@ namespace qplugin
                   tiles[ti++] = 'O'; // 'O' for opponent's position
                   continue;  
                }
-               #if (SHOW_MIN_PATH_ON_LOGGED_BOARD)
-                  if (board->isOnMinPath[i][j])
-                  { 
-                     tiles[ti++] = '*'; // '*' if tile is part of my min path
-                     continue; 
-                  }
-               #endif
                tiles[ti++] = ' ';
          }
       }
@@ -1198,7 +1147,35 @@ namespace qplugin
       LOG_INFO(DOM) << buff;
 
       LOG_INFO(DOM) << "     ╚═════════════════════════════════════════════════════╝ ";
-   }
+   }  
+   #endif
+
+   #if (PRINT_DEBUG_INFO && RUN_TESTS)
+      void drmaPlayer::debug_PrintTestMessage(const char* msg)
+      {
+         LOG_WARN(DOM) << msg;
+      }
+
+      void drmaPlayer::debug_PrintTestPassed(void)
+      {
+         LOG_WARN(DOM) << "TEST PASSED!";
+      }
+
+      void drmaPlayer::debug_PrintTestFailed(void)
+      {
+         LOG_ERROR(DOM) << "TEST FAILED!";
+      }
+
+      void drmaPlayer::debug_PrintTestErrorMsg(const char* errMsg)
+      {
+         LOG_ERROR(DOM) << errMsg;
+      }
+
+      void drmaPlayer::debug_PrintTestMinPaths(int minPathMe, int minPathOpp)
+      {
+         LOG_INFO(DOM) << "  Me: " << minPathMe << ", Opponent: " << minPathOpp;
+      }
+
 
    void drmaPlayer::PlaceWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount)
    {
@@ -3465,6 +3442,6 @@ namespace qplugin
       test_23_TestPossibleMovesRecursiveCorrectnessDefaultPlayerPos(board, 2);
       test_24_TestPossibleMovesRecursiveCorrectnessDifferentPlayerPos(board, 2);
    }
-
+   #endif
 
 } // end namespace

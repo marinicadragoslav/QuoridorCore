@@ -1,32 +1,42 @@
 #ifndef H_QPLUGIN_DRMA_PLAYER
 #define H_QPLUGIN_DRMA_PLAYER
 
-#include "Player.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <chrono>
+#include "Player.h"
+#include "QcoreUtil.h"
+
+#define RUN_TESTS                      (false)
+#define PRINT_DEBUG_INFO               (true) // only has effect when RUN_TESTS is false
+#define LOGGED_LINE_MAX_LEN            (120)
 
 #define BOARD_SZ                       (9)
+
+#define COUNT(arr)                     (sizeof(arr) / sizeof(arr[0]))
+#define COUNT_2D(arr)                  (sizeof(arr) / sizeof(arr[0][0]))
+#define COUNT_3D(arr)                  (sizeof(arr) / sizeof(arr[0][0][0]))
+
 #define MINIMAX_DEPTH                  (3)
 #define MINIMAX_TIMEOUT_MS             (4900)
-#define SHOW_MIN_PATH_ON_LOGGED_BOARD  (false)
 #define POS_INFINITY                   (+0xFFFFFF)     // some large positive value
 #define NEG_INFINITY                   (-0xFFFFFF)     // some large negative value
 #define CAP_POS_SCORE                  (+0xFFFFF0)     // valid minimax score < CAP_POS_SCORE < POS_INFINITY
 #define CAP_NEG_SCORE                  (-0xFFFFF0)     // valid minimax score > CAP_NEG_SCORE > NEG_INFINITY
 #define ERROR_NO_PATH                  (-0xFFFFFFF)    // must be outside [NEG_INFINITY, POS_INFINITY] range
-#define RUN_TESTS                      (true)
-#define LOGGED_LINE_MAX_LEN            (120)
-#define COUNT(arr)                     (arr== NULL ? 0 : (sizeof(arr) / sizeof(arr[0])))
+#define IS_VALID(score)                (CAP_NEG_SCORE <= score && score <= CAP_POS_SCORE)
+
 #define INFINITE_LEN                   (0xFFU)
 #define QUEUE_MAX_SIZE                 (1000)
-#define IS_VALID(score)                (CAP_NEG_SCORE <= score && score <= CAP_POS_SCORE)
 
 #define DECREASE_WALL_PERMISSION(wall)  (wall && (wall->permission = (WallPermission_t)(wall->permission - 1)))
 #define INCREASE_WALL_PERMISSION(wall)  (wall && (wall->permission = (WallPermission_t)(wall->permission + 1)))
 
+#if (RUN_TESTS)
+#define PRINT_DEBUG_INFO               (true)
 #define DEFAULT_NULL_TILE_LINKS        { 0, 0, N }, \
                                        { 0, 0, W }, \
                                        { 0, 1, N }, \
@@ -63,6 +73,7 @@
                                        { 8, 7, S }, \
                                        { 8, 8, S }, \
                                        { 8, 8, E }
+#endif
 
 namespace qplugin
 {
@@ -198,8 +209,7 @@ namespace qplugin
          Tile_t tiles[BOARD_SZ][BOARD_SZ];
          Wall_t walls[2][BOARD_SZ - 1][BOARD_SZ - 1];
          Move_t moves[2][MOVE_COUNT];
-         bool isOnMinPath[BOARD_SZ][BOARD_SZ];
-         NominalPlay_t plays[sizeof(walls)/sizeof(walls[0][0][0]) + sizeof(moves)/sizeof(moves[0][0])];
+         NominalPlay_t plays[COUNT_3D(walls) + COUNT_2D(moves)];
       }Board_t;
 
 
@@ -210,10 +220,12 @@ namespace qplugin
          VERT_WALLS_FIRST_LAST_COL
       }WallsSubset_t;
 
+
       typedef enum
       {
          N, S, E, W
       }Dir_t;
+
 
       typedef struct 
       {
@@ -222,12 +234,14 @@ namespace qplugin
          int8_t y;
       }TestWall_t;
 
+
       typedef struct
       {
          int8_t x;
          int8_t y;
          Dir_t dir;
       }TestTileLink_t;
+
 
       typedef struct 
       {
@@ -237,6 +251,7 @@ namespace qplugin
          WallPermission_t permission;
       }TestWallPermission_t;
 
+
       typedef struct
       {
          Tile_t* tile;
@@ -244,15 +259,15 @@ namespace qplugin
          uint8_t pathLen;
       }Subpath_t;
 
+      // Transformations
       qcore::Position CoreAbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation);
       Position_t CoreToPluginWallPos(qcore::Position coreWallPos, qcore::Orientation orientation);
       qcore::Position PluginToCoreWallPos(Position_t pluginWallPos, Orientation_t orientation);
       Orientation_t CoreToPluginWallOrientation(qcore::Orientation orientation);
       qcore::Orientation PluginToCoreWallOrientation(Orientation_t orientation);
 
-      // Create a new board and initialize the structure for it
+      // Board
       Board_t* NewDefaultBoard(void);
-
       Wall_t* GetWallByPosAndOrientation(Board_t* board, Position_t wallPos, Orientation_t wallOr);
       Tile_t* GetPlayerTile(Board_t* board, Player_t player);
       void UpdatePos(Board_t* board, Player_t player, Position_t pos);
@@ -266,6 +281,7 @@ namespace qplugin
       void EnableWallsSubset(Board_t* board, WallsSubset_t subset);
       void DisableWallsSubset(Board_t* board, WallsSubset_t subset);
 
+      // Min path
       uint8_t FindMinPathLen(Board_t* board, Player_t player, bool* found);
       void QueueInit(void);
       bool IsQueueEmpty(void);
@@ -274,30 +290,31 @@ namespace qplugin
       void FoundSubpathsInit(void);
       bool IsMinPathFoundForTile(Tile_t* tile);
 
+      // Minimax
       int Minimax(Board_t* board, Player_t player, uint8_t level, int alpha, int beta, 
                     std::chrono::time_point<std::chrono::steady_clock> tStart, bool canTimeOut, bool *hasTimedOut);
 
       Play_t GetBestPlayForLevel(uint8_t level);
       int StaticEval(Board_t* board);
 
+      // Logging and debugging
+      #if (PRINT_DEBUG_INFO)
       void ClearBuff(void);
       const char* debug_ConvertMoveIDToString(MoveID_t moveID);
+      char* debug_PrintMyPossibleMoves(Board_t* board);
+      char* debug_PrintOppPossibleMoves(Board_t* board);
+      void debug_PrintPlay(Play_t play);
+      void debug_PrintBoard(Board_t* board);
+      #endif
 
-      #if (RUN_TESTS)
+      // Testing
+      #if (PRINT_DEBUG_INFO && RUN_TESTS)
       void debug_PrintTestFailed(void);
       void debug_PrintTestPassed(void);
       void debug_PrintTestErrorMsg(const char* errMsg);
       void debug_PrintTestMessage(const char* msg);
-      #endif
-
-      char* debug_PrintMyPossibleMoves(Board_t* board);
-      char* debug_PrintOppPossibleMoves(Board_t* board);
-      void debug_PrintBoard(Board_t* board);
       void debug_PrintTestMinPaths(int minPathMe, int minPathOpp);
-      void debug_PrintPlay(Play_t play);
 
-
-      #if (RUN_TESTS)
       void PlaceWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount);
       void UndoWalls(Board_t* board, TestWall_t* walls, int8_t wallsCount);
       void CheckBoardStructure(Board_t* board, TestTileLink_t* tileLinksToTest, int8_t tileLinksCount,
@@ -349,14 +366,10 @@ namespace qplugin
       Subpath_t foundSubpaths[BOARD_SZ][BOARD_SZ];
       uint16_t goalTilesReached;
       Subpath_t* destination;
-
-      // stores the best play for every level. Get it with GetBestPlayForLevel(level);
       Play_t bestPlays[MINIMAX_DEPTH + 1];
-
       bool areAllWallsDisabled = false;
       bool areCornerWallsDisabled = false;
       bool areFirstAndLastColVertWallsDisabled = false;
-
 
    };
    
