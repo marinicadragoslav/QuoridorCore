@@ -155,7 +155,7 @@ namespace qplugin
       Play_t bestPlay;
       
       // Shiller opening if possible
-      if (myID == 0 && turn == 3 && myWallsLeft == 10 && oppWallsLeft == 10)
+      if (myID == 0 && turn == 4 && myWallsLeft == 10 && oppWallsLeft == 10)
       {
          bestPlay = {PLACE_WALL, NULL_MOVE, GetWallByPosAndOrientation(board, {7, 4}, V)};
          debug_PrintPlay(bestPlay);

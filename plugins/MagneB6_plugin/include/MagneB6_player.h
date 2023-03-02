@@ -1,5 +1,5 @@
-#ifndef H_QPLUGIN_DRMA_PLAYER
-#define H_QPLUGIN_DRMA_PLAYER
+#ifndef H_QPLUGIN_MB6_PLAYER
+#define H_QPLUGIN_MB6_PLAYER
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -374,4 +374,4 @@ namespace qplugin
    };
    
 } // end namespace
-#endif // H_QPLUGIN_DRMA_PLAYER
+#endif // H_QPLUGIN_MB6_PLAYER
