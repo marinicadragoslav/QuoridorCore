@@ -8,12 +8,6 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 add_library(qdrma-plugin SHARED
    src/drma_player.cpp
    src/player_registration.cpp
-   src/board.cpp
-   src/debug.cpp
-   src/tests.cpp
-   src/min_path.cpp
-   src/minimax.cpp
-   src/plugin_core_interface.cpp
 )
 
 target_include_directories(qdrma-plugin PUBLIC include)
