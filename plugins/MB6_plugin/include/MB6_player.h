@@ -40,8 +40,17 @@ namespace qplugin
       friend class MB6_Logger;
       
       public:
+         // make this static because: once set, it doesn't change & no need to duplicate it when creating board copies
+         static uint8_t mEnemyBaseRow[2]; // index is playerID, e.g. mEnemyBaseRow[myID] = enemy base row for me
+
          void UpdatePos(qcore::PlayerId id, qcore::Position pos);
          void PlaceWall(qcore::Position pos, qcore::Orientation orientation);
+         bool ComputeMinPath(qcore::PlayerId id);
+         uint8_t GetMinPath(qcore::PlayerId id);
+         bool HasWallAbove(qcore::Position);
+         bool HasWallBelow(qcore::Position);
+         bool HasWallToLeft(qcore::Position);
+         bool HasWallToRight(qcore::Position);
 
       private:
          uint8_t mBoard[qcore::BOARD_SIZE + 1][qcore::BOARD_SIZE + 1] = 
@@ -58,7 +67,8 @@ namespace qplugin
             {  3,1,1,1,1,1,1,1,1,3  }
          };
 
-         qcore::Position mPlayersPos[2] = { { 0, 0 }, { 0, 0 } };
+         qcore::Position mPlayerPos[2]; // index is playerID, e.g. mPlayerPos[myID] = my pos
+         uint8_t mMinPathLen[2];        // index is playerID, e.g. mMinPathLen[myID] = my min path length
    };
 
    class MB6_Logger
