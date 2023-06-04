@@ -4,56 +4,45 @@
 #include "Player.h"
 #include "QcoreUtil.h"
 
-
-#define LOGGED_LINE_MAX_LEN            (120)
+#define DEBUG                  true
+#define LOGGED_LINE_MAX_LEN    120
 
 namespace qplugin
 {
+   const uint8_t BOARD_SIZE = (qcore::BOARD_SIZE + 1);
+
    class MB6_Player : public qcore::Player
    {
       public:
-
          /** Construction */
          MB6_Player(qcore::PlayerId id, const std::string& name, qcore::GamePtr game);
 
-         /** Defines player's behavior. In this particular case, it's a really dummy one */
+         /** Defines player's behavior. */
          void doNextMove() override;
 
-      private:
-      
-         // Convert the absolute position of a wall to relative position (flip around the center point on both axis)
-         qcore::Position CoreAbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation);
-
-         // Convert position of a wall from core coords to plugin coords
-         qcore::Position CoreToPluginWallPos(qcore::Position corePos, qcore::Orientation orientation);
-
-         // Convert position of a player from core coords to plugin coords
-         qcore::Position CoreToPluginPlayerPos(qcore::Position corePos);
-
-         uint16_t turn = 0;
+         uint16_t turn;
    };
-
-   class MB6_Logger;
 
    class MB6_Board
    {
       friend class MB6_Logger;
       
       public:
-         // make this static because: once set, it doesn't change & no need to duplicate it when creating board copies
-         static uint8_t mEnemyBaseRow[2]; // index is playerID, e.g. mEnemyBaseRow[myID] = enemy base row for me
+         static qcore::PlayerId mMyID; // 0 (if I am first to move) or 1
 
-         void UpdatePos(qcore::PlayerId id, qcore::Position pos);
-         void PlaceWall(qcore::Position pos, qcore::Orientation orientation);
-         bool ComputeMinPath(qcore::PlayerId id);
-         uint8_t GetMinPath(qcore::PlayerId id);
-         bool HasWallAbove(qcore::Position);
-         bool HasWallBelow(qcore::Position);
-         bool HasWallToLeft(qcore::Position);
-         bool HasWallToRight(qcore::Position);
+         MB6_Board(){};
+         void UpdatePlayerPos(const qcore::PlayerId& id, const qcore::Position& pos);
+         void PlaceWall(const qcore::Position& pos, const qcore::Orientation& ori);
+         bool ComputeMinPath(const qcore::PlayerId& id);
+         uint8_t GetMinPath(const qcore::PlayerId& id) const;
+         bool HasWallAbove(const qcore::Position& pos) const;
+         bool HasWallBelow(const qcore::Position& pos) const;
+         bool HasWallToLeft(const qcore::Position& pos) const;
+         bool HasWallToRight(const qcore::Position& pos) const;
+         bool IsInEnemyBase(const qcore::Position& pos, const qcore::PlayerId& id) const; // true if given pos is part of the enemy base for player with given id
 
       private:
-         uint8_t mBoard[qcore::BOARD_SIZE + 1][qcore::BOARD_SIZE + 1] = 
+         uint8_t mBoard[BOARD_SIZE][BOARD_SIZE] = 
          {
             {  3,1,1,1,1,1,1,1,1,3  },
             {  2,0,0,0,0,0,0,0,0,2  },
@@ -66,18 +55,22 @@ namespace qplugin
             {  2,0,0,0,0,0,0,0,0,2  },
             {  3,1,1,1,1,1,1,1,1,3  }
          };
-
-         qcore::Position mPlayerPos[2]; // index is playerID, e.g. mPlayerPos[myID] = my pos
-         uint8_t mMinPathLen[2];        // index is playerID, e.g. mMinPathLen[myID] = my min path length
+         
+         qcore::Position mPlayerPos[2]; // index is playerID, e.g. mPlayerPos[mMyID] = my pos
+         uint8_t mMinPathLen[2]; // index is playerID, e.g. mMinPathLen[mMyID] = my min path length
    };
 
    class MB6_Logger
    {
       public:
-         void LogBoard(MB6_Board board, qcore::PlayerId myID);
+         #if (DEBUG)
+         void LogBoard(MB6_Board& board, const qcore::PlayerId myID);
+         #else
+         void LogBoard(const MB6_Board& board, const qcore::PlayerId myID);
+         #endif
 
       private:
-         qcore::Position BoardToMapPosition(qcore::Position);
+         qcore::Position BoardToMapPosition(const qcore::Position& pos) const;
          void ClearBuff(void);
 
          char mBuff[LOGGED_LINE_MAX_LEN] = { 0 };
