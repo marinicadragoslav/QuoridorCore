@@ -10,7 +10,6 @@ using namespace std::chrono_literals;
 namespace qplugin
 {
    static qcore::Position CoreToPluginWallPos(const qcore::Position& pos, const qcore::Orientation& ori);
-   static qcore::Position CoreToPluginPlayerPos(const qcore::Position& pos);
    static qcore::Position CoreAbsToRelWallPos(const qcore::Position& pos, const qcore::Orientation& ori);
 
    const char * const DOM = "MB6";
@@ -31,13 +30,11 @@ namespace qplugin
       auto const myID               = getId(); // 0 (if I am the first player to move) or 1
       auto const oppID              = (myID ? 0 : 1);
       auto const myWallsLeft        = getWallsLeft();
-      auto const coreMyPos          = getPosition();
+      auto const myPos              = getPosition();
       auto const boardState         = getBoardState();
       auto const oppState           = boardState->getPlayers(oppID).at(oppID);
       auto const oppWallsLeft       = oppState.wallsLeft;
-      auto const coreOppPos         = (oppState.position).rotate(2); // always rotate, as player positions are relative
-      auto const pluginMyPos        = CoreToPluginPlayerPos(coreMyPos);
-      auto const pluginOppPos       = CoreToPluginPlayerPos(coreOppPos);
+      auto const oppPos             = (oppState.position).rotate(2); // always rotate, as player positions are relative
       auto const lastAct            = boardState->getLastAction();
       auto const lastWallOri        = lastAct.wallState.orientation;
       auto const coreAbsLastWallPos = lastAct.wallState.position;
@@ -50,8 +47,8 @@ namespace qplugin
       board.mMyID = myID; // static class member mMyID: only assign once, never changes for any board instance.
 
       // UPDATE BOARD STRUCTURE -------------------------------------------------------------------------------------------------------------
-      board.UpdatePlayerPos(myID, pluginMyPos);
-      board.UpdatePlayerPos(oppID, pluginOppPos);
+      board.UpdatePlayerPos(myID, myPos);
+      board.UpdatePlayerPos(oppID, oppPos);
       
       if (lastAct.actionType == qcore::ActionType::Wall)
       {
@@ -63,8 +60,8 @@ namespace qplugin
 
       // log info ---------------------------------------------------------------------------------------------------------------------------
       LOG_INFO(DOM) << "  >  Turn count = " << (turn++);
-      LOG_INFO(DOM) << "  >  Me  (" << (int)myID << ") pos = [" << (int)pluginMyPos.x << ", " << (int)pluginMyPos.y << "], walls = " << (int)myWallsLeft;
-      LOG_INFO(DOM) << "  >  Opp (" << (int)oppID << ") pos = [" << (int)pluginOppPos.x << ", " << (int)pluginOppPos.y << "], walls = " << (int)oppWallsLeft;
+      LOG_INFO(DOM) << "  >  Me  (" << (int)myID << ") pos = [" << (int)myPos.x << ", " << (int)myPos.y << "], walls = " << (int)myWallsLeft;
+      LOG_INFO(DOM) << "  >  Opp (" << (int)oppID << ") pos = [" << (int)oppPos.x << ", " << (int)oppPos.y << "], walls = " << (int)oppWallsLeft;
       LOG_INFO(DOM) << "  >  Last act = " << (lastAct.actionType == qcore::ActionType::Move ? "Move" :
                                                 (lastAct.actionType == qcore::ActionType::Wall ? "Wall" : "Invalid"));
 
@@ -82,7 +79,7 @@ namespace qplugin
       logger.LogBoard(board, myID);
 
       // perform dummy move ----------------------------------------------------------------------------------------------------------------
-      auto myPos = getPosition() * 2;
+      auto myPosition = getPosition() * 2;
       qcore::BoardMap map;
       std::list<qcore::Position> pos;
 
@@ -97,7 +94,7 @@ namespace qplugin
 
       auto checkPos = [&](const qcore::Position& p, qcore::Direction dir) -> bool
       {
-         if (myPos == p)
+         if (myPosition == p)
          {
             move(dir);
             return true;
@@ -139,13 +136,18 @@ namespace qplugin
    {
       if (ori == qcore::Orientation::Horizontal)
       {
-         mBoard[pos.x][pos.y] |= 1;
-         mBoard[pos.x][pos.y + 1] |= 1;
+         mBoard[pos.x][pos.y] |= 2; // place below current tile
+         mBoard[pos.x][pos.y + 1] |= 2; // place below eastern neighbour
+         mBoard[pos.x + 1][pos.y] |= 1; // place above southern neighbour
+         mBoard[pos.x + 1][pos.y + 1] |= 1; // place above south-eastern neighbour
       }
       else
       {
-         mBoard[pos.x][pos.y] |= 2;
-         mBoard[pos.x + 1][pos.y] |= 2;
+         mBoard[pos.x][pos.y] |= 8; // place to the right of current tile
+         mBoard[pos.x + 1][pos.y] |= 8; // place to the right of southern neighbour
+         mBoard[pos.x][pos.y + 1] |= 4; // place to the left of eastern neighbour
+         mBoard[pos.x + 1][pos.y + 1] |= 4; // place to the left of south-eastern neighbour
+
       }
    }
 
@@ -166,7 +168,7 @@ namespace qplugin
       }TileInfo_t;
 
       // save info for each tile to this array as the tiles are being reached
-      TileInfo_t visitedTiles[BOARD_SIZE][BOARD_SIZE]; // initialized with the values from type definition
+      TileInfo_t visitedTiles[qcore::BOARD_SIZE][qcore::BOARD_SIZE]; // initialized with the values from type definition
 
       // queue for tile information
       std::queue<TileInfo_t> q;
@@ -198,7 +200,7 @@ namespace qplugin
                   qcore::Position pos = tile.tilePos;
                   do
                   {
-                     mBoard[pos.x][pos.y] |= (4 * (id + 1));
+                     mBoard[pos.x][pos.y] |= (16 * (id + 1));
                      pos = visitedTiles[pos.x][pos.y].prevTilePos;
                   } while (not(pos == mPlayerPos[id]));
                #endif
@@ -249,28 +251,28 @@ namespace qplugin
 
    bool MB6_Board::HasWallAbove(const qcore::Position& pos) const
    {
-      return (mBoard[pos.x - 1][pos.y] & 1);
+      return (mBoard[pos.x][pos.y] & 1);
    }
 
    bool MB6_Board::HasWallBelow(const qcore::Position& pos) const
    {
-      return (mBoard[pos.x][pos.y] & 1);
+      return (mBoard[pos.x][pos.y] & 2);
    }
 
    bool MB6_Board::HasWallToLeft(const qcore::Position& pos) const
    {
-      return (mBoard[pos.x][pos.y - 1] & 2);
+      return (mBoard[pos.x][pos.y] & 4);
    }
 
    bool MB6_Board::HasWallToRight(const qcore::Position& pos) const
    {
-      return (mBoard[pos.x][pos.y] & 2);
+      return (mBoard[pos.x][pos.y] & 8);
    }
 
    bool MB6_Board::IsInEnemyBase(const qcore::Position& pos, const qcore::PlayerId& id) const
    {
-      return ((id == mMyID && pos.x == 1) || // row #1 is enemy base for me
-                (id != mMyID && pos.x == 9)); // row #9 is enemy base for opponent
+      return ((id == mMyID && pos.x == 0) || // row #0 is enemy base for me
+                (id != mMyID && pos.x == 8)); // row #8 is enemy base for opponent
    }
 
    #if (DEBUG)
@@ -282,24 +284,24 @@ namespace qplugin
       char map[qcore::BOARD_MAP_SIZE][qcore::BOARD_MAP_SIZE] = { 0 };
 
       // add walls to map
-      for (int8_t i = 1; i <= qcore::BOARD_SIZE; i++)
+      for (int8_t i = 0; i < qcore::BOARD_SIZE; i++)
       {
-         for (int8_t j = 1; j <= qcore::BOARD_SIZE; j++)
+         for (int8_t j = 0; j < qcore::BOARD_SIZE; j++)
          {
             // convert board coords to map coords
             qcore::Position mapPos = BoardToMapPosition(qcore::Position(i, j));
 
             // start with an empty tile or a path tile
             #if (DEBUG)
-               if (board.mBoard[i][j] & 4 && board.mBoard[i][j] & 8) // tile is on the path of both players
+               if (board.mBoard[i][j] & 16 && board.mBoard[i][j] & 32) // tile is on the path of both players
                {
                   map[mapPos.x][mapPos.y] = 'x';
                }
-               else if (board.mBoard[i][j] & 4) // tile is on player 0's path
+               else if (board.mBoard[i][j] & 16) // tile is on player 0's path
                {
                   map[mapPos.x][mapPos.y] = '*';
                }
-               else if (board.mBoard[i][j] & 8) // tile is on player 1's path
+               else if (board.mBoard[i][j] & 32) // tile is on player 1's path
                {
                   map[mapPos.x][mapPos.y] = '+';
                }
@@ -312,19 +314,19 @@ namespace qplugin
             #endif
 
             // add horizontal wall below if applicable
-            if (i < qcore::BOARD_SIZE)
+            if (i < qcore::BOARD_SIZE - 1)
             {
-               map[mapPos.x + 1][mapPos.y] = (board.mBoard[i][j] & 1 ? '=' : ' ');
+               map[mapPos.x + 1][mapPos.y] = (board.mBoard[i][j] & 2 ? '=' : ' ');
             }
 
             // add vertical wall to the right if applicable
-            if (j < qcore::BOARD_SIZE)
+            if (j < qcore::BOARD_SIZE - 1)
             {
-               map[mapPos.x][mapPos.y + 1] = (board.mBoard[i][j] & 2 ? '|' : ' ');
+               map[mapPos.x][mapPos.y + 1] = (board.mBoard[i][j] & 8 ? '|' : ' ');
             }
 
             // add a dot at the intersection of vertical and horizontal wall lines
-            if ((i < qcore::BOARD_SIZE) && (j < qcore::BOARD_SIZE))
+            if ((i < qcore::BOARD_SIZE - 1) && (j < qcore::BOARD_SIZE - 1))
             {
                map[mapPos.x + 1][mapPos.y + 1] = '.';
             }
@@ -403,12 +405,12 @@ namespace qplugin
 
       #if (DEBUG)
       // remove path info from the board
-      for (int8_t i = 1; i <= qcore::BOARD_SIZE; i++)
+      for (int8_t i = 0; i < qcore::BOARD_SIZE; i++)
       {
-         for (int8_t j = 1; j <= qcore::BOARD_SIZE; j++)
+         for (int8_t j = 0; j < qcore::BOARD_SIZE; j++)
          {
-            board.mBoard[i][j] &= (~4);
-            board.mBoard[i][j] &= (~8);
+            board.mBoard[i][j] &= (~16);
+            board.mBoard[i][j] &= (~32);
          }
       }
       #endif
@@ -416,7 +418,7 @@ namespace qplugin
 
    qcore::Position MB6_Logger::BoardToMapPosition(const qcore::Position& pos) const
    {
-      return (pos - qcore::Position(1, 1)) * 2;
+      return pos * 2;
    }
 
    void MB6_Logger::ClearBuff(void)
@@ -426,12 +428,7 @@ namespace qplugin
 
    static qcore::Position CoreToPluginWallPos(const qcore::Position& pos, const qcore::Orientation& ori)
    {
-      return (ori == qcore::Orientation::Vertical ? pos + 1_x : pos + 1_y);
-   }
-
-   static qcore::Position CoreToPluginPlayerPos(const qcore::Position& pos)
-   {
-      return (pos + qcore::Position(1, 1));
+      return (ori == qcore::Orientation::Vertical ? pos - 1_y : pos - 1_x);
    }
 
    static qcore::Position CoreAbsToRelWallPos(const qcore::Position& pos, const qcore::Orientation& ori)

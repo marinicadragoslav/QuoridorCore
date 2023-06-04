@@ -9,8 +9,6 @@
 
 namespace qplugin
 {
-   const uint8_t BOARD_SIZE = (qcore::BOARD_SIZE + 1);
-
    class MB6_Player : public qcore::Player
    {
       public:
@@ -42,18 +40,18 @@ namespace qplugin
          bool IsInEnemyBase(const qcore::Position& pos, const qcore::PlayerId& id) const; // true if given pos is part of the enemy base for player with given id
 
       private:
-         uint8_t mBoard[BOARD_SIZE][BOARD_SIZE] = 
+         uint8_t mBoard[qcore::BOARD_SIZE][qcore::BOARD_SIZE] = 
          {
-            {  3,1,1,1,1,1,1,1,1,3  },
-            {  2,0,0,0,0,0,0,0,0,2  },
-            {  2,0,0,0,0,0,0,0,0,2  },
-            {  2,0,0,0,0,0,0,0,0,2  },
-            {  2,0,0,0,0,0,0,0,0,2  },
-            {  2,0,0,0,0,0,0,0,0,2  },
-            {  2,0,0,0,0,0,0,0,0,2  },
-            {  2,0,0,0,0,0,0,0,0,2  },
-            {  2,0,0,0,0,0,0,0,0,2  },
-            {  3,1,1,1,1,1,1,1,1,3  }
+            // Horizontal wall: above = 1, below = 2; Vertical wall: to the left = 4, to the right = 8
+            { 5, 1, 1, 1, 1, 1, 1, 1, 9 },
+            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
+            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
+            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
+            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
+            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
+            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
+            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
+            { 6, 2, 2, 2, 2, 2, 2, 2, 10}
          };
          
          qcore::Position mPlayerPos[2]; // index is playerID, e.g. mPlayerPos[mMyID] = my pos
