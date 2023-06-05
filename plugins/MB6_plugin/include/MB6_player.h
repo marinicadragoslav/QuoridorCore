@@ -40,18 +40,24 @@ namespace qplugin
          bool IsInEnemyBase(const qcore::Position& pos, const qcore::PlayerId& id) const; // true if given pos is part of the enemy base for player with given id
 
       private:
-         uint8_t mBoard[qcore::BOARD_SIZE][qcore::BOARD_SIZE] = 
+         #if (DEBUG) 
+            uint16_t 
+         #else 
+            uint8_t 
+         #endif 
+         mBoard[qcore::BOARD_SIZE][qcore::BOARD_SIZE] = 
          {
-            // Horizontal wall: above = 1, below = 2; Vertical wall: to the left = 4, to the right = 8
-            { 5, 1, 1, 1, 1, 1, 1, 1, 9 },
-            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
-            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
-            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
-            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
-            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
-            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
-            { 4, 0, 0, 0, 0, 0, 0, 0, 8 },
-            { 6, 2, 2, 2, 2, 2, 2, 2, 10}
+            // Horizontal wall: Above: first segment = 1, second segment = 2; Below: first segment = 4, second segment = 8;
+            // Vertical wall: To the left: first segment = 16, second segment = 32; To the right: first segment = 64, second segment = 128;
+            { 17,  1,  1,  1,  1,  1,  1,  1,  65 },
+            { 16,  0,  0,  0,  0,  0,  0,  0,  64 },
+            { 16,  0,  0,  0,  0,  0,  0,  0,  64 },
+            { 16,  0,  0,  0,  0,  0,  0,  0,  64 },
+            { 16,  0,  0,  0,  0,  0,  0,  0,  64 },
+            { 16,  0,  0,  0,  0,  0,  0,  0,  64 },
+            { 16,  0,  0,  0,  0,  0,  0,  0,  64 },
+            { 16,  0,  0,  0,  0,  0,  0,  0,  64 },
+            { 20,  4,  4,  4,  4,  4,  4,  4,  68 },
          };
          
          qcore::Position mPlayerPos[2]; // index is playerID, e.g. mPlayerPos[mMyID] = my pos

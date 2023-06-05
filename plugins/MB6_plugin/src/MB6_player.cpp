@@ -136,17 +136,17 @@ namespace qplugin
    {
       if (ori == qcore::Orientation::Horizontal)
       {
-         mBoard[pos.x][pos.y] |= 2; // place below current tile
-         mBoard[pos.x][pos.y + 1] |= 2; // place below eastern neighbour
-         mBoard[pos.x + 1][pos.y] |= 1; // place above southern neighbour
-         mBoard[pos.x + 1][pos.y + 1] |= 1; // place above south-eastern neighbour
+         mBoard[pos.x][pos.y] |= 4; // place below current tile (4 = horiz wall below, first segment)
+         mBoard[pos.x][pos.y + 1] |= 8; // place below eastern neighbour (8 = horiz wall below, second segment)
+         mBoard[pos.x + 1][pos.y] |= 1; // place above southern neighbour (1 = horiz wall above, first segment)
+         mBoard[pos.x + 1][pos.y + 1] |= 2; // place above south-eastern neighbour (2 = horiz wall above, second segment)
       }
       else
       {
-         mBoard[pos.x][pos.y] |= 8; // place to the right of current tile
-         mBoard[pos.x + 1][pos.y] |= 8; // place to the right of southern neighbour
-         mBoard[pos.x][pos.y + 1] |= 4; // place to the left of eastern neighbour
-         mBoard[pos.x + 1][pos.y + 1] |= 4; // place to the left of south-eastern neighbour
+         mBoard[pos.x][pos.y] |= 64; // place to the right of current tile (64 = vert wall to the right, first segment)
+         mBoard[pos.x + 1][pos.y] |= 128; // place to the right of southern neighbour (128 = vert wall to the right, second segment)
+         mBoard[pos.x][pos.y + 1] |= 16; // place to the left of eastern neighbour (16 = vert wall to the left, first segment)
+         mBoard[pos.x + 1][pos.y + 1] |= 32; // place to the left of south-eastern neighbour (32 = vert wall to the left, second segment)
 
       }
    }
@@ -200,7 +200,7 @@ namespace qplugin
                   qcore::Position pos = tile.tilePos;
                   do
                   {
-                     mBoard[pos.x][pos.y] |= (16 * (id + 1));
+                     mBoard[pos.x][pos.y] |= (256 * (id + 1));
                      pos = visitedTiles[pos.x][pos.y].prevTilePos;
                   } while (not(pos == mPlayerPos[id]));
                #endif
@@ -251,22 +251,22 @@ namespace qplugin
 
    bool MB6_Board::HasWallAbove(const qcore::Position& pos) const
    {
-      return (mBoard[pos.x][pos.y] & 1);
+      return (mBoard[pos.x][pos.y] & (1 | 2));
    }
 
    bool MB6_Board::HasWallBelow(const qcore::Position& pos) const
    {
-      return (mBoard[pos.x][pos.y] & 2);
+      return (mBoard[pos.x][pos.y] & (4 | 8));
    }
 
    bool MB6_Board::HasWallToLeft(const qcore::Position& pos) const
    {
-      return (mBoard[pos.x][pos.y] & 4);
+      return (mBoard[pos.x][pos.y] & (16 | 32));
    }
 
    bool MB6_Board::HasWallToRight(const qcore::Position& pos) const
    {
-      return (mBoard[pos.x][pos.y] & 8);
+      return (mBoard[pos.x][pos.y] & (64 | 128));
    }
 
    bool MB6_Board::IsInEnemyBase(const qcore::Position& pos, const qcore::PlayerId& id) const
@@ -293,15 +293,15 @@ namespace qplugin
 
             // start with an empty tile or a path tile
             #if (DEBUG)
-               if (board.mBoard[i][j] & 16 && board.mBoard[i][j] & 32) // tile is on the path of both players
+               if (board.mBoard[i][j] & 256 && board.mBoard[i][j] & 512) // tile is on the path of both players
                {
                   map[mapPos.x][mapPos.y] = 'x';
                }
-               else if (board.mBoard[i][j] & 16) // tile is on player 0's path
+               else if (board.mBoard[i][j] & 256) // tile is on player 0's path
                {
                   map[mapPos.x][mapPos.y] = '*';
                }
-               else if (board.mBoard[i][j] & 32) // tile is on player 1's path
+               else if (board.mBoard[i][j] & 512) // tile is on player 1's path
                {
                   map[mapPos.x][mapPos.y] = '+';
                }
@@ -316,13 +316,38 @@ namespace qplugin
             // add horizontal wall below if applicable
             if (i < qcore::BOARD_SIZE - 1)
             {
-               map[mapPos.x + 1][mapPos.y] = (board.mBoard[i][j] & 2 ? '=' : ' ');
+               if (board.mBoard[i][j] & 4)
+               {
+                  map[mapPos.x + 1][mapPos.y] = '-'; // first segment
+               }
+               else if (board.mBoard[i][j] & 8)
+               {
+                  map[mapPos.x + 1][mapPos.y] = '='; // second segment
+               }
+               else
+               {
+                  map[mapPos.x + 1][mapPos.y] = ' ';
+               }
+
+               //map[mapPos.x + 1][mapPos.y] = (board.mBoard[i][j] & (4 | 8) ? '=' : ' ');
             }
 
             // add vertical wall to the right if applicable
             if (j < qcore::BOARD_SIZE - 1)
             {
-               map[mapPos.x][mapPos.y + 1] = (board.mBoard[i][j] & 8 ? '|' : ' ');
+               if (board.mBoard[i][j] & 64)
+               {
+                  map[mapPos.x][mapPos.y + 1] = '!'; // first segment
+               }
+               else if (board.mBoard[i][j] & 128)
+               {
+                  map[mapPos.x][mapPos.y + 1] = '|'; // second segment
+               }
+               else
+               {
+                  map[mapPos.x][mapPos.y + 1] = ' ';
+               }
+               // map[mapPos.x][mapPos.y + 1] = (board.mBoard[i][j] & (64 | 128) ? '|' : ' ');
             }
 
             // add a dot at the intersection of vertical and horizontal wall lines
@@ -409,8 +434,8 @@ namespace qplugin
       {
          for (int8_t j = 0; j < qcore::BOARD_SIZE; j++)
          {
-            board.mBoard[i][j] &= (~16);
-            board.mBoard[i][j] &= (~32);
+            board.mBoard[i][j] &= (~256);
+            board.mBoard[i][j] &= (~512);
          }
       }
       #endif
