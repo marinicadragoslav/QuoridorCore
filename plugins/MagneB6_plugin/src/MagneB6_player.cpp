@@ -41,7 +41,7 @@ namespace qplugin
       qcore::ActionType    lastActType    = lastAct.actionType;
       qcore::Orientation   lastActWallOr  = lastAct.wallState.orientation;
       qcore::Position      lastActWallPos = (myID == 0 ? lastAct.wallState.position : 
-                                                CoreAbsToRelWallPos(lastAct.wallState.position, lastActWallOr)); // only convert when I am 2nd to move
+                                                _CoreAbsToRelWallPos(lastAct.wallState.position, lastActWallOr)); // only convert when I am 2nd to move
       uint8_t              myWallsLeft    = getWallsLeft();
       uint8_t              oppWallsLeft   = oppState.wallsLeft;
 
@@ -266,7 +266,7 @@ namespace qplugin
       }
    }
 
-   qcore::Position MagneB6Player::CoreAbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation)   
+   qcore::Position MagneB6Player::_CoreAbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation)   
    {
       qcore::Position relPos;
 
