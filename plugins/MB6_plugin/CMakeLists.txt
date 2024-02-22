@@ -7,6 +7,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # Create qcore shared library
 add_library(qMB6-plugin SHARED
    src/MB6_player.cpp
+   src/MB6_board.cpp
    src/MB6_logger.cpp
    src/player_registration.cpp
 )

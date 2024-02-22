@@ -2,6 +2,9 @@
 #define H_PLUGIN_MB6_LOGGER
 
 #include "MB6_player.h"
+#include "MB6_board.h"
+
+#define LINE_MAX_LEN    (120)
 
 namespace qplugin
 {
@@ -11,23 +14,25 @@ namespace qplugin
             void LogTurnCount(const uint16_t turnCount) const;
             void LogMyInfo(const MB6_Board& board) const;
             void LogOppInfo(const MB6_Board& board) const;
-            void LogLastActType(const qcore::ActionType act) const;
-            void LogLastActWallInfo(const qcore::Orientation ori, qcore::Position corePos, qcore::Position pluginPos) const;
-            void LogMyMinPath(bool pathExists, const MB6_Board& board, uint8_t infinitePath) const;
-            void LogOppMinPath(bool pathExists, const MB6_Board& board, uint8_t infinitePath) const;
+            void LogLastActType(const qcore::ActionType& act) const;
+            void LogLastActWallInfo(const qcore::Orientation& ori, 
+                                    const qcore::Position& corePos, 
+                                    const qcore::Position& pluginPos) const;
+            void LogMyMinPath(uint8_t MinPath) const;
+            void LogOppMinPath(uint8_t MinPath) const;
             void LogInt(int n) const;
 
-            #if (DEBUG)
-            void LogBoard(MB6_Board& board, const qcore::PlayerId myID);
-            #else
-            void LogBoard(const MB6_Board& board, const qcore::PlayerId myID);
-            #endif
+#if (MB6_DEBUG)
+            void LogBoard(MB6_Board& board);
+#else
+            void LogBoard(const MB6_Board& board);
+#endif
 
         private:
             qcore::Position BoardToMapPosition(const qcore::Position& pos) const;
             void ClearBuff(void);
 
-            char mBuff[LOGGED_LINE_MAX_LEN] = { 0 };
+            char mBuff[LINE_MAX_LEN] = { 0 };
     };
 } // end namespace
 
