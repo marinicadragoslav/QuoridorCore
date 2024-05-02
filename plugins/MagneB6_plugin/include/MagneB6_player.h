@@ -260,7 +260,7 @@ namespace qplugin
       }Subpath_t;
 
       // Transformations
-      qcore::Position _CoreAbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation);
+      qcore::Position CoreAbsToRelWallPos(qcore::Position absPos, qcore::Orientation orientation);
       Position_t CoreToPluginWallPos(qcore::Position coreWallPos, qcore::Orientation orientation);
       qcore::Position PluginToCoreWallPos(Position_t pluginWallPos, Orientation_t orientation);
       Orientation_t CoreToPluginWallOrientation(qcore::Orientation orientation);

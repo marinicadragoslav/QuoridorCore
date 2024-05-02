@@ -1,8 +1,9 @@
 #ifndef H_PLUGIN_MB6_LOGGER
 #define H_PLUGIN_MB6_LOGGER
 
-#include "MB6_player.h"
+#include "PlayerAction.h"
 #include "MB6_board.h"
+#include <vector>
 
 #define LINE_MAX_LEN    (120)
 
@@ -18,11 +19,11 @@ namespace qplugin
             void LogLastActWallInfo(const qcore::Orientation& ori, 
                                     const qcore::Position& corePos, 
                                     const qcore::Position& pluginPos) const;
-            void LogMyMinPath(uint8_t MinPath) const;
-            void LogOppMinPath(uint8_t MinPath) const;
-            void LogInt(int n) const;
+            void LogMyMinPath(const uint8_t MinPath) const;
+            void LogOppMinPath(const uint8_t MinPath) const;
+            void LogBestAction(const Action_t act) const;
 
-#if (MB6_DEBUG)
+#if (DEBUG_BOARD)
             void LogBoard(MB6_Board& board);
 #else
             void LogBoard(const MB6_Board& board);

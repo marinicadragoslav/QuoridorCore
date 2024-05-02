@@ -1,15 +1,17 @@
 #include "MB6_player.h"
+#include "MB6_board.h"
+#include "MB6_timer.h"
 #include "MB6_logger.h"
-#include <queue>
+#include <vector>
+
+#define MINIMAX_DEPTH         3
+#define MINIMAX_TIMEOUT_MS    4900
 
 using namespace qcore::literals;
 using namespace std::chrono_literals;
+
 namespace qplugin
 {
-   // Initialize static members, value will be assigned at runtime
-   qcore::PlayerId MB6_Player::_mMyId = UNDEF_ID;
-   qcore::PlayerId MB6_Player::_mOppId = UNDEF_ID;
-
    // Player construction
    MB6_Player::MB6_Player(qcore::PlayerId id, const std::string& name, qcore::GamePtr game) :
       qcore::Player(id, name, game)
@@ -22,50 +24,54 @@ namespace qplugin
     */
    void MB6_Player::doNextMove()
    {
-      // Create board (once)
+      static MB6_Logger logger;
+      static MB6_Timer timer;
       static MB6_Board board;
 
-      // Get Player Ids (once). My Id can be 0 (if I am the first player to move) or 1.
+      // Get Player Ids once, on my first move. My Id is 0 if I am the first player to move, or 1 otherwise.
       if (mTurnCount == 0)
       {
-         _mMyId  = getId(); 
-         _mOppId = (_mMyId ? 0 : 1);
+         MB6_Board::_mMyId  = getId(); 
+         MB6_Board::_mOppId = (MB6_Board::_mMyId ? 0 : 1);
       }
 
       // Update Turn Count
       mTurnCount++;
 
+      // Start the timer
+      timer.Reset(MINIMAX_TIMEOUT_MS);
+      timer.Start();
+
       // Get game info
       auto const myWallsLeft        = getWallsLeft();
       auto const myPos              = getPosition();
       auto const boardState         = getBoardState();
-      auto const oppState           = boardState->getPlayers(_mOppId).at(_mOppId);
+      auto const oppState           = boardState->getPlayers(MB6_Board::_mOppId).at(MB6_Board::_mOppId);
       auto const oppWallsLeft       = oppState.wallsLeft;
       auto const oppPos             = (oppState.position).rotate(2); // always rotate, as player positions are relative
       auto const lastAct            = boardState->getLastAction();
       auto const lastWallOri        = lastAct.wallState.orientation;
       auto const coreAbsLastWallPos = lastAct.wallState.position; // absolute wall position in the game core
-      auto const coreRelLastWallPos = (_mMyId == 0 ? // relative wall position in the game core
+      auto const coreRelLastWallPos = (MB6_Board::_mMyId == 0 ? // relative wall position in the game core
                                           coreAbsLastWallPos : CoreAbsToRelWallPos(coreAbsLastWallPos, lastWallOri));
       auto const pluginLastWallPos  = (lastAct.actionType == qcore::ActionType::Wall ? // wall position in the plugin
-                                          CoreToPluginWallPos(coreRelLastWallPos, lastWallOri) : UNDEF_POS);
+                                          CoreToPluginWallPos(coreRelLastWallPos, lastWallOri) : UNDEFINED_POSITION);
 
       // Update board structure
-      board.UpdatePlayerPos(_mMyId, myPos);
-      board.UpdatePlayerPos(_mOppId, oppPos);
-      board.UpdateWallsLeft(_mMyId, myWallsLeft);
-      board.UpdateWallsLeft(_mOppId, oppWallsLeft);
+      board.UpdatePlayerPos(MB6_Board::_mMyId, myPos);
+      board.UpdatePlayerPos(MB6_Board::_mOppId, oppPos);
+      board.UpdateWallsLeft(MB6_Board::_mMyId, myWallsLeft);
+      board.UpdateWallsLeft(MB6_Board::_mOppId, oppWallsLeft);
       if (lastAct.actionType == qcore::ActionType::Wall)
       {
          board.PlaceWall(pluginLastWallPos, lastWallOri);
       }
 
       // Compute minimum paths
-      uint8_t myMinPath = board.GetMinPath(_mMyId);
-      uint8_t oppMinPath = board.GetMinPath(_mOppId);
+      uint8_t myMinPath = board.GetMinPath(MB6_Board::_mMyId);
+      uint8_t oppMinPath = board.GetMinPath(MB6_Board::_mOppId);
 
       // Log information
-      static MB6_Logger logger;
       logger.LogTurnCount(mTurnCount);
       logger.LogMyInfo(board);
       logger.LogOppInfo(board);
@@ -78,54 +84,25 @@ namespace qplugin
       logger.LogOppMinPath(oppMinPath);
       logger.LogBoard(board);
 
-      ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-      // perform dummy move
-      auto myPosition = getPosition() * 2;
-      qcore::BoardMap map;
-      std::list<qcore::Position> pos;
+      // Get best action (Minimax with alpha-beta pruning)
+      bool timerHasElapsed = false;
+      board.Minimax(MB6_Board::_mMyId, MINIMAX_DEPTH, NEG_INFINITY, POS_INFINITY, timer, true, timerHasElapsed);
+      Action_t bestAct = board.GetBestAction(MINIMAX_DEPTH);
+      logger.LogBestAction(bestAct);
 
-      getBoardState()->createBoardMap(map, getId());
-
-      for (uint8_t i = 0; i < qcore::BOARD_MAP_SIZE; i += 2)
+      // Perform action
+      if (bestAct.actionType == ACT_TYPE_MOVE)
       {
-         qcore::Position p(0, i);
-         map(p) = qcore::BoardMap::Invalid;
-         pos.push_back(p);
+         move(bestAct.position);
       }
-
-      auto checkPos = [&](const qcore::Position& p, qcore::Direction dir) -> bool
+      else
       {
-         if (myPosition == p)
-         {
-            move(dir);
-            return true;
-         }
-
-         if(map(p) < qcore::BoardMap::HorizontalWall)
-         {
-            map(p) = qcore::BoardMap::Invalid;
-            pos.emplace_back(p);
-         }
-
-         return false;
-      };
-
-      while (not pos.empty())
-      {
-         auto p = pos.front();
-         pos.pop_front();
-
-         if ((map(p + 1_x) == 0 and checkPos(p + 2_x, qcore::Direction::Up)) or
-            (map(p - 1_x) == 0 and checkPos(p - 2_x, qcore::Direction::Down)) or
-            (map(p + 1_y) == 0 and checkPos(p + 2_y, qcore::Direction::Left)) or
-            (map(p - 1_y) == 0 and checkPos(p - 2_y, qcore::Direction::Right)))
-         {
-            return;
-         }
+         qcore::Orientation ori = (bestAct.actionType == ACT_TYPE_H_WALL ? 
+                                    qcore::Orientation::Horizontal : qcore::Orientation::Vertical);         
+         board.PlaceWall(bestAct.position, ori);
+         qcore::Position pos = PluginToCoreWallPos(bestAct.position, ori);
+         placeWall(pos.x, pos.y, ori);
       }
-
-      // LOG_WARN(DOM) << "Something went wrong. Making a random move.";
-      move(qcore::Direction::Down) or move(qcore::Direction::Left) or move(qcore::Direction::Right) or move(qcore::Direction::Up);
    }
 
    qcore::Position MB6_Player::CoreToPluginWallPos(const qcore::Position& pos, const qcore::Orientation& ori)
@@ -133,16 +110,33 @@ namespace qplugin
       return (ori == qcore::Orientation::Vertical ? pos - 1_y : pos - 1_x);
    }
 
+   qcore::Position MB6_Player::PluginToCoreWallPos(const qcore::Position& pos, const qcore::Orientation& ori)
+   {
+      return (ori == qcore::Orientation::Vertical ? pos + 1_y : pos + 1_x);
+   }
+
    qcore::Position MB6_Player::CoreAbsToRelWallPos(const qcore::Position& pos, const qcore::Orientation& ori)
    {
       // flip around the board center, on both axis
-      auto FlippedPos = qcore::Position(qcore::BOARD_SIZE, qcore::BOARD_SIZE) - pos;
-      
-      // adjust for the wrong end of the wall
-      qcore::Position Adj = { (int8_t)(ori == qcore::Orientation::Vertical ? 2 : 0), (int8_t)(ori == qcore::Orientation::Horizontal ? 2 : 0) };
+      qcore::Position flipped = qcore::Position(qcore::BOARD_SIZE, qcore::BOARD_SIZE) - pos;
 
-      // subtract adjustments
-      return (FlippedPos - Adj);
+      // adjust for the wrong end of the wall
+      qcore::Position relPos = flipped - qcore::Position((int8_t)(ori == qcore::Orientation::Vertical ? 2 : 0), 
+                                                            (int8_t)(ori == qcore::Orientation::Horizontal ? 2 : 0));
+
+      return relPos;
+   }
+
+   qcore::Position MB6_Player::CoreRelToAbsWallPos(const qcore::Position& pos, const qcore::Orientation& ori)
+   {
+      // revert the adjustment for the wrong end of the wall
+      qcore::Position flipped = pos + qcore::Position((int8_t)(ori == qcore::Orientation::Vertical ? 2 : 0), 
+                                                         (int8_t)(ori == qcore::Orientation::Horizontal ? 2 : 0));
+
+      // revert the flip around the board center, on both axis
+      qcore::Position absPos = qcore::Position(qcore::BOARD_SIZE, qcore::BOARD_SIZE) - flipped;
+
+      return absPos;
    }
 
 } // end namespace

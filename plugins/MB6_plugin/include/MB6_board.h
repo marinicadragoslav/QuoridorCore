@@ -1,7 +1,22 @@
 #ifndef H_PLUGIN_MB6_BOARD
 #define H_PLUGIN_MB6_BOARD
 
-#include "Player.h"
+#include "PlayerAction.h"
+#include "MB6_timer.h"
+#include <vector>
+
+#define DEBUG_BOARD           true
+
+#define UNDEFINED_POSITION    (qcore::Position{-0xF, -0xF})
+#define UNDEFINED_PLAYER_ID   0xF
+#define INEXISTENT_PATH       0xFF
+
+#define POS_SCORE_LIMIT       (+0xFFFFF0)  // limit for valid positive minimax score (must be < POS_INFINITY)
+#define NEG_SCORE_LIMIT       (-0xFFFFF0)  // limit for valid negative minimax score (must be > NEG_INFINITY)
+#define POS_INFINITY          (+0xFFFFFF)  // some large positive value
+#define NEG_INFINITY          (-0xFFFFFF)  // some large negative value
+#define OUT_OF_RANGE          (-0xFFFFFFF) // must be outside [NEG_INFINITY, POS_INFINITY] range
+#define IS_SCORE_VALID(score) (NEG_SCORE_LIMIT <= score and score <= POS_SCORE_LIMIT)
 
 namespace qplugin
 {
@@ -23,39 +38,64 @@ namespace qplugin
       WALL_NE  = (WALL_N | WALL_E),
       WALL_SW  = (WALL_S | WALL_W),
       WALL_SE  = (WALL_S | WALL_E),
-#if(MB6_DEBUG)
+#if(DEBUG_BOARD)
       MARKER_MY_PATH = (1 << 8),
       MARKER_OPP_PATH = (1 << 9)
 #endif
    }Wall_t;
 
+   typedef enum
+   {
+      ACT_TYPE_MOVE,
+      ACT_TYPE_H_WALL,
+      ACT_TYPE_V_WALL
+   }ActionType_t;
+
    typedef struct
    {
-      qcore::Position start = UNDEF_POS;
-      qcore::Position end = UNDEF_POS;
-      uint8_t pathLen = 0; // total path length from player to End
+      ActionType_t actionType;
+      qcore::Position position;
+   }Action_t;
+   
+
+   typedef struct
+   {
+      qcore::Position start = UNDEFINED_POSITION;
+      qcore::Position end = UNDEFINED_POSITION;
+      uint8_t pathLen = 0; // total path length from player to end
    }Step_t;
 
    class MB6_Board
    {
       friend class MB6_Logger;
-      
+
       public:
          MB6_Board(){};
          void UpdatePlayerPos(const qcore::PlayerId& id, const qcore::Position& pos);
          void UpdateWallsLeft(const qcore::PlayerId& id, const uint8_t walls);
+         void DecrementWallsLeft(const qcore::PlayerId& id);
          void PlaceWall(const qcore::Position& pos, const qcore::Orientation& ori);
          uint8_t GetMinPath(const qcore::PlayerId& id);
          bool HasWallTowards(const qcore::Position& pos, const qcore::Direction& dir) const;
          bool IsWinningPos(const qcore::Position& pos, const qcore::PlayerId& id) const;
-#if(MB6_DEBUG)
+         bool IsGameOver() const;
+         int StaticEval();
+         int Minimax(const qcore::PlayerId& id, const uint8_t level, int alpha, int beta, const MB6_Timer& timer, 
+               const bool useTimer, bool& timerHasElapsed);
+         std::vector<Action_t> GetPossibleActions(const qcore::PlayerId& id) const;
+         Action_t GetBestAction(const uint8_t level);
+#if(DEBUG_BOARD)
          void MarkMinPath(const Step_t steps[][qcore::BOARD_SIZE], const qcore::Position& end, const qcore::PlayerId& id);
 #endif
+
+         static qcore::PlayerId _mMyId;
+         static qcore::PlayerId _mOppId;
+         static std::vector<Action_t> _mBestActs;
 
       private:
          qcore::Position mPlayerPos[2]; // index is player's ID
          uint8_t mWallsLeft[2]; // index is player's ID
-#if (MB6_DEBUG) 
+#if (DEBUG_BOARD) 
          uint16_t mBoard[qcore::BOARD_SIZE][qcore::BOARD_SIZE] =
 #else 
          uint8_t mBoard[qcore::BOARD_SIZE][qcore::BOARD_SIZE] = 

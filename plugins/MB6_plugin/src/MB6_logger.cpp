@@ -1,6 +1,9 @@
 #include "MB6_logger.h"
 #include "MB6_board.h"
 #include "QcoreUtil.h"
+#include "BoardState.h"
+#include <vector>
+#include <string>
 
 namespace qplugin
 {
@@ -13,21 +16,21 @@ namespace qplugin
 
     void MB6_Logger::LogMyInfo(const MB6_Board& board) const
     {
-        int x = (int)(board.mPlayerPos[MB6_Player::_mMyId].x);
-        int y = (int)(board.mPlayerPos[MB6_Player::_mMyId].y);
+        int x = (int)(board.mPlayerPos[MB6_Board::_mMyId].x);
+        int y = (int)(board.mPlayerPos[MB6_Board::_mMyId].y);
 
-        LOG_INFO(DOM) << "  >  Me  (" << (int)(MB6_Player::_mMyId) << ") "
+        LOG_INFO(DOM) << "  >  Me  (" << (int)(MB6_Board::_mMyId) << ") "
                       << "pos = [" << x << ", " << y << "], " 
-                      << "walls = " << (int)(board.mWallsLeft[MB6_Player::_mMyId]);
+                      << "walls = " << (int)(board.mWallsLeft[MB6_Board::_mMyId]);
     }
 
     void MB6_Logger::LogOppInfo(const MB6_Board& board) const
     {
-        int x = (int)(board.mPlayerPos[MB6_Player::_mOppId].x);
-        int y = (int)(board.mPlayerPos[MB6_Player::_mOppId].y);
-        LOG_INFO(DOM) << "  >  Opp (" << (int)(MB6_Player::_mOppId) << ") " 
+        int x = (int)(board.mPlayerPos[MB6_Board::_mOppId].x);
+        int y = (int)(board.mPlayerPos[MB6_Board::_mOppId].y);
+        LOG_INFO(DOM) << "  >  Opp (" << (int)(MB6_Board::_mOppId) << ") " 
                       << "pos = [" << x << ", " << y << "], " 
-                      << "walls = " << (int)(board.mWallsLeft[MB6_Player::_mOppId]);
+                      << "walls = " << (int)(board.mWallsLeft[MB6_Board::_mOppId]);
     }
 
     void MB6_Logger::LogLastActType(const qcore::ActionType& act) const
@@ -55,12 +58,30 @@ namespace qplugin
         LOG_INFO(DOM) << "  >  Opp min path = " << (int)MinPath;
     }
 
-    void MB6_Logger::LogInt(int n) const
+    void MB6_Logger::LogBestAction(const Action_t act) const
     {
-        LOG_INFO(DOM) << "  >  { " << n << " }";
+        LOG_INFO(DOM) << "  >  Best action: ";
+
+        switch (act.actionType)
+        {
+            case ACT_TYPE_MOVE:
+                LOG_INFO(DOM) << "  >  [M: " << (int)act.position.x << "," << (int)act.position.y << "]";
+                break;
+
+            case ACT_TYPE_H_WALL:
+                LOG_INFO(DOM) << "  >  [H: " << (int)act.position.x << "," << (int)act.position.y << "]";
+                break;
+
+            case ACT_TYPE_V_WALL:
+                LOG_INFO(DOM) << "  >  [V: " << (int)act.position.x << "," << (int)act.position.y << "]";
+                break;
+                
+            default:
+                break;
+        }
     }
 
-#if (MB6_DEBUG)
+#if (DEBUG_BOARD)
     void MB6_Logger::LogBoard(MB6_Board& board)
 #else
     void MB6_Logger::LogBoard(const MB6_Board& board)
@@ -77,7 +98,7 @@ namespace qplugin
                 qcore::Position mapPos = BoardToMapPosition(qcore::Position(i, j));
 
                 // start with an empty tile or a path tile
-#if (MB6_DEBUG)
+#if (DEBUG_BOARD)
                 if ((board.mBoard[i][j] & Wall_t::MARKER_MY_PATH) && 
                     (board.mBoard[i][j] & Wall_t::MARKER_OPP_PATH)) // tile is on the path of both players
                 {
@@ -163,7 +184,7 @@ namespace qplugin
                 {
                     if (map[i][j] != '0' && map[i][j] != '1') // check to skip tiles with players
                     {
-#if (MB6_DEBUG)
+#if (DEBUG_BOARD)
                         if ((map[i][j] == '+') || (map[i][j] == '*') || (map[i][j] == 'x')) 
                         {
                             // path tiles
@@ -185,7 +206,7 @@ namespace qplugin
                     else
                     {
                         // set player tiles to something more meaningful
-                        if (map[i][j] - 48 == MB6_Player::_mMyId)
+                        if (map[i][j] - 48 == MB6_Board::_mMyId)
                         {
                             mBuff[bIndex++] = 'M';
                             mBuff[bIndex++] = 'E';
@@ -211,7 +232,7 @@ namespace qplugin
         }
         LOG_INFO(DOM) << "  >  ========================== ";
 
-#if (MB6_DEBUG)
+#if (DEBUG_BOARD)
         // remove path info from the board
         for (int8_t i = 0; i < qcore::BOARD_SIZE; i++)
         {
